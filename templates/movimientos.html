@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Movimientos de inventario</h2>
+  <div>
+    <a href="{{ url_for('nuevo_movimiento', tipo='entrada') }}"
+       class="btn btn-success btn-sm">+ Entrada</a>
+    <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}"
+       class="btn btn-danger btn-sm">- Salida</a>
+  </div>
+</div>
+
+<form method="get" action="{{ url_for('listar_movimientos') }}" class="mb-3">
+  <div class="form-row">
+    <div class="form-group col-md-2">
+      <label>Tipo</label>
+      <select name="tipo" class="form-control">
+        <option value="">(Todos)</option>
+        <option value="entrada" {% if tipo == "entrada" %}selected{% endif %}>Entradas</option>
+        <option value="salida" {% if tipo == "salida" %}selected{% endif %}>Salidas</option>
+      </select>
+    </div>
+    <div class="form-group col-md-4">
+      <label>Producto</label>
+      <select name="producto_id" class="form-control">
+        <option value="">(Todos)</option>
+        {% for p in productos %}
+          <option value="{{ p.id }}" {% if producto_id|int == p.id %}selected{% endif %}>
+            {{ p.nombre }} {% if p.codigo %}({{ p.codigo }}){% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group col-md-2">
+      <label>Desde</label>
+      <input type="date" name="desde" class="form-control" value="{{ desde }}">
+    </div>
+    <div class="form-group col-md-2">
+      <label>Hasta</label>
+      <input type="date" name="hasta" class="form-control" value="{{ hasta }}">
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-outline-secondary mr-2">Filtrar</button>
+  <a href="{{ url_for('listar_movimientos') }}" class="btn btn-link">Limpiar</a>
+</form>
+
+<table class="table table-sm table-hover bg-white">
+  <thead class="thead-dark">
+    <tr>
+      <th>Fecha</th>
+      <th>Tipo</th>
+      <th>Producto</th>
+      <th>Cantidad</th>
+      <th>Usuario</th>
+      <th>Motivo</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in movimientos %}
+      <tr class="{% if m.tipo == 'entrada' %}table-success{% else %}table-warning{% endif %}">
+        <td>{{ m.fecha }}</td>
+        <td>{{ m.tipo|capitalize }}</td>
+        <td>
+          {{ m.nombre_producto }}
+          {% if m.codigo_producto %} ({{ m.codigo_producto }}){% endif %}
+        </td>
+        <td>{{ m.cantidad }}</td>
+        <td>{{ m.usuario or "-" }}</td>
+        <td>{{ m.motivo or "-" }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

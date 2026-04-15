@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Resumen de Inventario</h1>
+
+<div class="row">
+  <div class="col-md-4 mb-3">
+    <div class="card border-primary">
+      <div class="card-body">
+        <h5 class="card-title">Total de productos</h5>
+        <p class="card-text display-4">{{ total_productos }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="card border-success">
+      <div class="card-body">
+        <h5 class="card-title">Stock total</h5>
+        <p class="card-text display-4">{{ total_stock }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tarjeta modificada: ahora es un link a /productos?stock_bajo=on -->
+  <div class="col-md-4 mb-3">
+    <div class="card border-danger position-relative">
+      <div class="card-body">
+        <h5 class="card-title">Productos con stock bajo</h5>
+        <a href="{{ url_for('listar_productos', stock_bajo='on') }}"
+           class="stretched-link text-danger"
+           style="text-decoration: none;">
+          <p class="card-text display-4 mb-0">{{ bajos }}</p>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Top productos con más salidas</h5>
+        <div style="height: 320px;">
+          <canvas id="chartTopSalidas"></canvas>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Movimientos últimos 7 días</h5>
+        <canvas id="chartMovimientos" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const topLabels = {{ top_labels|tojson }};
+  const topValues = {{ top_values|tojson }};
+  const dias = {{ dias|tojson }};
+  const entradas = {{ entradas|tojson }};
+  const salidas = {{ salidas|tojson }};
+
+  const ctx1 = document.getElementById('chartTopSalidas').getContext('2d');
+  new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: topLabels,
+      datasets: [{
+        label: 'Cantidad de salidas',
+        data: topValues,
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      indexAxis: 'y',          // 🔥 Esto lo hace horizontal
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0       // solo números enteros
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ctx.raw + ' salidas';
+            }
+          }
+        }
+      }
+    }
+  });
+
+
+  const ctx2 = document.getElementById('chartMovimientos').getContext('2d');
+  new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: dias,
+      datasets: [
+        {
+          label: 'Entradas',
+          data: entradas
+        },
+        {
+          label: 'Salidas',
+          data: salidas
+        }
+      ]
+    }
+  });
+</script>
+{% endblock %}
