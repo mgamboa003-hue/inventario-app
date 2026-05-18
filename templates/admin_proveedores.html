@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Proveedores — Inventario Wintec{% endblock %}
+{% block topbar_title %}Proveedores{% endblock %}
+{% block content %}
+<div style="max-width:760px;">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><span class="card-title">Nuevo proveedor</span></div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="form-row">
+          <div class="form-group"><label>Nombre *</label><input type="text" name="nombre" required></div>
+          <div class="form-group"><label>Contacto</label><input type="text" name="contacto"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Email</label><input type="email" name="email"></div>
+          <div class="form-group"><label>Teléfono</label><input type="text" name="telefono"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Agregar</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ proveedores|length }} proveedores</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nombre</th><th>Contacto</th><th>Email</th><th>Teléfono</th><th>Productos</th></tr></thead>
+        <tbody>
+        {% for p in proveedores %}
+        <tr>
+          <td style="font-weight:600;">{{ p.nombre }}</td>
+          <td>{{ p.contacto or '-' }}</td>
+          <td style="font-size:13px;">{{ p.email or '-' }}</td>
+          <td>{{ p.telefono or '-' }}</td>
+          <td><span class="tag tag-ok">{{ p.total }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

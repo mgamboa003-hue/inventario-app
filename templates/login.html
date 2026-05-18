@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Iniciar sesión — Inventario Wintec</title>
+  <link rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body { background: #f8f9fa; }
+    .login-card {
+      max-width: 400px;
+      margin: 100px auto;
+    }
+    .login-card .card-header {
+      background: #343a40;
+      color: white;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="card shadow">
+    <div class="card-header py-3">
+      Inventario Wintec
+    </div>
+    <div class="card-body p-4">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for categoria, mensaje in messages %}
+            <div class="alert alert-{{ categoria }}">{{ mensaje }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <div class="form-group">
+          <label for="username">Usuario</label>
+          <input type="text" id="username" name="username" class="form-control"
+                 autofocus required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" class="form-control"
+                 required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-dark btn-block mt-3">
+          Ingresar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

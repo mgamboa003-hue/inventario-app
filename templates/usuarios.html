@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Usuarios — Inventario Wintec{% endblock %}
+{% block topbar_title %}Gestión de usuarios{% endblock %}
+{% block topbar_actions %}
+  <button onclick="document.getElementById('modalNuevo').classList.add('open')" class="btn btn-primary">+ Nuevo usuario</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header"><span class="card-title">{{ usuarios|length }} usuario{{ 's' if usuarios|length != 1 }}</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Creado</th><th>Acciones</th></tr></thead>
+      <tbody>
+      {% for u in usuarios %}
+      <tr>
+        <td style="font-weight:600;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="avatar" style="width:28px;height:28px;font-size:11px;">{{ u.nombre[0].upper() if u.nombre else 'U' }}</div>
+            {{ u.nombre or '-' }}
+          </div>
+        </td>
+        <td style="font-family:monospace;color:var(--text2);">{{ u.username }}</td>
+        <td>
+          {% if u.role == 'admin' %}<span class="tag tag-admin">Admin</span>
+          {% elif u.role == 'bodeguero' %}<span class="tag tag-bodeguero">Bodeguero</span>
+          {% else %}<span class="tag tag-readonly">Solo lectura</span>{% endif %}
+        </td>
+        <td style="font-size:12px;color:var(--text2);">{{ u.created_at[:10] if u.created_at else '-' }}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button onclick="openCambiarPass({{ u.id }}, '{{ u.username }}')" class="btn btn-sm btn-secondary">🔑</button>
+            {% if u.id != current_user.id %}
+            <form method="POST" action="{{ url_for('eliminar_usuario', id=u.id) }}" onsubmit="return confirm('¿Eliminar usuario {{ u.username }}?')">
+              <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal nuevo usuario -->
+<div class="modal-overlay" id="modalNuevo">
+  <div class="modal">
+    <div class="modal-title">👤 Nuevo usuario</div>
+    <form method="POST" action="{{ url_for('nuevo_usuario') }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre completo</label>
+          <input type="text" name="nombre" placeholder="Juan Pérez" required>
+        </div>
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" name="username" placeholder="jperez" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" name="password" required>
+        </div>
+        <div class="form-group">
+          <label>Rol</label>
+          <select name="role">
+            <option value="bodeguero">Bodeguero</option>
+            <option value="admin">Admin</option>
+            <option value="readonly">Solo lectura</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="document.getElementById('modalNuevo').classList.remove('open')" class="btn btn-secondary">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Crear usuario</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal cambiar contraseña -->
+<div class="modal-overlay" id="modalPass">
+  <div class="modal">
+    <div class="modal-title">🔑 Cambiar contraseña</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">Usuario: <span id="passUsername" style="color:var(--accent2);font-weight:600;"></span></p>
+    <form method="POST" id="formPass">
+      <div class="form-group">
+        <label>Nueva contraseña</label>
+        <input type="password" name="nueva_password" required minlength="6">
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="document.getElementById('modalPass').classList.remove('open')" class="btn btn-secondary">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Actualizar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openCambiarPass(id, username) {
+  document.getElementById('passUsername').textContent = username;
+  document.getElementById('formPass').action = `/usuarios/${id}/cambiar-password`;
+  document.getElementById('modalPass').classList.add('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); });
+});
+</script>
+{% endblock %}

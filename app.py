@@ -1,12 +1,33 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, flash
-from datetime import datetime
-from db import get_db_connection, init_db
+import hmac
 import os
+from datetime import datetime, timedelta
+from functools import wraps
+
+from dotenv import load_dotenv
+from flask import (Flask, flash, jsonify, redirect, render_template, request,
+                   session, url_for)
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.utils import secure_filename
 
+from db import get_db_connection, init_db
+
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = "inventario_wintec_123"  # solo para mensajes flash
+app.secret_key = os.environ.get("SECRET_KEY", os.urandom(32))
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
+
+MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", 5))
+app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
+
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+
+csrf = CSRFProtect(app)
+
+# ----- Credenciales -----
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
 
 # ----- Configuración de subida de imágenes -----
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -15,13 +36,95 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
+
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def save_uploaded_image(archivo):
+    """Guarda la imagen subida y retorna la URL relativa, o None si falla."""
+    if not archivo or not archivo.filename:
+        return None
+    if not allowed_file(archivo.filename):
+        flash("Tipo de archivo no permitido. Usa png, jpg, jpeg, gif o webp.", "warning")
+        return None
+    filename = secure_filename(archivo.filename)
+    prefijo = datetime.now().strftime("%Y%m%d%H%M%S")
+    filename = f"{prefijo}_{filename}"
+    archivo.save(os.path.join(UPLOAD_FOLDER, filename))
+    return f"/static/uploads/{filename}"
+
+
+def safe_int(value, default=0):
+    try:
+        v = int(value)
+        return max(0, min(v, 9_999_999))
+    except (TypeError, ValueError):
+        return default
+
+
+def safe_float(value, default=0.0):
+    try:
+        v = float(value)
+        return max(0.0, v)
+    except (TypeError, ValueError):
+        return default
+
 
 # -------------------------
-# INICIALIZAR BASE DE DATOS (Flask 3.x)
+# AUTENTICACIÓN
+# -------------------------
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login", next=request.url))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("logged_in"):
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+
+        usuario_ok = hmac.compare_digest(username, ADMIN_USERNAME)
+        password_ok = hmac.compare_digest(password, ADMIN_PASSWORD)
+
+        if usuario_ok and password_ok:
+            session.permanent = True
+            session["logged_in"] = True
+            session["username"] = username
+            next_url = request.form.get("next") or url_for("index")
+            return redirect(next_url)
+        else:
+            flash("Usuario o contraseña incorrectos.", "danger")
+
+    return render_template("login.html", next=request.args.get("next", ""))
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Sesión cerrada correctamente.", "info")
+    return redirect(url_for("login"))
+
+
+# -------------------------
+# MANEJADORES DE ERROR
+# -------------------------
+@app.errorhandler(413)
+def archivo_muy_grande(e):
+    flash(f"El archivo supera el límite de {MAX_UPLOAD_MB} MB.", "danger")
+    return redirect(request.referrer or url_for("listar_productos")), 413
+
+
+# -------------------------
+# INICIALIZAR BASE DE DATOS
 # -------------------------
 @app.before_request
 def setup_db():
@@ -32,19 +135,17 @@ def setup_db():
 # RUTA: INICIO / DASHBOARD
 # -------------------------
 @app.route("/")
+@login_required
 def index():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Total productos
     cur.execute("SELECT COUNT(*) AS total FROM productos;")
     total_productos = cur.fetchone()["total"]
 
-    # Stock total
     cur.execute("SELECT IFNULL(SUM(stock_actual), 0) AS total_stock FROM productos;")
     total_stock = cur.fetchone()["total_stock"]
 
-    # Productos con stock bajo
     cur.execute(
         """
         SELECT COUNT(*) AS bajos
@@ -54,7 +155,6 @@ def index():
     )
     bajos = cur.fetchone()["bajos"]
 
-    # Top 5 productos con más salidas
     cur.execute(
         """
         SELECT p.nombre, SUM(m.cantidad) AS total_salidas
@@ -71,7 +171,6 @@ def index():
     top_labels = [fila["nombre"] for fila in top_salidas]
     top_values = [fila["total_salidas"] for fila in top_salidas]
 
-    # Movimientos últimos 7 días
     cur.execute(
         """
         SELECT date(fecha) AS dia,
@@ -103,52 +202,43 @@ def index():
     )
 
 
-
 # -------------------------
 # RUTAS: PRODUCTOS
 # -------------------------
 @app.route("/productos")
+@login_required
 def listar_productos():
-    from flask import request
-
     q = request.args.get("q", "").strip()
     categoria_filtro = request.args.get("categoria", "").strip()
     proveedor_filtro = request.args.get("proveedor", "").strip()
     equipo_filtro = request.args.get("equipo", "").strip()
-
-    # cualquier valor distinto de vacío cuenta como "stock bajo activado"
     stock_bajo_param = request.args.get("stock_bajo", "").strip()
     stock_bajo_activo = bool(stock_bajo_param)
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # ----- combos de categoría, proveedor y equipo -----
     cur.execute("""
-        SELECT DISTINCT categoria
-        FROM productos
+        SELECT DISTINCT categoria FROM productos
         WHERE categoria IS NOT NULL AND categoria <> ''
         ORDER BY categoria;
     """)
     categorias = [fila["categoria"] for fila in cur.fetchall()]
 
     cur.execute("""
-        SELECT DISTINCT proveedor
-        FROM productos
+        SELECT DISTINCT proveedor FROM productos
         WHERE proveedor IS NOT NULL AND proveedor <> ''
         ORDER BY proveedor;
     """)
     proveedores = [fila["proveedor"] for fila in cur.fetchall()]
 
     cur.execute("""
-        SELECT DISTINCT equipo
-        FROM productos
+        SELECT DISTINCT equipo FROM productos
         WHERE equipo IS NOT NULL AND equipo <> ''
         ORDER BY equipo;
     """)
     equipos = [fila["equipo"] for fila in cur.fetchall()]
 
-    # ----- WHERE dinámico -----
     sql = "SELECT * FROM productos WHERE 1=1"
     params = []
 
@@ -194,93 +284,63 @@ def listar_productos():
         categoria_filtro=categoria_filtro,
         proveedor_filtro=proveedor_filtro,
         equipo_filtro=equipo_filtro,
-        # para el template alcanza con saber si viene algo en stock_bajo
         stock_bajo=stock_bajo_param,
     )
 
 
 @app.route("/exportar/stock_bajo")
+@login_required
 def exportar_stock_bajo_excel():
+    import io
+
+    from flask import send_file
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
     conn = get_db_connection()
     cur = conn.cursor()
-
     cur.execute("""
-        SELECT
-            codigo,
-            nombre,
-            proveedor,
-            ubicacion,
-            (stock_minimo - stock_actual) AS cantidad_a_comprar
+        SELECT codigo, nombre, proveedor, ubicacion,
+               (stock_minimo - stock_actual) AS cantidad_a_comprar
         FROM productos
-        WHERE stock_actual < stock_minimo
-        AND (stock_minimo - stock_actual) > 0
+        WHERE stock_actual < stock_minimo AND (stock_minimo - stock_actual) > 0
         ORDER BY proveedor, nombre
     """)
-
     filas = cur.fetchall()
     conn.close()
-
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill
-    import io
-    from datetime import datetime
-    from flask import send_file
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Faltantes"
 
-    encabezados = [
-        "Código",
-        "Producto",
-        "Proveedor",
-        "Ubicación",
-        "Cantidad a comprar"
-    ]
-
+    encabezados = ["Código", "Producto", "Proveedor", "Ubicación", "Cantidad a comprar"]
     ws.append(encabezados)
 
-    for col in ws[1]:
-        col.font = Font(bold=True)
-        col.fill = PatternFill("solid", fgColor="FF9999")
-
-    for fila in filas:
-        ws.append(list(fila))
-
-    from openpyxl.styles import Alignment, Border, Side
-
-    # Ajustar ancho de columnas
-    anchos = [15, 35, 20, 15, 18]
-    for i, ancho in enumerate(anchos, start=1):
-        ws.column_dimensions[chr(64 + i)].width = ancho
-
-    # Estilos
     header_fill = PatternFill("solid", fgColor="D32F2F")
     header_font = Font(color="FFFFFF", bold=True)
     center = Alignment(horizontal="center", vertical="center")
     thin = Side(style="thin")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    # Encabezados
     for cell in ws[1]:
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = center
         cell.border = border
 
-    # Filas de datos
+    for fila in filas:
+        ws.append(list(fila))
+
     for row in ws.iter_rows(min_row=2):
         for cell in row:
             cell.border = border
-
-        # Columna "Cantidad a comprar" (última)
         row[-1].font = Font(bold=True)
         row[-1].alignment = center
 
+    for i, ancho in enumerate([15, 35, 20, 15, 18], start=1):
+        ws.column_dimensions[chr(64 + i)].width = ancho
 
     nombre = f"stock_bajo_{datetime.now().strftime('%Y-%m-%d_%H%M')}.xlsx"
-
     archivo = io.BytesIO()
     wb.save(archivo)
     archivo.seek(0)
@@ -289,79 +349,61 @@ def exportar_stock_bajo_excel():
         archivo,
         download_name=nombre,
         as_attachment=True,
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
+
 @app.route("/exportar/pedidos_proveedor")
+@login_required
 def exportar_pedidos_proveedor():
+    import io
+    import zipfile
+    from collections import defaultdict
+
+    from flask import send_file
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
     conn = get_db_connection()
     cur = conn.cursor()
-
     cur.execute("""
-        SELECT
-            proveedor,
-            codigo,
-            nombre,
-            ubicacion,
-            (stock_minimo - stock_actual) AS cantidad
+        SELECT proveedor, codigo, nombre, ubicacion,
+               (stock_minimo - stock_actual) AS cantidad
         FROM productos
-        WHERE stock_actual < stock_minimo
-        AND (stock_minimo - stock_actual) > 0
+        WHERE stock_actual < stock_minimo AND (stock_minimo - stock_actual) > 0
         ORDER BY proveedor, nombre
     """)
-
     filas = cur.fetchall()
     conn.close()
-
-    from collections import defaultdict
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    import zipfile
-    import io
-    from datetime import datetime
-    from flask import send_file
 
     pedidos = defaultdict(list)
     for f in filas:
         pedidos[f["proveedor"]].append(f)
 
     zip_buffer = io.BytesIO()
+    thin = Side(style="thin")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
-
         for proveedor, items in pedidos.items():
-
             wb = Workbook()
             ws = wb.active
             ws.title = "Pedido"
-
             ws.append(["Código", "Producto", "Ubicación", "Cantidad"])
 
-            header_fill = PatternFill("solid", fgColor="2E7D32")
-            header_font = Font(color="FFFFFF", bold=True)
-            center = Alignment(horizontal="center")
-            thin = Side(style="thin")
-            border = Border(left=thin, right=thin, top=thin, bottom=thin)
-
             for c in ws[1]:
-                c.fill = header_fill
-                c.font = header_font
-                c.alignment = center
+                c.fill = PatternFill("solid", fgColor="2E7D32")
+                c.font = Font(color="FFFFFF", bold=True)
+                c.alignment = Alignment(horizontal="center")
                 c.border = border
 
             for it in items:
-                ws.append([
-                    it["codigo"],
-                    it["nombre"],
-                    it["ubicacion"],
-                    it["cantidad"]
-                ])
+                ws.append([it["codigo"], it["nombre"], it["ubicacion"], it["cantidad"]])
 
             for row in ws.iter_rows(min_row=2):
                 for c in row:
                     c.border = border
-                row[-1].alignment = center
+                row[-1].alignment = Alignment(horizontal="center")
                 row[-1].font = Font(bold=True)
 
             for col, w in zip(["A", "B", "C", "D"], [15, 40, 20, 15]):
@@ -370,108 +412,75 @@ def exportar_pedidos_proveedor():
             archivo_excel = io.BytesIO()
             wb.save(archivo_excel)
             archivo_excel.seek(0)
-
-            nombre_excel = f"Pedido_{proveedor}.xlsx"
-            zipf.writestr(nombre_excel, archivo_excel.read())
+            zipf.writestr(f"Pedido_{proveedor}.xlsx", archivo_excel.read())
 
     zip_buffer.seek(0)
-
     nombre_zip = f"Pedidos_{datetime.now().strftime('%Y-%m-%d_%H%M')}.zip"
 
     return send_file(
         zip_buffer,
         download_name=nombre_zip,
         as_attachment=True,
-        mimetype="application/zip"
+        mimetype="application/zip",
     )
 
 
 @app.route("/productos/nuevo", methods=["GET", "POST"])
+@login_required
 def nuevo_producto():
     if request.method == "POST":
-        codigo = request.form.get("codigo") or None
-        nombre = request.form.get("nombre")
-        categoria = request.form.get("categoria")
-        equipo = request.form.get("equipo")
-        linea = request.form.get("linea")
-        stock_minimo = request.form.get("stock_minimo") or 0
-        stock_actual = request.form.get("stock_actual") or 0
-        ubicacion = request.form.get("ubicacion")
-        proveedor = request.form.get("proveedor")
-        precio = request.form.get("precio") or 0
+        nombre = (request.form.get("nombre") or "").strip()
+        if not nombre:
+            flash("El nombre del producto es obligatorio.", "danger")
+            return render_template("producto_form.html", producto=None)
 
-        # URL escrita a mano (opcional)
-        imagen_url_texto = request.form.get("imagen_url") or None
+        codigo = (request.form.get("codigo") or "").strip() or None
+        categoria = (request.form.get("categoria") or "").strip()
+        equipo = (request.form.get("equipo") or "").strip()
+        linea = (request.form.get("linea") or "").strip()
+        stock_minimo = safe_int(request.form.get("stock_minimo"))
+        stock_actual = safe_int(request.form.get("stock_actual"))
+        ubicacion = (request.form.get("ubicacion") or "").strip()
+        proveedor = (request.form.get("proveedor") or "").strip()
+        precio = safe_float(request.form.get("precio"))
 
-        # Archivo subido (opcional)
+        imagen_url = (request.form.get("imagen_url") or "").strip() or None
         archivo = request.files.get("imagen_archivo")
-
-        # Por defecto usamos lo que escribió el usuario
-        imagen_url = imagen_url_texto
-
-        # Si subió archivo y es válido, lo guardamos
-        if archivo and archivo.filename:
-            if allowed_file(archivo.filename):
-                filename = secure_filename(archivo.filename)
-                # Para evitar nombres repetidos, le agregamos un prefijo simple
-                from datetime import datetime
-                prefijo = datetime.now().strftime("%Y%m%d%H%M%S")
-                filename = f"{prefijo}_{filename}"
-
-                ruta_fisica = os.path.join(UPLOAD_FOLDER, filename)
-                archivo.save(ruta_fisica)
-
-                # Ruta que usará el navegador
-                imagen_url = f"/static/uploads/{filename}"
-            else:
-                flash(
-                    "Tipo de archivo no permitido. Usa png, jpg, jpeg, gif o webp.",
-                    "warning",
-                )
+        url_subida = save_uploaded_image(archivo)
+        if url_subida:
+            imagen_url = url_subida
 
         try:
             conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute(
+            conn.execute(
                 """
                 INSERT INTO productos
                 (codigo, nombre, categoria, equipo, linea, stock_minimo, stock_actual,
                  ubicacion, proveedor, precio, imagen_url)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
-                (
-                    codigo,
-                    nombre,
-                    categoria,
-                    equipo,
-                    linea,
-                    int(stock_minimo),
-                    int(stock_actual),
-                    ubicacion,
-                    proveedor,
-                    float(precio),
-                    imagen_url,
-                ),
+                (codigo, nombre, categoria, equipo, linea,
+                 stock_minimo, stock_actual, ubicacion, proveedor, precio, imagen_url),
             )
             conn.commit()
-            conn.close()
             flash("Producto creado correctamente.", "success")
             return redirect(url_for("listar_productos"))
         except Exception as e:
-            flash(f"Error al crear producto: {e}", "danger")
+            app.logger.error("Error al crear producto: %s", e)
+            flash("No se pudo crear el producto. Verifica que el código no esté duplicado.", "danger")
             return redirect(url_for("listar_productos"))
+        finally:
+            conn.close()
 
-    # GET
     return render_template("producto_form.html", producto=None)
 
 
-
 @app.route("/productos/<int:producto_id>/editar", methods=["GET", "POST"])
+@login_required
 def editar_producto(producto_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Obtener producto actual
     cur.execute("SELECT * FROM productos WHERE id = ?;", (producto_id,))
     producto = cur.fetchone()
 
@@ -481,51 +490,39 @@ def editar_producto(producto_id):
         return redirect(url_for("listar_productos"))
 
     if request.method == "POST":
-        # 🔹 PRIMERO obtener datos del formulario
-        codigo = request.form.get("codigo") or None
-        nombre = request.form.get("nombre")
-        categoria = request.form.get("categoria")
-        equipo = request.form.get("equipo")
-        linea = request.form.get("linea")
-        stock_minimo = request.form.get("stock_minimo") or 0
-        stock_actual = request.form.get("stock_actual") or 0
-        ubicacion = request.form.get("ubicacion")
-        proveedor = request.form.get("proveedor")
-        precio = request.form.get("precio") or 0
+        nombre = (request.form.get("nombre") or "").strip()
+        if not nombre:
+            conn.close()
+            flash("El nombre del producto es obligatorio.", "danger")
+            return redirect(url_for("editar_producto", producto_id=producto_id))
 
-        imagen_url_texto = request.form.get("imagen_url") or None
+        codigo = (request.form.get("codigo") or "").strip() or None
+        categoria = (request.form.get("categoria") or "").strip()
+        equipo = (request.form.get("equipo") or "").strip()
+        linea = (request.form.get("linea") or "").strip()
+        stock_minimo = safe_int(request.form.get("stock_minimo"))
+        stock_actual = safe_int(request.form.get("stock_actual"))
+        ubicacion = (request.form.get("ubicacion") or "").strip()
+        proveedor = (request.form.get("proveedor") or "").strip()
+        precio = safe_float(request.form.get("precio"))
+
+        imagen_url_texto = (request.form.get("imagen_url") or "").strip() or None
         archivo = request.files.get("imagen_archivo")
-
-        # Mantener imagen actual si no se cambia
         imagen_url = imagen_url_texto or producto["imagen_url"]
+        url_subida = save_uploaded_image(archivo)
+        if url_subida:
+            imagen_url = url_subida
 
-        # Subida de imagen
-        if archivo and archivo.filename:
-            if allowed_file(archivo.filename):
-                filename = secure_filename(archivo.filename)
-                from datetime import datetime
-                prefijo = datetime.now().strftime("%Y%m%d%H%M%S")
-                filename = f"{prefijo}_{filename}"
-                ruta_fisica = os.path.join(UPLOAD_FOLDER, filename)
-                archivo.save(ruta_fisica)
-                imagen_url = f"/static/uploads/{filename}"
-            else:
-                flash("Tipo de archivo no permitido. Usa png, jpg, jpeg, gif o webp.", "warning")
-
-        # 🔥 VALIDAR CODIGO UNICO (DESPUÉS de definir codigo)
-        cur.execute("""
-            SELECT id FROM productos 
-            WHERE codigo = ? AND id != ?
-        """, (codigo, producto_id))
-
-        existe = cur.fetchone()
-
-        if existe:
+        # Validar código único
+        cur.execute(
+            "SELECT id FROM productos WHERE codigo = ? AND id != ?",
+            (codigo, producto_id),
+        )
+        if cur.fetchone():
             conn.close()
             flash("Ya existe otro producto con ese código.", "danger")
             return redirect(url_for("editar_producto", producto_id=producto_id))
 
-        # 🔹 UPDATE
         try:
             cur.execute(
                 """
@@ -535,56 +532,43 @@ def editar_producto(producto_id):
                     proveedor = ?, precio = ?, imagen_url = ?
                 WHERE id = ?;
                 """,
-                (
-                    codigo,
-                    nombre,
-                    categoria,
-                    equipo,
-                    linea,
-                    int(stock_minimo),
-                    int(stock_actual),
-                    ubicacion,
-                    proveedor,
-                    float(precio),
-                    imagen_url,
-                    producto_id,
-                ),
+                (codigo, nombre, categoria, equipo, linea,
+                 stock_minimo, stock_actual, ubicacion, proveedor, precio,
+                 imagen_url, producto_id),
             )
             conn.commit()
             flash("Producto actualizado correctamente.", "success")
-
         except Exception as e:
-            flash(f"Error al actualizar producto: {e}", "danger")
-
+            app.logger.error("Error al actualizar producto: %s", e)
+            flash("No se pudo actualizar el producto.", "danger")
         finally:
             conn.close()
 
         return redirect(url_for("listar_productos"))
 
-    # GET
     conn.close()
     return render_template("producto_form.html", producto=producto)
 
+
 @app.route("/productos/<int:producto_id>/eliminar", methods=["POST"])
+@login_required
 def eliminar_producto(producto_id):
     conn = get_db_connection()
-    cur = conn.cursor()
-
-    # Ojo: podrías validar si tiene movimientos antes
-    cur.execute("DELETE FROM productos WHERE id = ?;", (producto_id,))
-    conn.commit()
-    conn.close()
-    flash("Producto eliminado.", "info")
+    try:
+        conn.execute("DELETE FROM productos WHERE id = ?;", (producto_id,))
+        conn.commit()
+        flash("Producto eliminado.", "info")
+    finally:
+        conn.close()
     return redirect(url_for("listar_productos"))
 
 
 # -------------------------
-# RUTAS: MOVIMIENTOS (ENTRADAS / SALIDAS)
+# RUTAS: MOVIMIENTOS
 # -------------------------
 @app.route("/movimientos")
+@login_required
 def listar_movimientos():
-    from flask import request
-
     tipo = request.args.get("tipo", "")
     producto_id = request.args.get("producto_id", "")
     desde = request.args.get("desde", "")
@@ -593,7 +577,6 @@ def listar_movimientos():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Para combo de productos
     cur.execute("SELECT id, nombre, codigo FROM productos ORDER BY nombre;")
     productos = cur.fetchall()
 
@@ -638,8 +621,8 @@ def listar_movimientos():
     )
 
 
-
 @app.route("/movimientos/nuevo/<tipo>", methods=["GET", "POST"])
+@login_required
 def nuevo_movimiento(tipo):
     if tipo not in ("entrada", "salida"):
         flash("Tipo de movimiento no válido.", "danger")
@@ -648,26 +631,30 @@ def nuevo_movimiento(tipo):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT 
-            id,
-            nombre,
-            codigo,
-            stock_actual,
-            stock_minimo
-        FROM productos
-        ORDER BY nombre;
+        SELECT id, nombre, codigo, stock_actual, stock_minimo
+        FROM productos ORDER BY nombre;
     """)
     productos = cur.fetchall()
 
     if request.method == "POST":
-        producto_id = int(request.form["producto_id"])
-        cantidad = int(request.form["cantidad"])
-        usuario = request.form.get("usuario", "").strip()
-        motivo = request.form.get("motivo", "").strip()
+        try:
+            producto_id = int(request.form["producto_id"])
+            cantidad = int(request.form["cantidad"])
+        except (KeyError, ValueError):
+            conn.close()
+            flash("Datos del formulario inválidos.", "danger")
+            return redirect(url_for("nuevo_movimiento", tipo=tipo))
+
+        if cantidad <= 0:
+            conn.close()
+            flash("La cantidad debe ser mayor a cero.", "danger")
+            return redirect(url_for("nuevo_movimiento", tipo=tipo))
+
+        usuario = request.form.get("usuario", "").strip()[:100]
+        motivo = request.form.get("motivo", "").strip()[:500]
 
         producto = conn.execute(
-            "SELECT stock_actual FROM productos WHERE id = ?",
-            (producto_id,)
+            "SELECT stock_actual FROM productos WHERE id = ?", (producto_id,)
         ).fetchone()
 
         if not producto:
@@ -677,52 +664,38 @@ def nuevo_movimiento(tipo):
 
         stock_actual = producto["stock_actual"]
 
-        # VALIDACIÓN SOLO PARA SALIDAS
         if tipo == "salida" and cantidad > stock_actual:
             conn.close()
             flash("No hay stock suficiente para realizar la salida.", "danger")
             return redirect(url_for("nuevo_movimiento", tipo=tipo))
 
-        # FECHA DEL MOVIMIENTO
         fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # REGISTRAR MOVIMIENTO
-        conn.execute("""
-            INSERT INTO movimientos (producto_id, tipo, cantidad, fecha, usuario, motivo)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (producto_id, tipo, cantidad, fecha, usuario, motivo))
-
-        # ACTUALIZAR STOCK
-        if tipo == "entrada":
-            nuevo_stock = stock_actual + cantidad
-        else:
-            nuevo_stock = stock_actual - cantidad
+        nuevo_stock = stock_actual + cantidad if tipo == "entrada" else stock_actual - cantidad
 
         conn.execute(
-            "UPDATE productos SET stock_actual = ? WHERE id = ?",
-            (nuevo_stock, producto_id)
+            "INSERT INTO movimientos (producto_id, tipo, cantidad, fecha, usuario, motivo) VALUES (?, ?, ?, ?, ?, ?)",
+            (producto_id, tipo, cantidad, fecha, usuario, motivo),
         )
-
+        conn.execute(
+            "UPDATE productos SET stock_actual = ? WHERE id = ?",
+            (nuevo_stock, producto_id),
+        )
         conn.commit()
         conn.close()
 
         flash("Movimiento registrado correctamente.", "success")
         return redirect(url_for("listar_movimientos"))
 
-    # GET
     conn.close()
-    return render_template(
-        "movimiento_form.html",
-        tipo=tipo,
-        productos=productos,
-    )
+    return render_template("movimiento_form.html", tipo=tipo, productos=productos)
+
 
 @app.route("/productos/<int:producto_id>")
+@login_required
 def detalle_producto(producto_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Datos del producto
     cur.execute("SELECT * FROM productos WHERE id = ?;", (producto_id,))
     producto = cur.fetchone()
     if not producto:
@@ -730,11 +703,9 @@ def detalle_producto(producto_id):
         flash("Producto no encontrado.", "warning")
         return redirect(url_for("listar_productos"))
 
-    # Últimos movimientos de este producto
     cur.execute(
         """
-        SELECT *
-        FROM movimientos
+        SELECT * FROM movimientos
         WHERE producto_id = ?
         ORDER BY fecha DESC, id DESC
         LIMIT 50;
@@ -752,10 +723,12 @@ def detalle_producto(producto_id):
 
 
 # -------------------------
-# API REST PARA APP MÓVIL
+# API REST (sin CSRF, sin login obligatorio)
 # -------------------------
 from flask import jsonify
 
+
+@csrf.exempt
 @app.route("/api/productos", methods=["GET"])
 def api_productos():
     conn = get_db_connection()
@@ -765,14 +738,23 @@ def api_productos():
     conn.close()
     return jsonify(productos)
 
+
+@csrf.exempt
 @app.route("/api/movimientos", methods=["POST"])
 def api_nuevo_movimiento():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "JSON requerido"}), 400
+
     tipo = data.get("tipo")
     producto_id = data.get("producto_id")
-    cantidad = int(data.get("cantidad", 0))
-    usuario = data.get("usuario", "")
-    motivo = data.get("motivo", "")
+    usuario = str(data.get("usuario", ""))[:100]
+    motivo = str(data.get("motivo", ""))[:500]
+
+    try:
+        cantidad = int(data.get("cantidad", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Cantidad inválida"}), 400
 
     if tipo not in ("entrada", "salida") or not producto_id or cantidad <= 0:
         return jsonify({"error": "Datos inválidos"}), 400
@@ -797,7 +779,7 @@ def api_nuevo_movimiento():
 
     conn.execute(
         "INSERT INTO movimientos (producto_id, tipo, cantidad, fecha, usuario, motivo) VALUES (?, ?, ?, ?, ?, ?)",
-        (producto_id, tipo, cantidad, fecha, usuario, motivo)
+        (producto_id, tipo, cantidad, fecha, usuario, motivo),
     )
     conn.execute("UPDATE productos SET stock_actual = ? WHERE id = ?", (nuevo_stock, producto_id))
     conn.commit()
@@ -805,10 +787,15 @@ def api_nuevo_movimiento():
 
     return jsonify({"ok": True, "nuevo_stock": nuevo_stock})
 
+
+@csrf.exempt
 @app.route("/api/productos", methods=["POST"])
 def api_nuevo_producto():
     data = request.get_json()
-    nombre = data.get("nombre")
+    if not data:
+        return jsonify({"error": "JSON requerido"}), 400
+
+    nombre = str(data.get("nombre", "")).strip()
     if not nombre:
         return jsonify({"error": "Nombre requerido"}), 400
 
@@ -821,19 +808,21 @@ def api_nuevo_producto():
             (
                 data.get("codigo"), nombre, data.get("categoria"),
                 data.get("equipo"), data.get("linea"),
-                int(data.get("stock_minimo", 0)), int(data.get("stock_actual", 0)),
+                safe_int(data.get("stock_minimo")),
+                safe_int(data.get("stock_actual")),
                 data.get("ubicacion"), data.get("proveedor"),
-                float(data.get("precio", 0))
-            )
+                safe_float(data.get("precio")),
+            ),
         )
         conn.commit()
         producto_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        conn.close()
         return jsonify({"ok": True, "id": producto_id})
     except Exception as e:
+        app.logger.error("Error al crear producto via API: %s", e)
+        return jsonify({"error": "Error interno"}), 500
+    finally:
         conn.close()
-        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True, port=5002)
-    
+    app.run(host="0.0.0.0", debug=DEBUG, port=5002)

@@ -1,0 +1,31 @@
+# Secretos y configuración local
+.env
+
+# Base de datos (no versionar datos de producción)
+inventario.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Entorno virtual
+venv/
+.venv/
+env/
+
+# PyInstaller
+dist/
+build/
+*.spec
+
+# Archivos subidos por usuarios
+static/uploads/*
+!static/uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp

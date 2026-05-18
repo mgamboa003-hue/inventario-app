@@ -143,6 +143,7 @@
                   method="post"
                   onsubmit="return confirm('¿Eliminar este producto?');"
                   style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
             </form>
           </div>

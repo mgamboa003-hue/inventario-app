@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Equipos — Inventario Wintec{% endblock %}
+{% block topbar_title %}Equipos{% endblock %}
+{% block content %}
+<div style="max-width:600px;">
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><span class="card-title">Nuevo equipo</span></div>
+    <div class="card-body">
+      <form method="POST" style="display:flex;gap:12px;">
+        <input type="text" name="nombre" placeholder="Nombre del equipo" required style="flex:1;">
+        <button type="submit" class="btn btn-primary">Agregar</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ equipos|length }} equipos</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nombre</th><th>Productos</th></tr></thead>
+        <tbody>
+        {% for e in equipos %}
+        <tr>
+          <td style="font-weight:600;">{{ e.nombre }}</td>
+          <td><span class="tag tag-ok">{{ e.total }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

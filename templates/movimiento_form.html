@@ -3,6 +3,7 @@
 <h2>{{ "Nueva entrada" if tipo == "entrada" else "Nueva salida" }}</h2>
 
 <form method="post" class="mt-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="form-group">
     <label>Producto</label>
     <select name="producto_id" class="form-control select2" required>
