@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ cotizacion['numero'] }} — Wintec{% endblock %}
+{% block topbar_title %}Cotización {{ cotizacion['numero'] }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('listar_cotizaciones') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Datos</h6>
+      <div class="mb-2"><span class="text-muted small">Proveedor</span><div class="fw-semibold">{{ cotizacion['proveedor_nombre'] or '—' }}</div></div>
+      <div class="mb-2"><span class="text-muted small">Recibida</span><div>{{ cotizacion['fecha_recibida'] or '—' }}</div></div>
+      <div class="mb-2"><span class="text-muted small">Válida hasta</span><div>{{ cotizacion['fecha_vigencia'] or '—' }}</div></div>
+      <div class="mb-2"><span class="text-muted small">Monto total</span><div class="fw-bold">${{ '{:,.0f}'.format(cotizacion['monto_total'] or 0) }}</div></div>
+      {% if cotizacion['notas'] %}<div class="mb-2"><span class="text-muted small">Notas</span><div>{{ cotizacion['notas'] }}</div></div>{% endif %}
+      {% if cotizacion['documento_url'] %}
+      <a href="{{ cotizacion['documento_url'] }}" target="_blank" class="btn btn-sm btn-outline-secondary w-100 mb-3">
+        <i class="bi bi-file-earmark-arrow-down me-1"></i>Ver documento
+      </a>
+      {% endif %}
+
+      <div class="mb-2">
+        <span class="text-muted small">Estado</span>
+        <div>
+          <span class="badge fs-6
+            {% if cotizacion['estado'] == 'aceptada' %}bg-success
+            {% elif cotizacion['estado'] in ['rechazada','vencida','cancelada'] %}bg-danger
+            {% else %}bg-secondary{% endif %}">
+            {{ cotizacion['estado']|capitalize }}
+          </span>
+        </div>
+      </div>
+
+      {% if session.get('role') == 'admin' %}
+      <form method="post" action="{{ url_for('cambiar_estado_cotizacion', cid=cotizacion['id']) }}" class="mt-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="form-label small fw-semibold">Cambiar estado</label>
+        <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+          {% for est in ['pendiente','aceptada','rechazada','vencida','cancelada'] %}
+          <option value="{{ est }}" {% if cotizacion['estado'] == est %}selected{% endif %}>{{ est|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% if cotizacion['estado'] == 'aceptada' %}
+      <div class="alert alert-success small mt-3 mb-0">
+        {% if cotizacion['orden_compra_id'] %}
+        <i class="bi bi-check-circle me-1"></i>Se generó la orden de compra correspondiente.
+        <a href="{{ url_for('listar_ordenes_compra') }}">Ver órdenes de compra</a>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="table-card">
+      <div class="table-header">
+        <h6><i class="bi bi-list-ul me-2"></i>{{ items|length }} ítem{{ 's' if items|length != 1 }}</h6>
+      </div>
+      {% if items %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead><tr><th>Código</th><th>Nombre</th><th class="text-center">Cantidad</th><th class="text-end">Precio unit.</th><th class="text-end">Subtotal</th></tr></thead>
+          <tbody>
+            {% for it in items %}
+            <tr>
+              <td class="font-monospace">{{ it['codigo'] or '—' }}</td>
+              <td>{{ it['nombre'] }}</td>
+              <td class="text-center">{{ it['cantidad'] }}</td>
+              <td class="text-end">{{ '{:,.0f}'.format(it['precio_unitario'] or 0) }}</td>
+              <td class="text-end fw-semibold">{{ '{:,.0f}'.format(it['subtotal'] or 0) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-4 text-muted">Sin ítems detallados (solo documento/monto total).</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

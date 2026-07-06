@@ -1,167 +1,158 @@
 {% extends "base.html" %}
+{% block title %}Inventario — Wintec{% endblock %}
+{% block topbar_title %}Inventario de repuestos{% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') == 'admin' %}
+  <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo repuesto
+  </a>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>Productos</h2>
-
-  <div>
-    <a href="{{ url_for('exportar_stock_bajo_excel') }}" class="btn btn-danger mr-2">
-      📥 Exportar faltantes
-    </a>
-
-    <a href="{{ url_for('exportar_pedidos_proveedor') }}" class="btn btn-success">
-        📦 Exportar pedidos por proveedor
-    </a>
-
-
-    <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary">
-      + Nuevo producto
-    </a>
+<!-- Filtros -->
+<div class="table-card mb-3">
+  <div class="p-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="Buscar por nombre, código, categoría...">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <select name="categoria" class="form-select form-select-sm select2">
+          <option value="">Todas las categorías</option>
+          {% for c in categorias %}<option value="{{ c }}" {% if c == categoria_filtro %}selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="equipo" class="form-select form-select-sm select2">
+          <option value="">Todos los equipos</option>
+          {% for e in equipos %}<option value="{{ e }}" {% if e == equipo_filtro %}selected{% endif %}>{{ e }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="proveedor" class="form-select form-select-sm select2">
+          <option value="">Todos los proveedores</option>
+          {% for p in proveedores %}<option value="{{ p }}" {% if p == proveedor_filtro %}selected{% endif %}>{{ p }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-1">
+        <div class="form-check form-switch ms-1 mt-1">
+          <input class="form-check-input" type="checkbox" name="stock_bajo" id="chkStockBajo" value="1" {% if stock_bajo %}checked{% endif %} onchange="this.form.submit()">
+          <label class="form-check-label small" for="chkStockBajo">Stock bajo</label>
+        </div>
+        {% if session.get('role') == 'admin' %}
+        <div class="form-check form-switch ms-1">
+          <input class="form-check-input" type="checkbox" name="inactivos" id="chkInactivos" value="1" {% if mostrar_inactivos %}checked{% endif %} onchange="this.form.submit()">
+          <label class="form-check-label small" for="chkInactivos">Ver inactivos</label>
+        </div>
+        {% endif %}
+      </div>
+      <div class="col-md-1 d-flex gap-1">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-funnel"></i></button>
+        <a href="{{ url_for('listar_productos') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+      </div>
+    </form>
   </div>
 </div>
 
-
-<form method="get" action="{{ url_for('listar_productos') }}" class="mb-3">
-  <div class="form-row">
-    <div class="form-group col-md-3">
-      <label>Buscar</label>
-      <input
-        type="text"
-        name="q"
-        class="form-control"
-        placeholder="Cable, código, proveedor..."
-        value="{{ q or '' }}"
-      >
-    </div>
-
-    <div class="form-group col-md-3">
-      <label>Categoría</label>
-      <select name="categoria" class="form-control">
-        <option value="">(Todas)</option>
-        {% for c in categorias %}
-          <option value="{{ c }}" {% if categoria_filtro == c %}selected{% endif %}>
-            {{ c }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="form-group col-md-3">
-      <label>Proveedor</label>
-      <select name="proveedor" class="form-control">
-        <option value="">(Todos)</option>
-        {% for p in proveedores %}
-          <option value="{{ p }}" {% if proveedor_filtro == p %}selected{% endif %}>
-            {{ p }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <!-- NUEVO: filtro por equipo -->
-    <div class="form-group col-md-3">
-      <label>Equipo</label>
-      <select name="equipo" class="form-control">
-        <option value="">(Todos)</option>
-        {% for e in equipos %}
-          <option value="{{ e }}" {% if equipo_filtro == e %}selected{% endif %}>
-            {{ e }}
-          </option>
-        {% endfor %}
-      </select>
+<!-- Tabla -->
+<div class="table-card">
+  <div class="table-header">
+    <h6><i class="bi bi-box-seam me-2"></i>{{ productos|length }} repuesto{{ 's' if productos|length != 1 }}{% if mostrar_inactivos %} (incluye inactivos){% endif %}</h6>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('exportar_stock_bajo') }}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+      <a href="{{ url_for('exportar_pedidos') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-bag me-1"></i>Pedidos</a>
+      {% if productos %}
+      <a href="{{ url_for('etiquetas_lote', ids=productos|map(attribute='id')|join(',')) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-upc-scan me-1"></i>Imprimir etiquetas
+      </a>
+      {% endif %}
     </div>
   </div>
-
-  <div class="form-row">
-    <div class="form-group col-md-3 d-flex align-items-center">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" name="stock_bajo" id="stock_bajo"
-               {% if stock_bajo %}checked{% endif %}>
-        <label class="form-check-label" for="stock_bajo">
-          Solo stock bajo
-        </label>
-      </div>
-    </div>
-
-    <div class="form-group col-md-9 d-flex align-items-center">
-      <button type="submit" class="btn btn-outline-secondary mr-2">Filtrar</button>
-      <a href="{{ url_for('listar_productos') }}" class="btn btn-link">Limpiar</a>
-    </div>
-  </div>
-</form>
-
-
-<table class="table table-sm table-hover bg-white">
-  <thead class="thead-dark">
-    <tr>
-      <th>Foto</th>
-      <th>Código</th>
-      <th>Nombre</th>
-      <th>Categoría</th>
-      <th>Equipo</th>
-      <th>Línea</th> 
-      <th>Stock actual</th>
-      <th>Stock mínimo</th>
-      <th>Ubicación</th>
-      <th>Proveedor</th>
-      <th>Precio</th>
-      <th class="text-center">Acciones</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in productos %}
-      <tr class="{% if p.stock_actual < p.stock_minimo %}table-danger{% endif %}">
-        <td class="thumb-cell">
-             {% if p.imagen_url %}
-          <div class="thumb-wrapper">
-            <img src="{{ p.imagen_url }}" alt="Foto" class="thumb-img">
-          </div>
-          {% else %}
-            -
-          {% endif %}
-        </td>
-
-        <td>{{ p.codigo or "-" }}</td>
-        <td>
-          <a href="{{ url_for('detalle_producto', producto_id=p.id) }}">
-            {{ p.nombre }}
-          </a>
-        </td>
-        <td>{{ p.categoria or "-" }}</td>
-        <td>{{ p.equipo or "-" }}</td>
-        <td>{{ p.linea or "-" }}</td>
-        <td>{{ p.stock_actual }}</td>
-        <td>{{ p.stock_minimo }}</td>
-        <td>{{ p.ubicacion or "-" }}</td>
-        <td>{{ p.proveedor or "-" }}</td>
-        <td>{{ "%.0f"|format(p.precio) if p.precio else "-" }}</td>
-        <td class="text-center align-middle">
-          <div style="display: flex; justify-content: center; gap: 8px;">
-                <a href="{{ url_for('editar_producto', producto_id=p.id) }}"
-                  class="btn btn-warning btn-sm">Editar</a>
-
-              <form action="{{ url_for('eliminar_producto', producto_id=p.id) }}"
-                  method="post"
-                  onsubmit="return confirm('¿Eliminar este producto?');"
-                  style="display:inline;">
+  {% if productos %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th style="width:70px"></th>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Categoría / Equipo</th>
+          <th>Proveedor</th>
+          <th>Ubicación</th>
+          <th class="text-center">Stock</th>
+          <th class="text-center">Mín.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in productos %}
+        {% set img = p['imagen_url'] or p['foto'] %}
+        <tr class="{% if not p['activo'] %}table-secondary opacity-75{% endif %}">
+          <td>
+            {% if img %}
+              <img src="{{ img }}" alt="{{ p['nombre'] }}" class="product-thumb">
+            {% else %}
+              <div class="product-thumb d-flex align-items-center justify-content-center bg-light text-muted">
+                <i class="bi bi-image fs-4"></i>
+              </div>
+            {% endif %}
+          </td>
+          <td><span class="badge bg-light text-dark border font-monospace">{{ p['codigo'] or '—' }}</span></td>
+          <td>
+            <a href="{{ url_for('detalle_producto', pid=p['id']) }}" class="fw-semibold text-decoration-none text-dark">{{ p['nombre'] }}</a>
+            {% if not p['activo'] %}<span class="badge bg-secondary ms-1">Inactivo</span>{% endif %}
+            {% if p['descripcion'] %}<div class="text-muted" style="font-size:.75rem">{{ p['descripcion'][:60] }}…</div>{% endif %}
+          </td>
+          <td>
+            {% if p['categoria'] %}<span class="badge bg-primary bg-opacity-10 text-primary">{{ p['categoria'] }}</span>{% endif %}
+            {% if p['equipo'] %}<div class="text-muted" style="font-size:.78rem">{{ p['equipo'] }}</div>{% endif %}
+          </td>
+          <td class="text-muted">{{ p['proveedor'] or '—' }}</td>
+          <td class="text-muted">{{ p['ubicacion'] or '—' }}</td>
+          <td class="text-center">
+            {% if p['stock_actual'] == 0 %}
+              <span class="badge badge-stock-zero">0</span>
+            {% elif p['stock_actual'] < p['stock_minimo'] %}
+              <span class="badge badge-stock-low">{{ p['stock_actual'] }}</span>
+            {% else %}
+              <span class="badge badge-stock-ok">{{ p['stock_actual'] }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center text-muted">{{ p['stock_minimo'] }}</td>
+          <td>
+            <div class="d-flex gap-1 justify-content-end">
+              <a href="{{ url_for('detalle_producto', pid=p['id']) }}" class="btn btn-sm btn-outline-secondary" title="Ver detalle"><i class="bi bi-eye"></i></a>
+              {% if session.get('role') == 'admin' %}
+              <a href="{{ url_for('etiqueta_producto', pid=p['id']) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Imprimir etiqueta QR"><i class="bi bi-upc-scan"></i></a>
+              <a href="{{ url_for('editar_producto', pid=p['id']) }}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+              {% if p['activo'] %}
+              <form method="post" action="{{ url_for('eliminar_producto', pid=p['id']) }}" onsubmit="return confirm('¿Desactivar este repuesto? Podrás restaurarlo despues.')">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-            </form>
-          </div>
-        </td>
-
-
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-<script>
-  // Foco automático en el buscador para usar el escáner USB
-  window.addEventListener('load', function() {
-    const input = document.querySelector('input[name="q"]');
-    if (input) {
-      input.focus();
-    }
-  });
-</script>
-
+                <button class="btn btn-sm btn-outline-danger" title="Desactivar"><i class="bi bi-trash"></i></button>
+              </form>
+              {% else %}
+              <form method="post" action="{{ url_for('restaurar_producto', pid=p['id']) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-success" title="Restaurar"><i class="bi bi-arrow-counterclockwise"></i></button>
+              </form>
+              {% endif %}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+    No se encontraron repuestos con los filtros actuales.
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

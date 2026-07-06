@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Tokens de API — Wintec{% endblock %}
+{% block topbar_title %}Tokens de API{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-2"><i class="bi bi-key me-2 text-primary"></i>Nuevo token</h6>
+      <p class="text-muted small">
+        Úsalo para conectar la app con un lector de código de barras, un ERP externo,
+        o cualquier integración. Se envía como <code>Authorization: Bearer &lt;token&gt;</code>.
+      </p>
+      <form method="post" action="{{ url_for('crear_api_token_route') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Nombre / descripción</label>
+          <input type="text" class="form-control form-control-sm" name="nombre" placeholder="Ej: Lector de bodega" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">
+          <i class="bi bi-plus me-1"></i>Generar token
+        </button>
+      </form>
+      <div class="alert alert-warning small mt-3 mb-0">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        El token completo solo se muestra una vez, justo después de crearlo.
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="table-card">
+      <div class="table-header">
+        <h6><i class="bi bi-list-check me-2"></i>{{ tokens|length }} token{{ 's' if tokens|length != 1 }}</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead><tr>
+            <th>Nombre</th><th>Creado por</th><th>Estado</th><th>Creado</th><th>Último uso</th><th></th>
+          </tr></thead>
+          <tbody>
+            {% for t in tokens %}
+            <tr>
+              <td class="fw-semibold">{{ t['nombre'] }}</td>
+              <td class="text-muted">{{ t['username'] or '—' }}</td>
+              <td>
+                {% if t['activo'] %}
+                  <span class="badge bg-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Revocado</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">{{ t['created_at']|string|truncate(19, True, '') }}</td>
+              <td class="text-muted small">{{ t['last_used_at']|string|truncate(19, True, '') if t['last_used_at'] else 'Nunca' }}</td>
+              <td>
+                {% if t['activo'] %}
+                <form method="post" action="{{ url_for('revocar_token_route', tid=t['id']) }}" onsubmit="return confirm('¿Revocar este token?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

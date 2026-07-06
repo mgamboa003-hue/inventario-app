@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Etiqueta — {{ producto['nombre'] }}</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f1f3f5;
+    }
+    .toolbar {
+      margin-bottom: 20px;
+    }
+    .toolbar button {
+      padding: 8px 18px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      background: #1B4F8A;
+      color: #fff;
+      cursor: pointer;
+    }
+    .etiqueta {
+      width: 7.5cm;
+      height: 5cm;
+      background: #fff;
+      border: 1px solid #999;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    .etiqueta img {
+      width: 3.2cm;
+      height: 3.2cm;
+      flex-shrink: 0;
+    }
+    .etiqueta .info {
+      overflow: hidden;
+    }
+    .etiqueta .codigo {
+      font-weight: bold;
+      font-size: 15px;
+      font-family: 'Courier New', monospace;
+    }
+    .etiqueta .nombre {
+      font-size: 13px;
+      margin-top: 4px;
+      line-height: 1.2;
+    }
+    .etiqueta .ubicacion {
+      font-size: 11px;
+      color: #555;
+      margin-top: 4px;
+    }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .etiqueta { border: 1px dashed #999; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button onclick="window.print()">Imprimir etiqueta</button>
+  </div>
+  <div class="etiqueta">
+    <img src="{{ qr_data_uri }}" alt="QR {{ codigo }}">
+    <div class="info">
+      <div class="codigo">{{ codigo }}</div>
+      <div class="nombre">{{ producto['nombre'] }}</div>
+      {% if producto['ubicacion'] %}<div class="ubicacion">Ubicación: {{ producto['ubicacion'] }}</div>{% endif %}
+    </div>
+  </div>
+</body>
+</html>

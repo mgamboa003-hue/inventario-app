@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Solicitudes — Wintec{% endblock %}
+{% block topbar_title %}{{ 'Solicitudes del equipo' if session.get('role') in ('admin', 'viewer') else 'Mis solicitudes' }}{% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') in ('admin', 'solicitante') %}
+  <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Pedir algo
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="table-card mb-3">
+  <div class="p-3">
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+      <ul class="nav nav-pills">
+        <li class="nav-item">
+          <a class="nav-link {% if vista == 'activo' %}active{% endif %}"
+             href="{{ url_for('listar_solicitudes', estado=estado_filtro) }}">
+             <i class="bi bi-list-check me-1"></i>Activas
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if vista == 'historial' %}active{% endif %}"
+             href="{{ url_for('listar_solicitudes', vista='historial', estado=estado_filtro) }}">
+             <i class="bi bi-clock-history me-1"></i>Historial
+          </a>
+        </li>
+      </ul>
+      <form method="get" class="d-flex gap-2 align-items-end">
+        <input type="hidden" name="vista" value="{{ vista }}">
+        <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Todos los estados</option>
+          {% for est in ['pendiente','comprado','rechazado','cancelado'] %}
+          <option value="{{ est }}" {% if est == estado_filtro %}selected{% endif %}>{{ est|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+    {% if vista == 'activo' %}
+    <div class="form-text mt-2 mb-0">Las solicitudes "Comprado" pasan directo al historial. Las "Rechazado"/"Cancelado" se mantienen aquí {{ dias_gracia }} días y luego solo quedan en el historial.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="table-card">
+  <div class="table-header">
+    <h6><i class="bi bi-clipboard-check me-2"></i>{{ solicitudes|length }} solicitud{{ 'es' if solicitudes|length != 1 }}</h6>
+  </div>
+  {% if solicitudes %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th style="width:60px"></th>
+          <th>Ítem</th>
+          <th class="text-center">Cant.</th>
+          <th>Urgencia</th>
+          {% if session.get('role') in ('admin', 'viewer') %}<th>Solicitado por</th>{% endif %}
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in solicitudes %}
+        <tr>
+          <td>
+            {% if s.foto_url %}
+              <img src="{{ s.foto_url }}" class="product-thumb" alt="{{ s.nombre_item }}">
+            {% else %}
+              <div class="product-thumb d-flex align-items-center justify-content-center bg-light text-muted">
+                <i class="bi bi-image fs-5"></i>
+              </div>
+            {% endif %}
+          </td>
+          <td class="fw-semibold">{{ s.nombre_item }}</td>
+          <td class="text-center">{{ s.cantidad }}</td>
+          <td>
+            {% if s.urgencia == 'urgente' %}
+              <span class="badge bg-danger">Urgente</span>
+            {% else %}
+              <span class="badge bg-light text-dark border">Normal</span>
+            {% endif %}
+          </td>
+          {% if session.get('role') in ('admin', 'viewer') %}<td class="text-muted">{{ s.solicitado_por or '—' }}</td>{% endif %}
+          <td class="text-muted small">{{ s.fecha_solicitud|string|truncate(16, True, '') }}</td>
+          <td>
+            {% if s.atrasada %}
+              <span class="badge bg-danger">Atrasado ({{ umbral_dias }}+ días)</span>
+            {% elif s.estado == 'pendiente' %}
+              <span class="badge bg-secondary">Pendiente</span>
+            {% elif s.estado == 'comprado' %}
+              <span class="badge bg-success">Comprado</span>
+            {% elif s.estado == 'rechazado' %}
+              <span class="badge bg-danger">Rechazado</span>
+            {% elif s.estado == 'cancelado' %}
+              <span class="badge bg-dark">Cancelado</span>
+            {% else %}
+              <span class="badge bg-dark">{{ s.estado|capitalize }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{{ url_for('detalle_solicitud', sid=s.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-clipboard-check fs-1 d-block mb-2"></i>
+    {% if vista == 'historial' %}
+      No hay solicitudes en el historial todavía.
+    {% else %}
+      No hay solicitudes activas.
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

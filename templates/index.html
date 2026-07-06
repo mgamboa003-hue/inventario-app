@@ -1,128 +1,133 @@
 {% extends "base.html" %}
+{% block title %}Dashboard — Inventario Wintec{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') == 'admin' %}
+  <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo repuesto
+  </a>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
-<h1 class="mb-4">Resumen de Inventario</h1>
-
-<div class="row">
-  <div class="col-md-4 mb-3">
-    <div class="card border-primary">
-      <div class="card-body">
-        <h5 class="card-title">Total de productos</h5>
-        <p class="card-text display-4">{{ total_productos }}</p>
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card blue d-flex align-items-center gap-3">
+      <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+      <div><div class="stat-value">{{ total_productos }}</div><div class="stat-label">Total repuestos</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card green d-flex align-items-center gap-3">
+      <div class="stat-icon"><i class="bi bi-layers"></i></div>
+      <div><div class="stat-value">{{ total_stock }}</div><div class="stat-label">Unidades en stock</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card red d-flex align-items-center gap-3">
+      <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <div><div class="stat-value">{{ stock_bajo }}</div><div class="stat-label">Repuestos bajo mínimo</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card amber d-flex align-items-center gap-3">
+      <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div>
+        <div class="stat-value">{{ (entradas|sum + salidas|sum) if entradas else 0 }}</div>
+        <div class="stat-label">Movimientos (14 días)</div>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="col-md-4 mb-3">
-    <div class="card border-success">
-      <div class="card-body">
-        <h5 class="card-title">Stock total</h5>
-        <p class="card-text display-4">{{ total_stock }}</p>
+<div class="row g-3 mb-4">
+  <!-- Gráfico movimientos -->
+  <div class="col-lg-8">
+    <div class="table-card h-100">
+      <div class="table-header">
+        <h6><i class="bi bi-graph-up me-2 text-primary"></i>Movimientos últimos 14 días</h6>
+      </div>
+      <div class="p-3">
+        <canvas id="chartMovimientos" height="90"></canvas>
       </div>
     </div>
   </div>
+  <!-- Top salidas -->
+  <div class="col-lg-4">
+    <div class="table-card h-100">
+      <div class="table-header">
+        <h6><i class="bi bi-bar-chart me-2 text-warning"></i>Top salidas</h6>
+      </div>
+      <div class="p-3">
+        <canvas id="chartTop" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <!-- Tarjeta modificada: ahora es un link a /productos?stock_bajo=on -->
-  <div class="col-md-4 mb-3">
-    <div class="card border-danger position-relative">
-      <div class="card-body">
-        <h5 class="card-title">Productos con stock bajo</h5>
-        <a href="{{ url_for('listar_productos', stock_bajo='on') }}"
-           class="stretched-link text-danger"
-           style="text-decoration: none;">
-          <p class="card-text display-4 mb-0">{{ bajos }}</p>
+<!-- Alertas stock bajo -->
+{% if alertas %}
+<div class="table-card mb-4">
+  <div class="table-header">
+    <h6><i class="bi bi-bell-fill me-2 text-danger"></i>Alertas de stock bajo</h6>
+    <a href="{{ url_for('listar_productos') }}?stock_bajo=1" class="btn btn-sm btn-outline-danger">Ver todos</a>
+  </div>
+  <div class="p-3">
+    {% for a in alertas %}
+    <div class="alert-stock-item">
+      <div>
+        <strong>{{ a['nombre'] }}</strong>
+        {% if a['codigo'] %}<span class="text-muted ms-1">[{{ a['codigo'] }}]</span>{% endif %}
+        <span class="ms-2 badge bg-secondary">{{ a['equipo'] or a['categoria'] or '' }}</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge badge-stock-zero">{{ a['stock_actual'] }} / {{ a['stock_minimo'] }}</span>
+        <a href="{{ url_for('detalle_producto', pid=a['id']) }}" class="btn btn-sm btn-outline-secondary py-0 px-2">
+          <i class="bi bi-eye"></i>
         </a>
       </div>
     </div>
+    {% endfor %}
   </div>
 </div>
+{% endif %}
+{% endblock %}
 
-<div class="row mt-4">
-  <div class="col-md-6 mb-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Top productos con más salidas</h5>
-        <div style="height: 320px;">
-          <canvas id="chartTopSalidas"></canvas>
-        </div>
-
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 mb-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Movimientos últimos 7 días</h5>
-        <canvas id="chartMovimientos" height="220"></canvas>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
-  const topLabels = {{ top_labels|tojson }};
-  const topValues = {{ top_values|tojson }};
-  const dias = {{ dias|tojson }};
-  const entradas = {{ entradas|tojson }};
-  const salidas = {{ salidas|tojson }};
+const dias = {{ dias | tojson }};
+const entradas = {{ entradas | tojson }};
+const salidas = {{ salidas | tojson }};
+const topLabels = {{ top_labels | tojson }};
+const topValues = {{ top_values | tojson }};
 
-  const ctx1 = document.getElementById('chartTopSalidas').getContext('2d');
-  new Chart(ctx1, {
-    type: 'bar',
-    data: {
-      labels: topLabels,
-      datasets: [{
-        label: 'Cantidad de salidas',
-        data: topValues,
-        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      indexAxis: 'y',          // 🔥 Esto lo hace horizontal
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          beginAtZero: true,
-          ticks: {
-            precision: 0       // solo números enteros
-          }
-        }
-      },
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          callbacks: {
-            label: function(ctx) {
-              return ctx.raw + ' salidas';
-            }
-          }
-        }
-      }
-    }
-  });
+// Líneas movimientos
+new Chart(document.getElementById('chartMovimientos'), {
+  type: 'line',
+  data: {
+    labels: dias,
+    datasets: [
+      { label: 'Entradas', data: entradas, borderColor: '#198754', backgroundColor: 'rgba(25,135,84,.12)', tension: .35, fill: true },
+      { label: 'Salidas',  data: salidas,  borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,.12)',  tension: .35, fill: true },
+    ]
+  },
+  options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+});
 
-
-  const ctx2 = document.getElementById('chartMovimientos').getContext('2d');
-  new Chart(ctx2, {
-    type: 'line',
-    data: {
-      labels: dias,
-      datasets: [
-        {
-          label: 'Entradas',
-          data: entradas
-        },
-        {
-          label: 'Salidas',
-          data: salidas
-        }
-      ]
-    }
-  });
+// Barras top salidas
+new Chart(document.getElementById('chartTop'), {
+  type: 'bar',
+  data: {
+    labels: topLabels,
+    datasets: [{ label: 'Salidas', data: topValues, backgroundColor: '#1B4F8A', borderRadius: 6 }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true } }
+  }
+});
 </script>
 {% endblock %}

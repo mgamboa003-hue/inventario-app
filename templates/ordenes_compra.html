@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Órdenes de compra — Wintec{% endblock %}
+{% block topbar_title %}Órdenes de compra{% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') == 'admin' %}
+  <form method="post" action="{{ url_for('generar_ordenes_compra') }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="bi bi-magic me-1"></i>Generar sugeridas
+    </button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="table-card">
+  <div class="table-header">
+    <h6><i class="bi bi-cart-check me-2"></i>{{ ordenes|length }} orden{{ 'es' if ordenes|length != 1 }} de compra</h6>
+  </div>
+  {% if ordenes %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>N° Orden</th>
+          <th>Proveedor</th>
+          <th>Fecha</th>
+          <th>Generado por</th>
+          <th class="text-end">Total estimado</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in ordenes %}
+        <tr>
+          <td><span class="badge bg-light text-dark border font-monospace">{{ o['numero'] }}</span></td>
+          <td class="fw-semibold">{{ o['proveedor_nombre'] or 'Sin proveedor' }}</td>
+          <td class="text-muted small">{{ o['fecha']|string|truncate(19, True, '') }}</td>
+          <td class="text-muted">{{ o['creado_por'] or '—' }}</td>
+          <td class="text-end">{{ '{:,.0f}'.format(o['total_estimado'] or 0) }}</td>
+          <td>
+            {% if session.get('role') == 'admin' %}
+            <form method="post" action="{{ url_for('cambiar_estado_orden', oid=o['id']) }}" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select name="estado" class="form-select form-select-sm" style="width:auto;display:inline-block" onchange="this.form.submit()">
+                {% for est in ['pendiente','enviada','recibida','cancelada'] %}
+                <option value="{{ est }}" {% if o['estado'] == est %}selected{% endif %}>{{ est|capitalize }}</option>
+                {% endfor %}
+              </select>
+            </form>
+            {% else %}
+              <span class="badge bg-secondary">{{ o['estado']|capitalize }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('exportar_orden_compra', oid=o['id']) }}" class="btn btn-sm btn-outline-success" title="Exportar Excel">
+              <i class="bi bi-file-earmark-excel"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-cart fs-1 d-block mb-2"></i>
+    No hay órdenes de compra todavía. Usa "Generar sugeridas" para crear una por cada proveedor
+    con productos bajo el stock mínimo.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ ubicacion['nombre'] }} — Wintec{% endblock %}
+{% block topbar_title %}Contenido de: {{ ubicacion['nombre'] }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('etiqueta_ubicacion', uid=ubicacion['id']) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-upc-scan me-1"></i>Imprimir etiqueta
+  </a>
+  <a href="{{ url_for('listar_ubicaciones') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="table-card">
+  <div class="table-header">
+    <h6><i class="bi bi-box-seam me-2"></i>{{ productos|length }} repuesto{{ 's' if productos|length != 1 }} en {{ ubicacion['nombre'] }}</h6>
+  </div>
+  {% if productos %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th style="width:70px"></th>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th class="text-center">Stock</th>
+          <th class="text-center">Mín.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in productos %}
+        {% set img = p['imagen_url'] or p['foto'] %}
+        <tr>
+          <td>
+            {% if img %}
+              <img src="{{ img }}" alt="{{ p['nombre'] }}" class="product-thumb">
+            {% else %}
+              <div class="product-thumb d-flex align-items-center justify-content-center bg-light text-muted">
+                <i class="bi bi-image fs-4"></i>
+              </div>
+            {% endif %}
+          </td>
+          <td><span class="badge bg-light text-dark border font-monospace">{{ p['codigo'] or '—' }}</span></td>
+          <td>
+            <a href="{{ url_for('detalle_producto', pid=p['id']) }}" class="fw-semibold text-decoration-none text-dark">{{ p['nombre'] }}</a>
+          </td>
+          <td>{% if p['categoria'] %}<span class="badge bg-primary bg-opacity-10 text-primary">{{ p['categoria'] }}</span>{% endif %}</td>
+          <td class="text-center">
+            {% if p['stock_actual'] == 0 %}
+              <span class="badge badge-stock-zero">0</span>
+            {% elif p['stock_actual'] < p['stock_minimo'] %}
+              <span class="badge badge-stock-low">{{ p['stock_actual'] }}</span>
+            {% else %}
+              <span class="badge badge-stock-ok">{{ p['stock_actual'] }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center text-muted">{{ p['stock_minimo'] }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('detalle_producto', pid=p['id']) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+    No hay repuestos activos guardados en esta ubicación.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

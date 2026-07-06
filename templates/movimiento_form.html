@@ -1,41 +1,169 @@
 {% extends "base.html" %}
+{% block title %}Registrar {{ tipo }} — Wintec{% endblock %}
+{% block topbar_title %}Registrar {{ 'entrada' if tipo == 'entrada' else 'salida' }} de stock{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('listar_movimientos') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+{% endblock %}
+
 {% block content %}
-<h2>{{ "Nueva entrada" if tipo == "entrada" else "Nueva salida" }}</h2>
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="table-card p-4">
+      <div class="alert {% if tipo == 'entrada' %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center mb-4">
+        <i class="bi bi-{% if tipo == 'entrada' %}plus-circle{% else %}dash-circle{% endif %} fs-4 me-3"></i>
+        <div>
+          <strong>{% if tipo == 'entrada' %}Ingreso de stock{% else %}Retiro de stock{% endif %}</strong><br>
+          <small>{% if tipo == 'entrada' %}Se sumará al stock actual del repuesto.{% else %}Se descontará del stock actual del repuesto.{% endif %}</small>
+        </div>
+      </div>
 
-<form method="post" class="mt-3">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div class="form-group">
-    <label>Producto</label>
-    <select name="producto_id" class="form-control select2" required>
-      <option value="">-- Selecciona un producto --</option>
-      {% for p in productos %}
-      <option 
-          value="{{ p.id }}"
-          data-stock="{{ p.stock_actual }}"
-          data-min="{{ p.stock_minimo }}"
-      >
-          {{ p.nombre }} {% if p.codigo %}({{ p.codigo }}){% endif %} — [{{ p.stock_actual }}]
-      </option>
-      {% endfor %}
-    </select>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Repuesto <span class="text-danger">*</span></label>
+          <div class="d-flex gap-2">
+            <select name="producto_id" id="productoSelect" class="form-select select2" required style="flex:1">
+              <option value="">— Seleccionar repuesto —</option>
+              {% for p in productos %}
+              <option value="{{ p['id'] }}" data-codigo="{{ p['codigo'] or '' }}" data-stock="{{ p['stock_actual'] }}" data-min="{{ p['stock_minimo'] }}">
+                {{ p['nombre'] }}{% if p['codigo'] %} [{{ p['codigo'] }}]{% endif %} — Stock: {{ p['stock_actual'] }}
+              </option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-outline-primary" id="btnEscanear" title="Escanear código de barras / QR">
+              <i class="bi bi-upc-scan"></i>
+            </button>
+          </div>
+          <div id="stockInfo" class="form-text mt-1"></div>
+          <div id="scanStatus" class="form-text text-muted"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Cantidad <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" name="cantidad" min="1" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre de quien retira / ingresa</label>
+          <input type="text" class="form-control" name="usuario" value="{{ session.get('nombre','') }}" placeholder="Tu nombre">
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Motivo / Observaciones</label>
+          <textarea class="form-control" name="motivo" rows="2" placeholder="Descripción opcional del movimiento..."></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn {% if tipo == 'entrada' %}btn-success{% else %}btn-danger{% endif %} px-4 fw-semibold">
+            <i class="bi bi-{% if tipo == 'entrada' %}plus{% else %}dash{% endif %}-circle me-1"></i>
+            Registrar {{ tipo }}
+          </button>
+          <a href="{{ url_for('listar_movimientos') }}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
   </div>
+</div>
 
-  <div class="form-group">
-    <label>Cantidad</label>
-    <input type="number" name="cantidad" class="form-control" min="1" required>
+<!-- Modal escáner -->
+<div class="modal fade" id="modalEscaner" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-upc-scan me-2"></i>Escanear código</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="lectorQR" style="width:100%"></div>
+        <div class="text-muted small mt-2">Apunta la cámara al código de barras o QR del repuesto.</div>
+      </div>
+    </div>
   </div>
+</div>
+{% endblock %}
 
-  <div class="form-group">
-    <label>Usuario (opcional)</label>
-    <input type="text" name="usuario" class="form-control" placeholder="Mauricio, Bodega, etc.">
-  </div>
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+document.getElementById('productoSelect').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  const info = document.getElementById('stockInfo');
+  if (opt.value) {
+    const stock = opt.dataset.stock;
+    const min = opt.dataset.min;
+    const tipo = '{{ tipo }}';
+    if (tipo === 'salida') {
+      info.innerHTML = `<span class="${parseInt(stock) === 0 ? 'text-danger fw-bold' : 'text-muted'}">
+        Stock disponible: <strong>${stock}</strong> unidades (mínimo: ${min})
+      </span>`;
+    } else {
+      info.innerHTML = `<span class="text-muted">Stock actual: <strong>${stock}</strong> unidades</span>`;
+    }
+  } else { info.innerHTML = ''; }
+});
 
-  <div class="form-group">
-    <label>Motivo (opcional)</label>
-    <textarea name="motivo" class="form-control" rows="2"></textarea>
-  </div>
+let html5QrCode = null;
+const modalEscanerEl = document.getElementById('modalEscaner');
+const modalEscaner = new bootstrap.Modal(modalEscanerEl);
 
-  <button type="submit" class="btn btn-primary">Guardar</button>
-  <a href="{{ url_for('listar_movimientos') }}" class="btn btn-secondary">Cancelar</a>
-</form>
+document.getElementById('btnEscanear').addEventListener('click', function() {
+  modalEscaner.show();
+});
+
+modalEscanerEl.addEventListener('shown.bs.modal', function() {
+  const status = document.getElementById('scanStatus');
+  html5QrCode = new Html5Qrcode("lectorQR");
+  Html5Qrcode.getCameras().then(cameras => {
+    if (!cameras || !cameras.length) {
+      status.textContent = 'No se detectó una cámara disponible.';
+      return;
+    }
+    const camaraId = cameras[cameras.length - 1].id; // suele ser la trasera en celulares
+    html5QrCode.start(
+      camaraId,
+      { fps: 10, qrbox: { width: 250, height: 150 } },
+      (decodedText) => {
+        aplicarCodigoEscaneado(decodedText);
+        modalEscaner.hide();
+      },
+      () => {}
+    ).catch(() => {
+      status.textContent = 'No se pudo iniciar la cámara. Revisa los permisos del navegador.';
+    });
+  }).catch(() => {
+    status.textContent = 'No se pudo acceder a la cámara en este dispositivo/navegador.';
+  });
+});
+
+modalEscanerEl.addEventListener('hidden.bs.modal', function() {
+  if (html5QrCode) {
+    html5QrCode.stop().catch(() => {}).finally(() => {
+      html5QrCode.clear();
+      html5QrCode = null;
+    });
+  }
+});
+
+function aplicarCodigoEscaneado(codigo) {
+  const select = document.getElementById('productoSelect');
+  const status = document.getElementById('scanStatus');
+  let encontrado = false;
+  for (const opt of select.options) {
+    if (opt.dataset.codigo && opt.dataset.codigo.trim() === codigo.trim()) {
+      select.value = opt.value;
+      select.dispatchEvent(new Event('change'));
+      if (window.jQuery) { $(select).trigger('change'); }
+      encontrado = true;
+      break;
+    }
+  }
+  status.textContent = encontrado
+    ? `Código "${codigo}" encontrado y seleccionado.`
+    : `Código "${codigo}" escaneado, pero no coincide con ningún repuesto registrado.`;
+  status.className = encontrado ? 'form-text text-success' : 'form-text text-danger';
+}
+</script>
 {% endblock %}

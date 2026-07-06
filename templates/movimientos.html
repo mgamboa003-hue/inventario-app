@@ -1,75 +1,98 @@
 {% extends "base.html" %}
+{% block title %}Movimientos — Wintec{% endblock %}
+{% block topbar_title %}Movimientos de stock{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('nuevo_movimiento', tipo='entrada') }}" class="btn btn-success btn-sm">
+    <i class="bi bi-plus-circle me-1"></i>Entrada
+  </a>
+  <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}" class="btn btn-danger btn-sm">
+    <i class="bi bi-dash-circle me-1"></i>Salida
+  </a>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>Movimientos de inventario</h2>
-  <div>
-    <a href="{{ url_for('nuevo_movimiento', tipo='entrada') }}"
-       class="btn btn-success btn-sm">+ Entrada</a>
-    <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}"
-       class="btn btn-danger btn-sm">- Salida</a>
+<div class="table-card mb-3">
+  <div class="p-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">Tipo</label>
+        <select name="tipo" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          <option value="entrada" {% if tipo == 'entrada' %}selected{% endif %}>Entradas</option>
+          <option value="salida"  {% if tipo == 'salida'  %}selected{% endif %}>Salidas</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">Repuesto</label>
+        <select name="producto_id" class="form-select form-select-sm select2">
+          <option value="">Todos</option>
+          {% for p in productos %}
+          <option value="{{ p['id'] }}" {% if producto_id|string == p['id']|string %}selected{% endif %}>
+            {{ p['nombre'] }}{% if p['codigo'] %} [{{ p['codigo'] }}]{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Desde</label>
+        <input type="date" class="form-control form-control-sm" name="desde" value="{{ desde }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Hasta</label>
+        <input type="date" class="form-control form-control-sm" name="hasta" value="{{ hasta }}">
+      </div>
+      <div class="col-md-2 d-flex gap-1">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+        <a href="{{ url_for('listar_movimientos') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+      </div>
+    </form>
   </div>
 </div>
 
-<form method="get" action="{{ url_for('listar_movimientos') }}" class="mb-3">
-  <div class="form-row">
-    <div class="form-group col-md-2">
-      <label>Tipo</label>
-      <select name="tipo" class="form-control">
-        <option value="">(Todos)</option>
-        <option value="entrada" {% if tipo == "entrada" %}selected{% endif %}>Entradas</option>
-        <option value="salida" {% if tipo == "salida" %}selected{% endif %}>Salidas</option>
-      </select>
-    </div>
-    <div class="form-group col-md-4">
-      <label>Producto</label>
-      <select name="producto_id" class="form-control">
-        <option value="">(Todos)</option>
-        {% for p in productos %}
-          <option value="{{ p.id }}" {% if producto_id|int == p.id %}selected{% endif %}>
-            {{ p.nombre }} {% if p.codigo %}({{ p.codigo }}){% endif %}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-group col-md-2">
-      <label>Desde</label>
-      <input type="date" name="desde" class="form-control" value="{{ desde }}">
-    </div>
-    <div class="form-group col-md-2">
-      <label>Hasta</label>
-      <input type="date" name="hasta" class="form-control" value="{{ hasta }}">
-    </div>
+<div class="table-card">
+  <div class="table-header">
+    <h6><i class="bi bi-arrow-left-right me-2"></i>{{ movimientos|length }} movimiento{{ 's' if movimientos|length != 1 }}</h6>
   </div>
-
-  <button type="submit" class="btn btn-outline-secondary mr-2">Filtrar</button>
-  <a href="{{ url_for('listar_movimientos') }}" class="btn btn-link">Limpiar</a>
-</form>
-
-<table class="table table-sm table-hover bg-white">
-  <thead class="thead-dark">
-    <tr>
-      <th>Fecha</th>
-      <th>Tipo</th>
-      <th>Producto</th>
-      <th>Cantidad</th>
-      <th>Usuario</th>
-      <th>Motivo</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for m in movimientos %}
-      <tr class="{% if m.tipo == 'entrada' %}table-success{% else %}table-warning{% endif %}">
-        <td>{{ m.fecha }}</td>
-        <td>{{ m.tipo|capitalize }}</td>
-        <td>
-          {{ m.nombre_producto }}
-          {% if m.codigo_producto %} ({{ m.codigo_producto }}){% endif %}
-        </td>
-        <td>{{ m.cantidad }}</td>
-        <td>{{ m.usuario or "-" }}</td>
-        <td>{{ m.motivo or "-" }}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  {% if movimientos %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Tipo</th><th>Repuesto</th>
+          <th class="text-center">Cantidad</th><th>Usuario</th><th>Motivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movimientos %}
+        <tr>
+          <td class="text-muted small text-nowrap">{{ m['fecha'][:16] }}</td>
+          <td>
+            {% if m['tipo'] == 'entrada' %}
+              <span class="badge bg-success"><i class="bi bi-arrow-up-circle me-1"></i>Entrada</span>
+            {% else %}
+              <span class="badge bg-danger"><i class="bi bi-arrow-down-circle me-1"></i>Salida</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('detalle_producto', pid=m['producto_id']) }}" class="text-decoration-none fw-semibold text-dark">
+              {{ m['nombre_producto'] }}
+            </a>
+            {% if m['codigo_producto'] %}
+            <span class="text-muted ms-1 font-monospace small">[{{ m['codigo_producto'] }}]</span>
+            {% endif %}
+          </td>
+          <td class="text-center fw-bold fs-5">{{ m['cantidad'] }}</td>
+          <td class="text-muted small">{{ m['usuario'] or '—' }}</td>
+          <td class="text-muted small">{{ m['motivo'] or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2"></i>No hay movimientos con los filtros actuales.
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

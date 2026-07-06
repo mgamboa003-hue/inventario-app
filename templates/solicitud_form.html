@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Pedir algo — Wintec{% endblock %}
+{% block topbar_title %}Pedir un repuesto o herramienta{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('listar_solicitudes') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="table-card p-4">
+      <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="producto_id" id="productoIdOculto">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">¿Qué necesitas? <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="nombre_item" id="nombreItem" list="lista-productos-existentes" required
+                 placeholder="Ej: Correa dentada 5M-450, o el nombre que sea">
+          <datalist id="lista-productos-existentes"></datalist>
+          <div class="form-text">Si ya existe en el inventario, selecciónalo de la lista para vincularlo.</div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Cantidad</label>
+            <input type="number" class="form-control" name="cantidad" min="1" value="1">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Urgencia</label>
+            <select name="urgencia" class="form-select">
+              <option value="normal">Normal</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Descripción / detalles</label>
+          <textarea class="form-control" name="descripcion" rows="2" placeholder="Marca, medida, para qué equipo es, etc."></textarea>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Foto (opcional)</label>
+          <input type="file" class="form-control" name="foto" accept="image/*" capture="environment">
+          <div class="form-text">Puedes tomar la foto directo con la cámara del celular.</div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary px-4"><i class="bi bi-send me-1"></i>Enviar solicitud</button>
+          <a href="{{ url_for('listar_solicitudes') }}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/api/productos').then(r => r.json()).then(prods => {
+  const datalist = document.getElementById('lista-productos-existentes');
+  const mapaProductos = {};
+  prods.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.nombre;
+    datalist.appendChild(opt);
+    mapaProductos[p.nombre] = p.id;
+  });
+  document.getElementById('nombreItem').addEventListener('input', function() {
+    const id = mapaProductos[this.value];
+    document.getElementById('productoIdOculto').value = id || '';
+  });
+}).catch(() => {});
+</script>
+{% endblock %}

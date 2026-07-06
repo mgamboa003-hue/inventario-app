@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Ubicaciones — Wintec{% endblock %}
+{% block topbar_title %}Ubicaciones (cajas / estantes){% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') == 'admin' %}
+  {% if ubicaciones %}
+  <a href="{{ url_for('etiquetas_ubicaciones_lote') }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-upc-scan me-1"></i>Imprimir todas las etiquetas
+  </a>
+  {% endif %}
+  <a href="{{ url_for('admin_ubicaciones') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Gestionar ubicaciones
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="table-card">
+  <div class="table-header">
+    <h6><i class="bi bi-geo-alt me-2"></i>{{ ubicaciones|length }} ubicación{{ 'es' if ubicaciones|length != 1 }}</h6>
+  </div>
+  {% if ubicaciones %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Ubicación</th>
+          <th class="text-center">Repuestos guardados ahí</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in ubicaciones %}
+        <tr>
+          <td class="fw-semibold"><i class="bi bi-box2 me-2 text-muted"></i>{{ u.nombre }}</td>
+          <td class="text-center">
+            <span class="badge {% if u.n_productos == 0 %}bg-secondary{% else %}bg-primary{% endif %}">{{ u.n_productos }}</span>
+          </td>
+          <td>
+            <div class="d-flex gap-1 justify-content-end">
+              <a href="{{ url_for('ver_ubicacion', uid=u.id) }}" class="btn btn-sm btn-outline-secondary" title="Ver contenido">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% if session.get('role') == 'admin' %}
+              <a href="{{ url_for('etiqueta_ubicacion', uid=u.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Imprimir etiqueta QR">
+                <i class="bi bi-upc-scan"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-geo-alt fs-1 d-block mb-2"></i>
+    Todavía no hay ubicaciones. Se crean solas cuando escribes una "Ubicación en bodega" en un repuesto,
+    o puedes agregarlas a mano desde "Gestionar ubicaciones".
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

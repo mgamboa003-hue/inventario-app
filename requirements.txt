@@ -5,8 +5,12 @@ MarkupSafe==3.0.3
 itsdangerous==2.2.0
 click==8.3.1
 blinker==1.9.0
-gunicorn==25.3.0
+gunicorn==23.0.0
 openpyxl==3.1.5
-et_xmlfile==2.0.0
 python-dotenv==1.0.1
 Flask-WTF==1.2.2
+bcrypt==4.3.0
+Pillow==11.2.1
+psycopg2-binary==2.9.10
+boto3==1.35.36
+qrcode==7.4.2

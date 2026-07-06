@@ -2,127 +2,189 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>{{ title or "Inventario Wintec" }}</title>
-
-  <!-- Bootstrap -->
-  <link rel="stylesheet"
-        href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-
-  <!-- Estilos propios -->
-  <link rel="stylesheet"
-        href="{{ url_for('static', filename='styles.css') }}">
-
-  <!-- Select2 (Cloudflare estable) -->
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
-
-  <style>
-    /* FIX Bootstrap + Select2 */
-    .select2-container .select2-search--dropdown .select2-search__field {
-        width: 100% !important;
-        padding: 6px 10px !important;
-        box-sizing: border-box !important;
-    }
-    .select2-container--default .select2-search--dropdown {
-        display: block !important;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Inventario Wintec{% endblock %}</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1B4F8A">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo_wintec.png') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+<body>
 
-<body class="bg-light">
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <a class="navbar-brand" href="{{ url_for('index') }}">
-    Inventario Wintec
-  </a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarMenu">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarMenu">
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('index') }}">Inicio</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('listar_productos') }}">Productos</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('listar_movimientos') }}">Movimientos</a>
-      </li>
-    </ul>
-    {% if session.get('logged_in') %}
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <span class="nav-link text-secondary">{{ session.get('username', '') }}</span>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('logout') }}">Cerrar sesión</a>
-      </li>
-    </ul>
-    {% endif %}
+{% if session.get('logged_in') %}
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a href="{{ url_for('index') }}" class="sidebar-brand">
+      {% if logo_path %}
+        <img src="{{ url_for('static', filename='logo_wintec.png') }}" alt="Wintec" class="sidebar-logo">
+      {% else %}
+        <span class="brand-icon"><i class="bi bi-boxes"></i></span>
+        <span class="brand-text">WINTEC</span>
+      {% endif %}
+    </a>
+    <button class="sidebar-toggle d-lg-none" id="sidebarClose">
+      <i class="bi bi-x-lg"></i>
+    </button>
   </div>
-</nav>
 
-<div class="container mt-4">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for categoria, mensaje in messages %}
-        <div class="alert alert-{{ categoria }} alert-dismissible fade show" role="alert">
-          {{ mensaje }}
-          <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-      {% endfor %}
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Principal</div>
+    {% if session.get('role') != 'comprador' %}
+    <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+    </a>
+    <a href="{{ url_for('listar_productos') }}" class="nav-link {% if 'producto' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-box-seam"></i><span>Inventario</span>
+    </a>
+    <a href="{{ url_for('listar_movimientos') }}" class="nav-link {% if 'movimiento' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-arrow-left-right"></i><span>Movimientos</span>
+    </a>
     {% endif %}
-  {% endwith %}
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('listar_ordenes_compra') }}" class="nav-link {% if 'orden' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-cart-check"></i><span>Órdenes de compra</span>
+    </a>
+    {% endif %}
+    {% if session.get('role') != 'comprador' %}
+    <a href="{{ url_for('listar_ubicaciones') }}" class="nav-link {% if 'ubicacion' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-geo-alt"></i><span>Ubicaciones</span>
+    </a>
+    {% endif %}
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('listar_cotizaciones') }}" class="nav-link {% if 'cotizacion' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-file-earmark-text"></i><span>Cotizaciones</span>
+    </a>
+    {% endif %}
+    <a href="{{ url_for('listar_solicitudes') }}" class="nav-link {% if 'solicitud' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-clipboard-check"></i><span>Solicitudes del equipo</span>
+    </a>
 
-  {% block content %}{% endblock %}
+    {% if session.get('role') == 'admin' %}
+    <div class="nav-section-label mt-3">Exportar</div>
+    <a href="{{ url_for('exportar_stock_bajo') }}" class="nav-link">
+      <i class="bi bi-file-earmark-excel"></i><span>Stock Bajo</span>
+    </a>
+    <a href="{{ url_for('exportar_pedidos') }}" class="nav-link">
+      <i class="bi bi-bag-check"></i><span>Pedidos por Proveedor</span>
+    </a>
+    <a href="{{ url_for('exportar_valorizacion') }}" class="nav-link">
+      <i class="bi bi-cash-stack"></i><span>Valorización</span>
+    </a>
+    <a href="{{ url_for('exportar_rotacion') }}" class="nav-link">
+      <i class="bi bi-arrow-repeat"></i><span>Rotación</span>
+    </a>
+    <a href="{{ url_for('exportar_abc') }}" class="nav-link">
+      <i class="bi bi-bar-chart-steps"></i><span>Clasificación ABC</span>
+    </a>
+    {% endif %}
+
+    {% if session.get('role') == 'admin' %}
+    <div class="nav-section-label mt-3">Administración</div>
+    <a href="{{ url_for('admin_usuarios') }}" class="nav-link {% if 'usuario' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-people"></i><span>Usuarios</span>
+    </a>
+    <a href="{{ url_for('admin_categorias') }}" class="nav-link {% if request.endpoint == 'admin_categorias' %}active{% endif %}">
+      <i class="bi bi-tags"></i><span>Categorías</span>
+    </a>
+    <a href="{{ url_for('admin_equipos') }}" class="nav-link {% if request.endpoint == 'admin_equipos' %}active{% endif %}">
+      <i class="bi bi-gear"></i><span>Equipos</span>
+    </a>
+    <a href="{{ url_for('admin_proveedores') }}" class="nav-link {% if 'proveedor' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-building"></i><span>Proveedores</span>
+    </a>
+    <a href="{{ url_for('admin_ubicaciones') }}" class="nav-link {% if request.endpoint == 'admin_ubicaciones' %}active{% endif %}">
+      <i class="bi bi-geo"></i><span>Gestionar ubicaciones</span>
+    </a>
+    <a href="{{ url_for('admin_api_tokens') }}" class="nav-link {% if request.endpoint == 'admin_api_tokens' %}active{% endif %}">
+      <i class="bi bi-key"></i><span>Tokens de API</span>
+    </a>
+    <a href="{{ url_for('admin_auditoria') }}" class="nav-link {% if request.endpoint == 'admin_auditoria' %}active{% endif %}">
+      <i class="bi bi-shield-check"></i><span>Auditoría</span>
+    </a>
+    <a href="{{ url_for('admin_accesos') }}" class="nav-link {% if request.endpoint == 'admin_accesos' %}active{% endif %}">
+      <i class="bi bi-clock-history"></i><span>Control de accesos</span>
+    </a>
+    <a href="{{ url_for('admin_sistema') }}" class="nav-link {% if request.endpoint == 'admin_sistema' %}active{% endif %}">
+      <i class="bi bi-hdd-network"></i><span>Sistema y respaldos</span>
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar">{{ session.get('nombre','U')[0]|upper }}</div>
+      <div>
+        <div class="user-name">{{ session.get('nombre', session.get('username','')) }}</div>
+        <div class="user-role badge {% if session.get('role') == 'admin' %}bg-danger{% elif session.get('role') == 'solicitante' %}bg-info text-dark{% elif session.get('role') == 'comprador' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+          {% if session.get('role') == 'admin' %}Admin{% elif session.get('role') == 'solicitante' %}Solicitante{% elif session.get('role') == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}
+        </div>
+      </div>
+    </div>
+    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light mt-2 w-100">
+      <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+    </a>
+  </div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="main-content" id="mainContent">
+  <header class="topbar">
+    <button class="btn btn-sm sidebar-toggle-btn" id="sidebarOpen">
+      <i class="bi bi-list fs-5"></i>
+    </button>
+    <div class="topbar-title">{% block topbar_title %}{% endblock %}</div>
+    <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+  </header>
+
+  <div class="page-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }} alert-dismissible fade show shadow-sm" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
 </div>
 
-<!-- jQuery completo (DEBE ir primero) -->
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
 
-<!-- Select2 (DEBE ir después de jQuery) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-
-<!-- Bootstrap -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-function formatProducto(producto) {
-    if (!producto.id) return producto.text;
-
-    var stock = $(producto.element).data('stock');
-    var min = $(producto.element).data('min');
-
-    var color = (stock <= min) ? 'red' : '#333';
-    var texto = producto.text;
-
-    if (stock <= 0) {
-        texto += '  ❌ SIN STOCK';
-    }
-
-    return $('<span style="color:' + color + ';">' + texto + '</span>');
-}
-
-$(document).ready(function() {
-    $('.select2').select2({
-        placeholder: "Buscar producto por nombre o código...",
-        width: '100%',
-        allowClear: true,
-        templateResult: formatProducto,
-        templateSelection: function(producto) {
-            if (!producto.id) {
-                return "Buscar producto por nombre o código...";
-            }
-            return formatProducto(producto);
-        }
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  document.getElementById('sidebarOpen')?.addEventListener('click', () => {
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
+  });
+  ['sidebarClose','sidebarOverlay'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
     });
-});
+  });
+  $(document).ready(function() {
+    $('.select2').select2({ theme: 'bootstrap-5', width: '100%' });
+  });
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
 </script>
-
-
-
+{% block scripts %}{% endblock %}
 </body>
 </html>

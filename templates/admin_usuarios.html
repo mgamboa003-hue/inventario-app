@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Usuarios — Wintec{% endblock %}
+{% block topbar_title %}Gestión de usuarios{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <!-- Crear usuario -->
+  <div class="col-lg-4">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-person-plus me-2 text-primary"></i>Nuevo usuario</h6>
+      <form method="post" action="{{ url_for('crear_usuario') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Nombre de usuario</label>
+          <input type="text" class="form-control form-control-sm" name="username" required autocomplete="off">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Nombre completo</label>
+          <input type="text" class="form-control form-control-sm" name="nombre">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Contraseña</label>
+          <input type="password" class="form-control form-control-sm" name="password" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Rol</label>
+          <select name="role" class="form-select form-select-sm">
+            <option value="viewer">Solo lectura</option>
+            <option value="solicitante">Solicitante (equipo de mantenimiento)</option>
+            <option value="comprador">Comprador (gestiona solicitudes)</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">
+          <i class="bi bi-plus me-1"></i>Crear usuario
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lista usuarios -->
+  <div class="col-lg-8">
+    <div class="table-card">
+      <div class="table-header">
+        <h6><i class="bi bi-people me-2"></i>{{ usuarios|length }} usuario{{ 's' if usuarios|length != 1 }}</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead><tr>
+            <th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Desde</th><th></th>
+          </tr></thead>
+          <tbody>
+            {% for u in usuarios %}
+            <tr>
+              <td><strong>{{ u['username'] }}</strong></td>
+              <td class="text-muted">{{ u['nombre'] or '—' }}</td>
+              <td>
+                <span class="badge {% if u['role'] == 'admin' %}bg-danger{% elif u['role'] == 'solicitante' %}bg-info text-dark{% elif u['role'] == 'comprador' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                  {% if u['role'] == 'admin' %}Admin{% elif u['role'] == 'solicitante' %}Solicitante{% elif u['role'] == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}
+                </span>
+              </td>
+              <td>
+                {% if u['activo'] %}
+                  <span class="badge bg-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactivo</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">{{ u['created_at'][:10] if u['created_at'] else '—' }}</td>
+              <td>
+                <div class="d-flex gap-1 justify-content-end">
+                  <!-- Reset password -->
+                  <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalReset{{ u['id'] }}" title="Cambiar contraseña">
+                    <i class="bi bi-key"></i>
+                  </button>
+                  <!-- Toggle activo -->
+                  {% if u['id'] != session.get('user_id') %}
+                  <form method="post" action="{{ url_for('toggle_usuario', uid=u['id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm {% if u['activo'] %}btn-outline-danger{% else %}btn-outline-success{% endif %}" title="{{ 'Desactivar' if u['activo'] else 'Activar' }}">
+                      <i class="bi bi-{% if u['activo'] %}person-dash{% else %}person-check{% endif %}"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            <!-- Modal reset password -->
+            <div class="modal fade" id="modalReset{{ u['id'] }}" tabindex="-1">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h6 class="modal-title">Cambiar contraseña — {{ u['username'] }}</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="post" action="{{ url_for('reset_password', uid=u['id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-body">
+                      <input type="password" class="form-control" name="nueva_password" minlength="6" placeholder="Nueva contraseña (mín. 6 chars)" required>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="submit" class="btn btn-warning btn-sm">Cambiar</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

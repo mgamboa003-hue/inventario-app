@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Solicitud — Wintec{% endblock %}
+{% block topbar_title %}Solicitud: {{ solicitud['nombre_item'] }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('listar_solicitudes') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 justify-content-center">
+  <div class="col-lg-7">
+    <div class="table-card p-4">
+      {% if solicitud['foto_url'] %}
+      <img src="{{ solicitud['foto_url'] }}" class="mb-3" style="max-width:100%; border-radius:8px;">
+      {% endif %}
+      <div class="mb-2"><span class="text-muted small">Ítem solicitado</span><div class="fw-bold fs-5">{{ solicitud['nombre_item'] }}</div></div>
+      <div class="row">
+        <div class="col-6 mb-2"><span class="text-muted small">Cantidad</span><div>{{ solicitud['cantidad'] }}</div></div>
+        <div class="col-6 mb-2">
+          <span class="text-muted small">Urgencia</span>
+          <div>{% if solicitud['urgencia'] == 'urgente' %}<span class="badge bg-danger">Urgente</span>{% else %}Normal{% endif %}</div>
+        </div>
+      </div>
+      {% if solicitud['descripcion'] %}
+      <div class="mb-2"><span class="text-muted small">Descripción</span><div>{{ solicitud['descripcion'] }}</div></div>
+      {% endif %}
+      <div class="mb-2"><span class="text-muted small">Solicitado por</span><div>{{ solicitud['solicitado_por'] or '—' }}</div></div>
+      <div class="mb-2"><span class="text-muted small">Fecha</span><div>{{ solicitud['fecha_solicitud']|string|truncate(19, True, '') }}</div></div>
+      {% if solicitud['comprado_por'] %}
+      <div class="mb-2"><span class="text-muted small">Comprado por</span><div>{{ solicitud['comprado_por'] }}</div></div>
+      {% endif %}
+
+      <div class="mt-3">
+        <span class="text-muted small">Estado</span>
+        <div>
+          <span class="badge fs-6
+            {% if solicitud['estado'] == 'comprado' %}bg-success
+            {% elif solicitud['estado'] in ['rechazado','cancelado'] %}bg-dark
+            {% else %}bg-secondary{% endif %}">
+            {{ solicitud['estado']|capitalize }}
+          </span>
+        </div>
+      </div>
+
+      {% if session.get('role') == 'admin' %}
+      <form method="post" action="{{ url_for('cambiar_estado_solicitud', sid=solicitud['id']) }}" class="mt-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="form-label small fw-semibold">Cambiar estado</label>
+        <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+          {% for est in ['pendiente','comprado','rechazado','cancelado'] %}
+          <option value="{{ est }}" {% if solicitud['estado'] == est %}selected{% endif %}>{{ est|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

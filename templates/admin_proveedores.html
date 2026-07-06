@@ -1,41 +1,68 @@
-{% extends 'base.html' %}
-{% block title %}Proveedores — Inventario Wintec{% endblock %}
+{% extends "base.html" %}
+{% block title %}Proveedores — Wintec{% endblock %}
 {% block topbar_title %}Proveedores{% endblock %}
+
 {% block content %}
-<div style="max-width:760px;">
-  <div class="card" style="margin-bottom:20px;">
-    <div class="card-header"><span class="card-title">Nuevo proveedor</span></div>
-    <div class="card-body">
-      <form method="POST">
-        <div class="form-row">
-          <div class="form-group"><label>Nombre *</label><input type="text" name="nombre" required></div>
-          <div class="form-group"><label>Contacto</label><input type="text" name="contacto"></div>
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-building-add me-2 text-primary"></i>Nuevo proveedor</h6>
+      <form method="post" action="{{ url_for('nuevo_proveedor') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Nombre <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm" name="nombre" required>
         </div>
-        <div class="form-row">
-          <div class="form-group"><label>Email</label><input type="email" name="email"></div>
-          <div class="form-group"><label>Teléfono</label><input type="text" name="telefono"></div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Contacto</label>
+          <input type="text" class="form-control form-control-sm" name="contacto">
         </div>
-        <button type="submit" class="btn btn-primary">Agregar</button>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Email</label>
+          <input type="email" class="form-control form-control-sm" name="email">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Teléfono</label>
+          <input type="text" class="form-control form-control-sm" name="telefono">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">
+          <i class="bi bi-plus me-1"></i>Agregar
+        </button>
       </form>
     </div>
   </div>
-  <div class="card">
-    <div class="card-header"><span class="card-title">{{ proveedores|length }} proveedores</span></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Nombre</th><th>Contacto</th><th>Email</th><th>Teléfono</th><th>Productos</th></tr></thead>
-        <tbody>
-        {% for p in proveedores %}
-        <tr>
-          <td style="font-weight:600;">{{ p.nombre }}</td>
-          <td>{{ p.contacto or '-' }}</td>
-          <td style="font-size:13px;">{{ p.email or '-' }}</td>
-          <td>{{ p.telefono or '-' }}</td>
-          <td><span class="tag tag-ok">{{ p.total }}</span></td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+
+  <div class="col-lg-7">
+    <div class="table-card">
+      <div class="table-header">
+        <h6><i class="bi bi-building me-2"></i>{{ items|length }} proveedor{{ 'es' if items|length != 1 }}</h6>
+      </div>
+      {% if items %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead><tr><th>Nombre</th><th>Contacto</th><th>Email</th><th>Teléfono</th><th></th></tr></thead>
+          <tbody>
+            {% for p in items %}
+            <tr>
+              <td class="fw-semibold">{{ p['nombre'] }}</td>
+              <td class="text-muted small">{{ p['contacto'] or '—' }}</td>
+              <td class="text-muted small">{{ p['email'] or '—' }}</td>
+              <td class="text-muted small">{{ p['telefono'] or '—' }}</td>
+              <td class="text-end">
+                <form method="post" action="{{ url_for('eliminar_proveedor', pid=p['id']) }}"
+                      onsubmit="return confirm('¿Eliminar proveedor?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-4 text-muted"><i class="bi bi-inbox d-block fs-2 mb-2"></i>Sin proveedores.</div>
+      {% endif %}
     </div>
   </div>
 </div>

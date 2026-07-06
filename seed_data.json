@@ -12,12 +12,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128124145_WhatsApp_Image_2025-11-28_at_11.40.21.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128124145_WhatsApp_Image_2025-11-28_at_11.40.21.jpeg"
     },
     {
       "id": 2,
@@ -31,12 +31,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128131032_WhatsApp_Image_2025-11-28_at_13.08.05.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128131032_WhatsApp_Image_2025-11-28_at_13.08.05.jpeg"
     },
     {
       "id": 3,
@@ -50,12 +50,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128131633_WhatsApp_Image_2025-11-28_at_13.15.43.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128131633_WhatsApp_Image_2025-11-28_at_13.15.43.jpeg"
     },
     {
       "id": 4,
@@ -69,12 +69,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128132142_WhatsApp_Image_2025-11-28_at_13.18.50.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 2,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128132142_WhatsApp_Image_2025-11-28_at_13.18.50.jpeg"
     },
     {
       "id": 5,
@@ -88,12 +88,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128132445_WhatsApp_Image_2025-11-28_at_13.23.54.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128132445_WhatsApp_Image_2025-11-28_at_13.23.54.jpeg"
     },
     {
       "id": 6,
@@ -107,12 +107,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128132758_WhatsApp_Image_2025-11-28_at_13.25.54.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 3,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128132758_WhatsApp_Image_2025-11-28_at_13.25.54.jpeg"
     },
     {
       "id": 7,
@@ -126,12 +126,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128133206_WhatsApp_Image_2025-11-28_at_13.29.26.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128133206_WhatsApp_Image_2025-11-28_at_13.29.26.jpeg"
     },
     {
       "id": 8,
@@ -145,12 +145,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128133820_WhatsApp_Image_2025-11-28_at_13.34.03.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128133820_WhatsApp_Image_2025-11-28_at_13.34.03.jpeg"
     },
     {
       "id": 9,
@@ -164,12 +164,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128133943_WhatsApp_Image_2025-11-28_at_13.34.31.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128133943_WhatsApp_Image_2025-11-28_at_13.34.31.jpeg"
     },
     {
       "id": 10,
@@ -183,12 +183,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128134132_WhatsApp_Image_2025-11-28_at_13.34.51.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128134132_WhatsApp_Image_2025-11-28_at_13.34.51.jpeg"
     },
     {
       "id": 11,
@@ -202,12 +202,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128135034_WhatsApp_Image_2025-11-28_at_13.35.39.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128135034_WhatsApp_Image_2025-11-28_at_13.35.39.jpeg"
     },
     {
       "id": 12,
@@ -221,12 +221,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128134557_WhatsApp_Image_2025-11-28_at_13.35.46.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128134557_WhatsApp_Image_2025-11-28_at_13.35.46.jpeg"
     },
     {
       "id": 13,
@@ -240,12 +240,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128135743_WhatsApp_Image_2025-11-28_at_13.51.51.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 5,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128135743_WhatsApp_Image_2025-11-28_at_13.51.51.jpeg"
     },
     {
       "id": 14,
@@ -259,12 +259,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128135938_WhatsApp_Image_2025-11-28_at_13.53.01.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 5,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128135938_WhatsApp_Image_2025-11-28_at_13.53.01.jpeg"
     },
     {
       "id": 15,
@@ -278,12 +278,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128140119_WhatsApp_Image_2025-11-28_at_13.54.10.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 5,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128140119_WhatsApp_Image_2025-11-28_at_13.54.10.jpeg"
     },
     {
       "id": 16,
@@ -297,12 +297,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128140341_WhatsApp_Image_2025-11-28_at_13.54.33.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 5,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128140341_WhatsApp_Image_2025-11-28_at_13.54.33.jpeg"
     },
     {
       "id": 17,
@@ -316,12 +316,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128142406_WhatsApp_Image_2025-11-28_at_14.17.59.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128142406_WhatsApp_Image_2025-11-28_at_14.17.59.jpeg"
     },
     {
       "id": 18,
@@ -335,12 +335,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128142553_WhatsApp_Image_2025-11-28_at_14.18.24.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128142553_WhatsApp_Image_2025-11-28_at_14.18.24.jpeg"
     },
     {
       "id": 19,
@@ -354,12 +354,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128142804_WhatsApp_Image_2025-11-28_at_14.18.42.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128142804_WhatsApp_Image_2025-11-28_at_14.18.42.jpeg"
     },
     {
       "id": 20,
@@ -373,12 +373,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128143100_WhatsApp_Image_2025-11-28_at_14.18.59.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 5,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128143100_WhatsApp_Image_2025-11-28_at_14.18.59.jpeg"
     },
     {
       "id": 21,
@@ -392,12 +392,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128143526_WhatsApp_Image_2025-11-28_at_14.19.24.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 5,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128143526_WhatsApp_Image_2025-11-28_at_14.19.24.jpeg"
     },
     {
       "id": 22,
@@ -411,12 +411,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128143706_WhatsApp_Image_2025-11-28_at_14.19.54.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128143706_WhatsApp_Image_2025-11-28_at_14.19.54.jpeg"
     },
     {
       "id": 23,
@@ -430,12 +430,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128143905_WhatsApp_Image_2025-11-28_at_14.20.14.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128143905_WhatsApp_Image_2025-11-28_at_14.20.14.jpeg"
     },
     {
       "id": 24,
@@ -449,12 +449,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128144207_WhatsApp_Image_2025-11-28_at_14.20.31.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128144207_WhatsApp_Image_2025-11-28_at_14.20.31.jpeg"
     },
     {
       "id": 25,
@@ -468,12 +468,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128144707_WhatsApp_Image_2025-11-28_at_14.20.40.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 7,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128144707_WhatsApp_Image_2025-11-28_at_14.20.40.jpeg"
     },
     {
       "id": 26,
@@ -487,12 +487,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128144823_WhatsApp_Image_2025-11-28_at_14.20.48.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128144823_WhatsApp_Image_2025-11-28_at_14.20.48.jpeg"
     },
     {
       "id": 27,
@@ -506,12 +506,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128144951_WhatsApp_Image_2025-11-28_at_14.21.15.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128144951_WhatsApp_Image_2025-11-28_at_14.21.15.jpeg"
     },
     {
       "id": 28,
@@ -525,12 +525,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128145125_WhatsApp_Image_2025-11-28_at_14.21.23.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128145125_WhatsApp_Image_2025-11-28_at_14.21.23.jpeg"
     },
     {
       "id": 29,
@@ -544,12 +544,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128150514_WhatsApp_Image_2025-11-28_at_14.58.36.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128150514_WhatsApp_Image_2025-11-28_at_14.58.36.jpeg"
     },
     {
       "id": 30,
@@ -563,12 +563,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128150728_WhatsApp_Image_2025-11-28_at_14.59.13.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 8,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128150728_WhatsApp_Image_2025-11-28_at_14.59.13.jpeg"
     },
     {
       "id": 31,
@@ -582,12 +582,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128150846_WhatsApp_Image_2025-11-28_at_14.59.48.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128150846_WhatsApp_Image_2025-11-28_at_14.59.48.jpeg"
     },
     {
       "id": 32,
@@ -601,12 +601,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128151012_WhatsApp_Image_2025-11-28_at_14.59.57.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128151012_WhatsApp_Image_2025-11-28_at_14.59.57.jpeg"
     },
     {
       "id": 33,
@@ -620,12 +620,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128151200_WhatsApp_Image_2025-11-28_at_15.00.13.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128151200_WhatsApp_Image_2025-11-28_at_15.00.13.jpeg"
     },
     {
       "id": 34,
@@ -639,12 +639,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128151352_WhatsApp_Image_2025-11-28_at_15.00.32.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 9,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128151352_WhatsApp_Image_2025-11-28_at_15.00.32.jpeg"
     },
     {
       "id": 35,
@@ -658,12 +658,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128151517_WhatsApp_Image_2025-11-28_at_15.00.49.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128151517_WhatsApp_Image_2025-11-28_at_15.00.49.jpeg"
     },
     {
       "id": 36,
@@ -677,12 +677,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128151929_WhatsApp_Image_2025-11-28_at_15.01.04.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128151929_WhatsApp_Image_2025-11-28_at_15.01.04.jpeg"
     },
     {
       "id": 37,
@@ -696,12 +696,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128152107_WhatsApp_Image_2025-11-28_at_15.01.16.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128152107_WhatsApp_Image_2025-11-28_at_15.01.16.jpeg"
     },
     {
       "id": 38,
@@ -715,12 +715,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128152253_WhatsApp_Image_2025-11-28_at_15.01.30.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128152253_WhatsApp_Image_2025-11-28_at_15.01.30.jpeg"
     },
     {
       "id": 39,
@@ -734,12 +734,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128152444_WhatsApp_Image_2025-11-28_at_15.01.40.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128152444_WhatsApp_Image_2025-11-28_at_15.01.40.jpeg"
     },
     {
       "id": 40,
@@ -753,12 +753,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128152804_WhatsApp_Image_2025-11-28_at_15.01.52.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128152804_WhatsApp_Image_2025-11-28_at_15.01.52.jpeg"
     },
     {
       "id": 41,
@@ -772,12 +772,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128152932_WhatsApp_Image_2025-11-28_at_15.01.59.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128152932_WhatsApp_Image_2025-11-28_at_15.01.59.jpeg"
     },
     {
       "id": 42,
@@ -791,12 +791,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128153035_WhatsApp_Image_2025-11-28_at_15.02.07.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128153035_WhatsApp_Image_2025-11-28_at_15.02.07.jpeg"
     },
     {
       "id": 43,
@@ -810,12 +810,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128153138_WhatsApp_Image_2025-11-28_at_15.02.24.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128153138_WhatsApp_Image_2025-11-28_at_15.02.24.jpeg"
     },
     {
       "id": 44,
@@ -829,12 +829,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128153250_WhatsApp_Image_2025-11-28_at_15.02.51.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128153250_WhatsApp_Image_2025-11-28_at_15.02.51.jpeg"
     },
     {
       "id": 45,
@@ -848,12 +848,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128154706_WhatsApp_Image_2025-11-28_at_15.45.20.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 7,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128154706_WhatsApp_Image_2025-11-28_at_15.45.20.jpeg"
     },
     {
       "id": 46,
@@ -867,12 +867,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128162957_WhatsApp_Image_2025-11-28_at_16.22.33.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128162957_WhatsApp_Image_2025-11-28_at_16.22.33.jpeg"
     },
     {
       "id": 47,
@@ -886,12 +886,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128163206_WhatsApp_Image_2025-11-28_at_16.23.21.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128163206_WhatsApp_Image_2025-11-28_at_16.23.21.jpeg"
     },
     {
       "id": 48,
@@ -905,12 +905,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128163619_WhatsApp_Image_2025-11-28_at_16.23.26.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 7,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128163619_WhatsApp_Image_2025-11-28_at_16.23.26.jpeg"
     },
     {
       "id": 49,
@@ -924,12 +924,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128163957_WhatsApp_Image_2025-11-28_at_16.23.50.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 11,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128163957_WhatsApp_Image_2025-11-28_at_16.23.50.jpeg"
     },
     {
       "id": 50,
@@ -943,12 +943,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128164139_WhatsApp_Image_2025-11-28_at_16.24.02.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 12,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128164139_WhatsApp_Image_2025-11-28_at_16.24.02.jpeg"
     },
     {
       "id": 51,
@@ -962,12 +962,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128164614_WhatsApp_Image_2025-11-28_at_16.24.16.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128164614_WhatsApp_Image_2025-11-28_at_16.24.16.jpeg"
     },
     {
       "id": 52,
@@ -981,12 +981,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128164802_WhatsApp_Image_2025-11-28_at_16.24.25.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128164802_WhatsApp_Image_2025-11-28_at_16.24.25.jpeg"
     },
     {
       "id": 53,
@@ -1000,12 +1000,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128164924_WhatsApp_Image_2025-11-28_at_16.24.32.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128164924_WhatsApp_Image_2025-11-28_at_16.24.32.jpeg"
     },
     {
       "id": 54,
@@ -1019,12 +1019,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128165356_WhatsApp_Image_2025-11-28_at_16.50.07.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128165356_WhatsApp_Image_2025-11-28_at_16.50.07.jpeg"
     },
     {
       "id": 55,
@@ -1038,12 +1038,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128165620_WhatsApp_Image_2025-11-28_at_16.50.13.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128165620_WhatsApp_Image_2025-11-28_at_16.50.13.jpeg"
     },
     {
       "id": 56,
@@ -1057,12 +1057,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128165741_WhatsApp_Image_2025-11-28_at_16.50.22.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128165741_WhatsApp_Image_2025-11-28_at_16.50.22.jpeg"
     },
     {
       "id": 57,
@@ -1076,12 +1076,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128165935_WhatsApp_Image_2025-11-28_at_16.50.28.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128165935_WhatsApp_Image_2025-11-28_at_16.50.28.jpeg"
     },
     {
       "id": 58,
@@ -1095,12 +1095,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128170123_WhatsApp_Image_2025-11-28_at_16.50.34.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 13,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128170123_WhatsApp_Image_2025-11-28_at_16.50.34.jpeg"
     },
     {
       "id": 59,
@@ -1114,12 +1114,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128170727_WhatsApp_Image_2025-11-28_at_17.06.02.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128170727_WhatsApp_Image_2025-11-28_at_17.06.02.jpeg"
     },
     {
       "id": 60,
@@ -1133,12 +1133,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128171626_WhatsApp_Image_2025-11-28_at_17.10.32.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128171626_WhatsApp_Image_2025-11-28_at_17.10.32.jpeg"
     },
     {
       "id": 61,
@@ -1152,12 +1152,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128172234_WhatsApp_Image_2025-11-28_at_17.22.16.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128172234_WhatsApp_Image_2025-11-28_at_17.22.16.jpeg"
     },
     {
       "id": 62,
@@ -1171,12 +1171,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128172545_WhatsApp_Image_2025-11-28_at_17.24.05.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128172545_WhatsApp_Image_2025-11-28_at_17.24.05.jpeg"
     },
     {
       "id": 63,
@@ -1190,12 +1190,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128172811_WhatsApp_Image_2025-11-28_at_17.12.14.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128172811_WhatsApp_Image_2025-11-28_at_17.12.14.jpeg"
     },
     {
       "id": 64,
@@ -1209,12 +1209,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128173545_WhatsApp_Image_2025-11-28_at_17.12.22.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128173545_WhatsApp_Image_2025-11-28_at_17.12.22.jpeg"
     },
     {
       "id": 65,
@@ -1228,12 +1228,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128173732_WhatsApp_Image_2025-11-28_at_17.12.32.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128173732_WhatsApp_Image_2025-11-28_at_17.12.32.jpeg"
     },
     {
       "id": 66,
@@ -1247,12 +1247,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128173910_WhatsApp_Image_2025-11-28_at_17.12.47.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128173910_WhatsApp_Image_2025-11-28_at_17.12.47.jpeg"
     },
     {
       "id": 67,
@@ -1266,12 +1266,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128174046_WhatsApp_Image_2025-11-28_at_17.13.01.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128174046_WhatsApp_Image_2025-11-28_at_17.13.01.jpeg"
     },
     {
       "id": 68,
@@ -1285,12 +1285,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128174210_WhatsApp_Image_2025-11-28_at_17.13.06.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128174210_WhatsApp_Image_2025-11-28_at_17.13.06.jpeg"
     },
     {
       "id": 69,
@@ -1304,12 +1304,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128174328_WhatsApp_Image_2025-11-28_at_17.13.15.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128174328_WhatsApp_Image_2025-11-28_at_17.13.15.jpeg"
     },
     {
       "id": 70,
@@ -1323,12 +1323,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128175231_WhatsApp_Image_2025-11-28_at_17.47.27.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128175231_WhatsApp_Image_2025-11-28_at_17.47.27.jpeg"
     },
     {
       "id": 71,
@@ -1342,12 +1342,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128175412_WhatsApp_Image_2025-11-28_at_17.47.44.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128175412_WhatsApp_Image_2025-11-28_at_17.47.44.jpeg"
     },
     {
       "id": 72,
@@ -1361,12 +1361,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128175704_WhatsApp_Image_2025-11-28_at_17.48.08.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128175704_WhatsApp_Image_2025-11-28_at_17.48.08.jpeg"
     },
     {
       "id": 73,
@@ -1380,12 +1380,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128180123_WhatsApp_Image_2025-11-28_at_17.48.30.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128180123_WhatsApp_Image_2025-11-28_at_17.48.30.jpeg"
     },
     {
       "id": 74,
@@ -1399,12 +1399,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128180318_WhatsApp_Image_2025-11-28_at_17.48.51.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128180318_WhatsApp_Image_2025-11-28_at_17.48.51.jpeg"
     },
     {
       "id": 75,
@@ -1418,12 +1418,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128180515_WhatsApp_Image_2025-11-28_at_17.48.59.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128180515_WhatsApp_Image_2025-11-28_at_17.48.59.jpeg"
     },
     {
       "id": 76,
@@ -1437,12 +1437,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128180724_WhatsApp_Image_2025-11-28_at_17.49.05.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128180724_WhatsApp_Image_2025-11-28_at_17.49.05.jpeg"
     },
     {
       "id": 77,
@@ -1456,12 +1456,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128180910_WhatsApp_Image_2025-11-28_at_17.49.11.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128180910_WhatsApp_Image_2025-11-28_at_17.49.11.jpeg"
     },
     {
       "id": 78,
@@ -1475,12 +1475,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128181105_WhatsApp_Image_2025-11-28_at_17.49.22.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128181105_WhatsApp_Image_2025-11-28_at_17.49.22.jpeg"
     },
     {
       "id": 79,
@@ -1494,12 +1494,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128181916_WhatsApp_Image_2025-11-28_at_18.15.46.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128181916_WhatsApp_Image_2025-11-28_at_18.15.46.jpeg"
     },
     {
       "id": 80,
@@ -1513,12 +1513,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251128182048_WhatsApp_Image_2025-11-28_at_18.17.04.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251128182048_WhatsApp_Image_2025-11-28_at_18.17.04.jpeg"
     },
     {
       "id": 81,
@@ -1532,12 +1532,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201120523_WhatsApp_Image_2025-12-01_at_11.57.47.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201120523_WhatsApp_Image_2025-12-01_at_11.57.47.jpeg"
     },
     {
       "id": 82,
@@ -1551,12 +1551,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201120721_WhatsApp_Image_2025-12-01_at_11.57.52.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 7,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201120721_WhatsApp_Image_2025-12-01_at_11.57.52.jpeg"
     },
     {
       "id": 83,
@@ -1570,12 +1570,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201121037_WhatsApp_Image_2025-12-01_at_11.58.04.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201121037_WhatsApp_Image_2025-12-01_at_11.58.04.jpeg"
     },
     {
       "id": 84,
@@ -1589,12 +1589,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201121152_WhatsApp_Image_2025-12-01_at_11.58.11.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201121152_WhatsApp_Image_2025-12-01_at_11.58.11.jpeg"
     },
     {
       "id": 85,
@@ -1608,12 +1608,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201121406_WhatsApp_Image_2025-12-01_at_11.58.16.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201121406_WhatsApp_Image_2025-12-01_at_11.58.16.jpeg"
     },
     {
       "id": 86,
@@ -1627,12 +1627,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201121606_WhatsApp_Image_2025-12-01_at_11.58.28.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201121606_WhatsApp_Image_2025-12-01_at_11.58.28.jpeg"
     },
     {
       "id": 87,
@@ -1646,12 +1646,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201121818_WhatsApp_Image_2025-12-01_at_11.58.32.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201121818_WhatsApp_Image_2025-12-01_at_11.58.32.jpeg"
     },
     {
       "id": 88,
@@ -1665,12 +1665,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201122101_WhatsApp_Image_2025-12-01_at_11.58.55.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201122101_WhatsApp_Image_2025-12-01_at_11.58.55.jpeg"
     },
     {
       "id": 89,
@@ -1684,12 +1684,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201122225_WhatsApp_Image_2025-12-01_at_11.59.02.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201122225_WhatsApp_Image_2025-12-01_at_11.59.02.jpeg"
     },
     {
       "id": 90,
@@ -1703,12 +1703,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201122426_WhatsApp_Image_2025-12-01_at_11.59.10.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201122426_WhatsApp_Image_2025-12-01_at_11.59.10.jpeg"
     },
     {
       "id": 91,
@@ -1722,12 +1722,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201123041_WhatsApp_Image_2025-12-01_at_12.28.30.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201123041_WhatsApp_Image_2025-12-01_at_12.28.30.jpeg"
     },
     {
       "id": 92,
@@ -1741,12 +1741,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201123222_WhatsApp_Image_2025-12-01_at_12.28.35.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201123222_WhatsApp_Image_2025-12-01_at_12.28.35.jpeg"
     },
     {
       "id": 93,
@@ -1760,12 +1760,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201124819_WhatsApp_Image_2025-12-01_at_12.43.04.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201124819_WhatsApp_Image_2025-12-01_at_12.43.04.jpeg"
     },
     {
       "id": 94,
@@ -1779,12 +1779,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201124949_WhatsApp_Image_2025-12-01_at_12.43.04.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201124949_WhatsApp_Image_2025-12-01_at_12.43.04.jpeg"
     },
     {
       "id": 95,
@@ -1798,12 +1798,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201125210_WhatsApp_Image_2025-12-01_at_12.43.11.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201125210_WhatsApp_Image_2025-12-01_at_12.43.11.jpeg"
     },
     {
       "id": 96,
@@ -1817,12 +1817,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201125358_WhatsApp_Image_2025-12-01_at_12.43.31.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 11,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201125358_WhatsApp_Image_2025-12-01_at_12.43.31.jpeg"
     },
     {
       "id": 97,
@@ -1836,12 +1836,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201125547_WhatsApp_Image_2025-12-01_at_12.43.37.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201125547_WhatsApp_Image_2025-12-01_at_12.43.37.jpeg"
     },
     {
       "id": 98,
@@ -1855,12 +1855,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201125756_WhatsApp_Image_2025-12-01_at_12.43.42.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 11,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201125756_WhatsApp_Image_2025-12-01_at_12.43.42.jpeg"
     },
     {
       "id": 99,
@@ -1874,12 +1874,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201130228_WhatsApp_Image_2025-12-01_at_12.43.55.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 7,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201130228_WhatsApp_Image_2025-12-01_at_12.43.55.jpeg"
     },
     {
       "id": 100,
@@ -1893,12 +1893,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201130424_WhatsApp_Image_2025-12-01_at_12.44.37.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201130424_WhatsApp_Image_2025-12-01_at_12.44.37.jpeg"
     },
     {
       "id": 101,
@@ -1912,12 +1912,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201130545_WhatsApp_Image_2025-12-01_at_12.44.43.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201130545_WhatsApp_Image_2025-12-01_at_12.44.43.jpeg"
     },
     {
       "id": 102,
@@ -1931,12 +1931,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201131221_WhatsApp_Image_2025-12-01_at_13.07.46.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201131221_WhatsApp_Image_2025-12-01_at_13.07.46.jpeg"
     },
     {
       "id": 103,
@@ -1950,12 +1950,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201131355_WhatsApp_Image_2025-12-01_at_13.08.13.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201131355_WhatsApp_Image_2025-12-01_at_13.08.13.jpeg"
     },
     {
       "id": 104,
@@ -1969,12 +1969,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201131505_WhatsApp_Image_2025-12-01_at_13.08.42.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201131505_WhatsApp_Image_2025-12-01_at_13.08.42.jpeg"
     },
     {
       "id": 105,
@@ -1988,12 +1988,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201131612_WhatsApp_Image_2025-12-01_at_13.08.58.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201131612_WhatsApp_Image_2025-12-01_at_13.08.58.jpeg"
     },
     {
       "id": 106,
@@ -2007,12 +2007,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201131721_WhatsApp_Image_2025-12-01_at_13.09.05.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201131721_WhatsApp_Image_2025-12-01_at_13.09.05.jpeg"
     },
     {
       "id": 107,
@@ -2026,12 +2026,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201131929_WhatsApp_Image_2025-12-01_at_13.09.19.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201131929_WhatsApp_Image_2025-12-01_at_13.09.19.jpeg"
     },
     {
       "id": 108,
@@ -2045,12 +2045,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201132405_WhatsApp_Image_2025-12-01_at_13.21.31.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201132405_WhatsApp_Image_2025-12-01_at_13.21.31.jpeg"
     },
     {
       "id": 109,
@@ -2064,12 +2064,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201132619_WhatsApp_Image_2025-12-01_at_13.09.25.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201132619_WhatsApp_Image_2025-12-01_at_13.09.25.jpeg"
     },
     {
       "id": 110,
@@ -2083,12 +2083,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201132726_WhatsApp_Image_2025-12-01_at_13.09.30.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201132726_WhatsApp_Image_2025-12-01_at_13.09.30.jpeg"
     },
     {
       "id": 111,
@@ -2102,12 +2102,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201132917_WhatsApp_Image_2025-12-01_at_13.09.41.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201132917_WhatsApp_Image_2025-12-01_at_13.09.41.jpeg"
     },
     {
       "id": 112,
@@ -2121,12 +2121,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201133115_WhatsApp_Image_2025-12-01_at_13.09.48.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201133115_WhatsApp_Image_2025-12-01_at_13.09.48.jpeg"
     },
     {
       "id": 113,
@@ -2140,12 +2140,12 @@
       "ubicacion": "Caja 4",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201133243_WhatsApp_Image_2025-12-01_at_13.09.53.jpeg",
       "descripcion": null,
       "equipo_id": 4,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201133243_WhatsApp_Image_2025-12-01_at_13.09.53.jpeg"
     },
     {
       "id": 114,
@@ -2159,12 +2159,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201152534_WhatsApp_Image_2025-12-01_at_15.22.52.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201152534_WhatsApp_Image_2025-12-01_at_15.22.52.jpeg"
     },
     {
       "id": 115,
@@ -2178,12 +2178,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201155117_WhatsApp_Image_2025-12-01_at_15.41.31.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201155117_WhatsApp_Image_2025-12-01_at_15.41.31.jpeg"
     },
     {
       "id": 116,
@@ -2197,12 +2197,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251201155410_WhatsApp_Image_2025-12-01_at_15.41.36.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251201155410_WhatsApp_Image_2025-12-01_at_15.41.36.jpeg"
     },
     {
       "id": 117,
@@ -2216,12 +2216,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202132456_WhatsApp_Image_2025-12-01_at_15.41.40.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202132456_WhatsApp_Image_2025-12-01_at_15.41.40.jpeg"
     },
     {
       "id": 118,
@@ -2235,12 +2235,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202125607_WhatsApp_Image_2025-12-01_at_15.41.43.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202125607_WhatsApp_Image_2025-12-01_at_15.41.43.jpeg"
     },
     {
       "id": 119,
@@ -2254,12 +2254,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202125838_WhatsApp_Image_2025-12-01_at_15.41.50.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202125838_WhatsApp_Image_2025-12-01_at_15.41.50.jpeg"
     },
     {
       "id": 120,
@@ -2273,12 +2273,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202130022_WhatsApp_Image_2025-12-01_at_15.42.00.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202130022_WhatsApp_Image_2025-12-01_at_15.42.00.jpeg"
     },
     {
       "id": 121,
@@ -2292,12 +2292,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202130316_WhatsApp_Image_2025-12-01_at_15.42.05.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202130316_WhatsApp_Image_2025-12-01_at_15.42.05.jpeg"
     },
     {
       "id": 122,
@@ -2311,12 +2311,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202130434_WhatsApp_Image_2025-12-01_at_15.42.12.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202130434_WhatsApp_Image_2025-12-01_at_15.42.12.jpeg"
     },
     {
       "id": 123,
@@ -2330,12 +2330,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202131442_WhatsApp_Image_2025-12-02_at_13.07.17.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202131442_WhatsApp_Image_2025-12-02_at_13.07.17.jpeg"
     },
     {
       "id": 124,
@@ -2349,12 +2349,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202131657_WhatsApp_Image_2025-12-02_at_13.07.26.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202131657_WhatsApp_Image_2025-12-02_at_13.07.26.jpeg"
     },
     {
       "id": 125,
@@ -2368,12 +2368,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202131839_WhatsApp_Image_2025-12-02_at_13.07.31.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202131839_WhatsApp_Image_2025-12-02_at_13.07.31.jpeg"
     },
     {
       "id": 126,
@@ -2387,12 +2387,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202132031_WhatsApp_Image_2025-12-02_at_13.07.44.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202132031_WhatsApp_Image_2025-12-02_at_13.07.44.jpeg"
     },
     {
       "id": 127,
@@ -2406,12 +2406,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202132341_WhatsApp_Image_2025-12-02_at_13.07.59.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202132341_WhatsApp_Image_2025-12-02_at_13.07.59.jpeg"
     },
     {
       "id": 128,
@@ -2425,12 +2425,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202132908_WhatsApp_Image_2025-12-02_at_13.08.04.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202132908_WhatsApp_Image_2025-12-02_at_13.08.04.jpeg"
     },
     {
       "id": 129,
@@ -2444,12 +2444,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202133002_WhatsApp_Image_2025-12-02_at_13.08.09.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202133002_WhatsApp_Image_2025-12-02_at_13.08.09.jpeg"
     },
     {
       "id": 130,
@@ -2463,12 +2463,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202133138_WhatsApp_Image_2025-12-02_at_13.08.24.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202133138_WhatsApp_Image_2025-12-02_at_13.08.24.jpeg"
     },
     {
       "id": 131,
@@ -2482,12 +2482,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202133241_WhatsApp_Image_2025-12-02_at_13.09.01.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202133241_WhatsApp_Image_2025-12-02_at_13.09.01.jpeg"
     },
     {
       "id": 132,
@@ -2501,12 +2501,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202133406_WhatsApp_Image_2025-12-02_at_13.09.48.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202133406_WhatsApp_Image_2025-12-02_at_13.09.48.jpeg"
     },
     {
       "id": 133,
@@ -2520,12 +2520,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202133624_WhatsApp_Image_2025-12-02_at_13.09.54.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202133624_WhatsApp_Image_2025-12-02_at_13.09.54.jpeg"
     },
     {
       "id": 134,
@@ -2539,12 +2539,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202133834_WhatsApp_Image_2025-12-02_at_13.10.16.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202133834_WhatsApp_Image_2025-12-02_at_13.10.16.jpeg"
     },
     {
       "id": 135,
@@ -2558,12 +2558,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202134617_WhatsApp_Image_2025-12-02_at_13.42.36.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202134617_WhatsApp_Image_2025-12-02_at_13.42.36.jpeg"
     },
     {
       "id": 136,
@@ -2577,12 +2577,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202134814_WhatsApp_Image_2025-12-02_at_13.42.40.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202134814_WhatsApp_Image_2025-12-02_at_13.42.40.jpeg"
     },
     {
       "id": 137,
@@ -2596,12 +2596,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202135018_WhatsApp_Image_2025-12-02_at_13.42.52.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202135018_WhatsApp_Image_2025-12-02_at_13.42.52.jpeg"
     },
     {
       "id": 138,
@@ -2615,12 +2615,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202135219_WhatsApp_Image_2025-12-02_at_13.42.43.jpeg",
       "descripcion": null,
       "equipo_id": 5,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202135219_WhatsApp_Image_2025-12-02_at_13.42.43.jpeg"
     },
     {
       "id": 139,
@@ -2634,12 +2634,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202135331_WhatsApp_Image_2025-12-02_at_13.42.48.jpeg",
       "descripcion": null,
       "equipo_id": 5,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202135331_WhatsApp_Image_2025-12-02_at_13.42.48.jpeg"
     },
     {
       "id": 140,
@@ -2653,12 +2653,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202135655_WhatsApp_Image_2025-12-02_at_13.43.00.jpeg",
       "descripcion": null,
       "equipo_id": 5,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202135655_WhatsApp_Image_2025-12-02_at_13.43.00.jpeg"
     },
     {
       "id": 141,
@@ -2672,12 +2672,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202140252_WhatsApp_Image_2025-12-02_at_13.58.49.jpeg",
       "descripcion": null,
       "equipo_id": 5,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202140252_WhatsApp_Image_2025-12-02_at_13.58.49.jpeg"
     },
     {
       "id": 142,
@@ -2691,12 +2691,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202140406_WhatsApp_Image_2025-12-02_at_13.59.13.jpeg",
       "descripcion": null,
       "equipo_id": 5,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202140406_WhatsApp_Image_2025-12-02_at_13.59.13.jpeg"
     },
     {
       "id": 143,
@@ -2710,12 +2710,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202140533_WhatsApp_Image_2025-12-02_at_13.59.27.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202140533_WhatsApp_Image_2025-12-02_at_13.59.27.jpeg"
     },
     {
       "id": 144,
@@ -2729,12 +2729,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202140843_WhatsApp_Image_2025-12-02_at_13.59.38.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202140843_WhatsApp_Image_2025-12-02_at_13.59.38.jpeg"
     },
     {
       "id": 145,
@@ -2748,12 +2748,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202141036_WhatsApp_Image_2025-12-02_at_13.59.44.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202141036_WhatsApp_Image_2025-12-02_at_13.59.44.jpeg"
     },
     {
       "id": 146,
@@ -2767,12 +2767,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202141339_WhatsApp_Image_2025-12-02_at_14.00.09.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202141339_WhatsApp_Image_2025-12-02_at_14.00.09.jpeg"
     },
     {
       "id": 147,
@@ -2786,12 +2786,12 @@
       "ubicacion": "Caja 5",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251202141448_WhatsApp_Image_2025-12-02_at_14.01.12.jpeg",
       "descripcion": null,
       "equipo_id": 5,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251202141448_WhatsApp_Image_2025-12-02_at_14.01.12.jpeg"
     },
     {
       "id": 148,
@@ -2805,12 +2805,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205080648_WhatsApp_Image_2025-12-05_at_08.00.35.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205080648_WhatsApp_Image_2025-12-05_at_08.00.35.jpeg"
     },
     {
       "id": 149,
@@ -2824,12 +2824,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205081055_WhatsApp_Image_2025-12-05_at_08.01.59.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205081055_WhatsApp_Image_2025-12-05_at_08.01.59.jpeg"
     },
     {
       "id": 150,
@@ -2843,12 +2843,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205081411_WhatsApp_Image_2025-12-05_at_08.00.42.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205081411_WhatsApp_Image_2025-12-05_at_08.00.42.jpeg"
     },
     {
       "id": 151,
@@ -2862,12 +2862,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205081632_WhatsApp_Image_2025-12-05_at_08.00.49.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205081632_WhatsApp_Image_2025-12-05_at_08.00.49.jpeg"
     },
     {
       "id": 152,
@@ -2881,12 +2881,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205082227_WhatsApp_Image_2025-12-05_at_08.01.08.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205082227_WhatsApp_Image_2025-12-05_at_08.01.08.jpeg"
     },
     {
       "id": 153,
@@ -2900,12 +2900,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205082342_WhatsApp_Image_2025-12-05_at_08.01.19.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205082342_WhatsApp_Image_2025-12-05_at_08.01.19.jpeg"
     },
     {
       "id": 154,
@@ -2919,12 +2919,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205082618_WhatsApp_Image_2025-12-05_at_08.01.24.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205082618_WhatsApp_Image_2025-12-05_at_08.01.24.jpeg"
     },
     {
       "id": 155,
@@ -2938,12 +2938,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205113629_WhatsApp_Image_2025-12-05_at_08.01.32.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205113629_WhatsApp_Image_2025-12-05_at_08.01.32.jpeg"
     },
     {
       "id": 156,
@@ -2957,12 +2957,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205113827_WhatsApp_Image_2025-12-05_at_08.01.39.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205113827_WhatsApp_Image_2025-12-05_at_08.01.39.jpeg"
     },
     {
       "id": 157,
@@ -2976,12 +2976,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205114038_WhatsApp_Image_2025-12-05_at_08.01.47.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205114038_WhatsApp_Image_2025-12-05_at_08.01.47.jpeg"
     },
     {
       "id": 158,
@@ -2995,12 +2995,12 @@
       "ubicacion": "Caja 7",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205122402_WhatsApp_Image_2025-12-05_at_08.01.52.jpeg",
       "descripcion": null,
       "equipo_id": 3,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205122402_WhatsApp_Image_2025-12-05_at_08.01.52.jpeg"
     },
     {
       "id": 159,
@@ -3033,12 +3033,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205131434_WhatsApp_Image_2025-12-05_at_12.46.55.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205131434_WhatsApp_Image_2025-12-05_at_12.46.55.jpeg"
     },
     {
       "id": 161,
@@ -3052,12 +3052,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205131633_WhatsApp_Image_2025-12-05_at_12.47.13.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205131633_WhatsApp_Image_2025-12-05_at_12.47.13.jpeg"
     },
     {
       "id": 162,
@@ -3071,12 +3071,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205132308_WhatsApp_Image_2025-12-05_at_12.47.25.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205132308_WhatsApp_Image_2025-12-05_at_12.47.25.jpeg"
     },
     {
       "id": 163,
@@ -3090,12 +3090,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205132419_WhatsApp_Image_2025-12-05_at_12.47.31.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205132419_WhatsApp_Image_2025-12-05_at_12.47.31.jpeg"
     },
     {
       "id": 164,
@@ -3109,12 +3109,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205132537_WhatsApp_Image_2025-12-05_at_12.47.37.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205132537_WhatsApp_Image_2025-12-05_at_12.47.37.jpeg"
     },
     {
       "id": 165,
@@ -3128,12 +3128,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205133355_WhatsApp_Image_2025-12-05_at_12.47.54.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205133355_WhatsApp_Image_2025-12-05_at_12.47.54.jpeg"
     },
     {
       "id": 166,
@@ -3147,12 +3147,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205133606_WhatsApp_Image_2025-12-05_at_12.48.01.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 5,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205133606_WhatsApp_Image_2025-12-05_at_12.48.01.jpeg"
     },
     {
       "id": 167,
@@ -3166,12 +3166,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205133743_WhatsApp_Image_2025-12-05_at_12.48.07.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 14,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205133743_WhatsApp_Image_2025-12-05_at_12.48.07.jpeg"
     },
     {
       "id": 168,
@@ -3185,12 +3185,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251205135118_WhatsApp_Image_2025-12-05_at_12.48.12.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251205135118_WhatsApp_Image_2025-12-05_at_12.48.12.jpeg"
     },
     {
       "id": 169,
@@ -3204,12 +3204,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208135302_WhatsApp_Image_2025-12-08_at_13.49.29.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208135302_WhatsApp_Image_2025-12-08_at_13.49.29.jpeg"
     },
     {
       "id": 170,
@@ -3223,12 +3223,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208135446_WhatsApp_Image_2025-12-08_at_13.49.35.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208135446_WhatsApp_Image_2025-12-08_at_13.49.35.jpeg"
     },
     {
       "id": 171,
@@ -3242,12 +3242,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208135604_WhatsApp_Image_2025-12-08_at_13.49.35.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208135604_WhatsApp_Image_2025-12-08_at_13.49.35.jpeg"
     },
     {
       "id": 172,
@@ -3261,12 +3261,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208135751_WhatsApp_Image_2025-12-08_at_13.49.39.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208135751_WhatsApp_Image_2025-12-08_at_13.49.39.jpeg"
     },
     {
       "id": 173,
@@ -3280,12 +3280,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208140109_WhatsApp_Image_2025-12-08_at_13.49.45.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 15,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208140109_WhatsApp_Image_2025-12-08_at_13.49.45.jpeg"
     },
     {
       "id": 174,
@@ -3299,12 +3299,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208140409_WhatsApp_Image_2025-12-08_at_13.49.57.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208140409_WhatsApp_Image_2025-12-08_at_13.49.57.jpeg"
     },
     {
       "id": 175,
@@ -3318,12 +3318,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208140630_WhatsApp_Image_2025-12-08_at_13.50.01.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208140630_WhatsApp_Image_2025-12-08_at_13.50.01.jpeg"
     },
     {
       "id": 176,
@@ -3337,12 +3337,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208140820_WhatsApp_Image_2025-12-08_at_13.50.07.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208140820_WhatsApp_Image_2025-12-08_at_13.50.07.jpeg"
     },
     {
       "id": 177,
@@ -3356,12 +3356,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208141615_WhatsApp_Image_2025-12-08_at_14.13.03.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208141615_WhatsApp_Image_2025-12-08_at_14.13.03.jpeg"
     },
     {
       "id": 178,
@@ -3375,12 +3375,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208141730_WhatsApp_Image_2025-12-08_at_14.13.11.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208141730_WhatsApp_Image_2025-12-08_at_14.13.11.jpeg"
     },
     {
       "id": 179,
@@ -3394,12 +3394,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208141924_WhatsApp_Image_2025-12-08_at_14.13.23.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208141924_WhatsApp_Image_2025-12-08_at_14.13.23.jpeg"
     },
     {
       "id": 180,
@@ -3413,12 +3413,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208142254_WhatsApp_Image_2025-12-08_at_14.13.47.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 6,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208142254_WhatsApp_Image_2025-12-08_at_14.13.47.jpeg"
     },
     {
       "id": 181,
@@ -3432,12 +3432,12 @@
       "ubicacion": "Caja 9",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208142503_WhatsApp_Image_2025-12-08_at_14.14.31.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208142503_WhatsApp_Image_2025-12-08_at_14.14.31.jpeg"
     },
     {
       "id": 182,
@@ -3451,12 +3451,12 @@
       "ubicacion": "Caja 10 ",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208143512_WhatsApp_Image_2025-12-08_at_14.27.41.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208143512_WhatsApp_Image_2025-12-08_at_14.27.41.jpeg"
     },
     {
       "id": 183,
@@ -3470,12 +3470,12 @@
       "ubicacion": "Caja 10",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208143628_WhatsApp_Image_2025-12-08_at_14.27.49.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208143628_WhatsApp_Image_2025-12-08_at_14.27.49.jpeg"
     },
     {
       "id": 184,
@@ -3489,12 +3489,12 @@
       "ubicacion": "Caja 11",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208145314_WhatsApp_Image_2025-12-08_at_14.37.41.jpeg",
       "descripcion": null,
       "equipo_id": 6,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208145314_WhatsApp_Image_2025-12-08_at_14.37.41.jpeg"
     },
     {
       "id": 185,
@@ -3508,12 +3508,12 @@
       "ubicacion": "Caja 2",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251208145602_WhatsApp_Image_2025-12-08_at_14.55.44.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251208145602_WhatsApp_Image_2025-12-08_at_14.55.44.jpeg"
     },
     {
       "id": 186,
@@ -3527,12 +3527,12 @@
       "ubicacion": "Caja 1A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226101928_WhatsApp_Image_2025-12-26_at_10.11.53.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226101928_WhatsApp_Image_2025-12-26_at_10.11.53.jpeg"
     },
     {
       "id": 187,
@@ -3546,12 +3546,12 @@
       "ubicacion": "Caja 2.B",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226102707_WhatsApp_Image_2025-12-26_at_10.21.41.jpeg",
       "descripcion": null,
       "equipo_id": 8,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226102707_WhatsApp_Image_2025-12-26_at_10.21.41.jpeg"
     },
     {
       "id": 188,
@@ -3565,12 +3565,12 @@
       "ubicacion": "Caja 2.B",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226103143_WhatsApp_Image_2025-12-26_at_10.31.18.jpeg",
       "descripcion": null,
       "equipo_id": 9,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226103143_WhatsApp_Image_2025-12-26_at_10.31.18.jpeg"
     },
     {
       "id": 189,
@@ -3584,12 +3584,12 @@
       "ubicacion": "Caja 2.B",
       "proveedor": "Austech",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226103811_WhatsApp_Image_2025-12-26_at_10.33.19.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": 3,
-      "foto": null
+      "foto": "/static/uploads/20251226103811_WhatsApp_Image_2025-12-26_at_10.33.19.jpeg"
     },
     {
       "id": 190,
@@ -3603,12 +3603,12 @@
       "ubicacion": "Caja 2.B",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226104049_WhatsApp_Image_2025-12-26_at_10.33.23.jpeg",
       "descripcion": null,
       "equipo_id": 8,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226104049_WhatsApp_Image_2025-12-26_at_10.33.23.jpeg"
     },
     {
       "id": 191,
@@ -3622,12 +3622,12 @@
       "ubicacion": "Caja 2.B",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226104909_WhatsApp_Image_2025-12-26_at_10.33.29.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226104909_WhatsApp_Image_2025-12-26_at_10.33.29.jpeg"
     },
     {
       "id": 192,
@@ -3641,12 +3641,12 @@
       "ubicacion": "Caja 3.A",
       "proveedor": "d",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226110127_WhatsApp_Image_2025-12-26_at_11.00.47.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 4,
-      "foto": null
+      "foto": "/static/uploads/20251226110127_WhatsApp_Image_2025-12-26_at_11.00.47.jpeg"
     },
     {
       "id": 193,
@@ -3660,12 +3660,12 @@
       "ubicacion": "Caja 3.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226110546_WhatsApp_Image_2025-12-26_at_11.04.07.jpeg",
       "descripcion": null,
       "equipo_id": 11,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226110546_WhatsApp_Image_2025-12-26_at_11.04.07.jpeg"
     },
     {
       "id": 194,
@@ -3679,12 +3679,12 @@
       "ubicacion": "Caja 4.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226111519_WhatsApp_Image_2025-12-26_at_11.09.49.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226111519_WhatsApp_Image_2025-12-26_at_11.09.49.jpeg"
     },
     {
       "id": 195,
@@ -3698,12 +3698,12 @@
       "ubicacion": "Caja 4.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226111805_WhatsApp_Image_2025-12-26_at_11.09.56.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226111805_WhatsApp_Image_2025-12-26_at_11.09.56.jpeg"
     },
     {
       "id": 196,
@@ -3717,12 +3717,12 @@
       "ubicacion": "Caja 4.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226112008_WhatsApp_Image_2025-12-26_at_11.10.31.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226112008_WhatsApp_Image_2025-12-26_at_11.10.31.jpeg"
     },
     {
       "id": 197,
@@ -3736,12 +3736,12 @@
       "ubicacion": "Caja 4.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226112148_WhatsApp_Image_2025-12-26_at_11.10.36.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226112148_WhatsApp_Image_2025-12-26_at_11.10.36.jpeg"
     },
     {
       "id": 198,
@@ -3755,12 +3755,12 @@
       "ubicacion": "Caja 5.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226113603_WhatsApp_Image_2025-12-26_at_11.31.09.jpeg",
       "descripcion": null,
       "equipo_id": 8,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226113603_WhatsApp_Image_2025-12-26_at_11.31.09.jpeg"
     },
     {
       "id": 199,
@@ -3774,12 +3774,12 @@
       "ubicacion": "Caja 6.A",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226114629_WhatsApp_Image_2025-12-26_at_11.45.17.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20251226114629_WhatsApp_Image_2025-12-26_at_11.45.17.jpeg"
     },
     {
       "id": 200,
@@ -3793,12 +3793,12 @@
       "ubicacion": "Caja 7.A",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226115107_WhatsApp_Image_2025-12-26_at_11.50.46.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20251226115107_WhatsApp_Image_2025-12-26_at_11.50.46.jpeg"
     },
     {
       "id": 201,
@@ -3812,12 +3812,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226120328_WhatsApp_Image_2025-12-26_at_11.54.07.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20251226120328_WhatsApp_Image_2025-12-26_at_11.54.07.jpeg"
     },
     {
       "id": 202,
@@ -3831,12 +3831,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226120615_WhatsApp_Image_2025-12-26_at_11.54.12.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20251226120615_WhatsApp_Image_2025-12-26_at_11.54.12.jpeg"
     },
     {
       "id": 203,
@@ -3850,12 +3850,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226120847_WhatsApp_Image_2025-12-26_at_12.08.30.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20251226120847_WhatsApp_Image_2025-12-26_at_12.08.30.jpeg"
     },
     {
       "id": 204,
@@ -3869,12 +3869,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226121107_WhatsApp_Image_2025-12-26_at_11.54.45.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20251226121107_WhatsApp_Image_2025-12-26_at_11.54.45.jpeg"
     },
     {
       "id": 205,
@@ -3888,12 +3888,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226121405_WhatsApp_Image_2025-12-26_at_11.55.08.jpeg",
       "descripcion": null,
       "equipo_id": 12,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226121405_WhatsApp_Image_2025-12-26_at_11.55.08.jpeg"
     },
     {
       "id": 206,
@@ -3907,12 +3907,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226121646_WhatsApp_Image_2025-12-26_at_11.55.26.jpeg",
       "descripcion": null,
       "equipo_id": 13,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20251226121646_WhatsApp_Image_2025-12-26_at_11.55.26.jpeg"
     },
     {
       "id": 207,
@@ -3926,12 +3926,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226121802_WhatsApp_Image_2025-12-26_at_11.55.49.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20251226121802_WhatsApp_Image_2025-12-26_at_11.55.49.jpeg"
     },
     {
       "id": 208,
@@ -3945,12 +3945,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226121910_WhatsApp_Image_2025-12-26_at_11.55.54.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20251226121910_WhatsApp_Image_2025-12-26_at_11.55.54.jpeg"
     },
     {
       "id": 209,
@@ -3964,12 +3964,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226122154_WhatsApp_Image_2025-12-26_at_11.56.10.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226122154_WhatsApp_Image_2025-12-26_at_11.56.10.jpeg"
     },
     {
       "id": 210,
@@ -3983,12 +3983,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226122355_WhatsApp_Image_2025-12-26_at_11.56.35.jpeg",
       "descripcion": null,
       "equipo_id": 12,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20251226122355_WhatsApp_Image_2025-12-26_at_11.56.35.jpeg"
     },
     {
       "id": 211,
@@ -4002,12 +4002,12 @@
       "ubicacion": "",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226122955_WhatsApp_Image_2025-12-26_at_12.29.17.jpeg",
       "descripcion": null,
       "equipo_id": 14,
       "categoria_id": 1,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20251226122955_WhatsApp_Image_2025-12-26_at_12.29.17.jpeg"
     },
     {
       "id": 212,
@@ -4021,12 +4021,12 @@
       "ubicacion": "",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20251226123205_WhatsApp_Image_2025-12-26_at_12.29.25.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20251226123205_WhatsApp_Image_2025-12-26_at_12.29.25.jpeg"
     },
     {
       "id": 213,
@@ -4040,12 +4040,12 @@
       "ubicacion": "Caja 2.B",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260109113942_WhatsApp_Image_2026-01-09_at_11.38.36.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20260109113942_WhatsApp_Image_2026-01-09_at_11.38.36.jpeg"
     },
     {
       "id": 214,
@@ -4059,12 +4059,12 @@
       "ubicacion": "Caja de sonsores Rotox",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260112093554_ID_1260_MSK5000_CMYK_2LAYERS_PSD.jpg",
       "descripcion": null,
       "equipo_id": 14,
       "categoria_id": 1,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20260112093554_ID_1260_MSK5000_CMYK_2LAYERS_PSD.jpg"
     },
     {
       "id": 215,
@@ -4078,12 +4078,12 @@
       "ubicacion": "Caja 1",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260114120854_WhatsApp_Image_2026-01-14_at_12.07.08.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20260114120854_WhatsApp_Image_2026-01-14_at_12.07.08.jpeg"
     },
     {
       "id": 216,
@@ -4097,12 +4097,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260121114121_WhatsApp_Image_2025-12-26_at_11.56.10.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20260121114121_WhatsApp_Image_2025-12-26_at_11.56.10.jpeg"
     },
     {
       "id": 217,
@@ -4116,12 +4116,12 @@
       "ubicacion": "Repisa ",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260209123748_WhatsApp_Image_2026-02-09_at_12.36.53.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20260209123748_WhatsApp_Image_2026-02-09_at_12.36.53.jpeg"
     },
     {
       "id": 218,
@@ -4135,12 +4135,12 @@
       "ubicacion": "Caja 10",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260209124131_WhatsApp_Image_2026-02-09_at_12.36.27.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 4,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20260209124131_WhatsApp_Image_2026-02-09_at_12.36.27.jpeg"
     },
     {
       "id": 219,
@@ -4154,12 +4154,12 @@
       "ubicacion": "Repisa ",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260209124357_WhatsApp_Image_2026-02-09_at_12.36.28.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 7,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20260209124357_WhatsApp_Image_2026-02-09_at_12.36.28.jpeg"
     },
     {
       "id": 220,
@@ -4173,12 +4173,12 @@
       "ubicacion": "Caja 3",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260309092413_WhatsApp_Image_2026-03-09_at_09.21.49.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 1,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20260309092413_WhatsApp_Image_2026-03-09_at_09.21.49.jpeg"
     },
     {
       "id": 221,
@@ -4211,12 +4211,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260311155329_WhatsApp_Image_2025-12-26_at_11.55.08.jpeg",
       "descripcion": null,
       "equipo_id": 10,
       "categoria_id": 16,
       "proveedor_id": null,
-      "foto": null
+      "foto": "/static/uploads/20260311155329_WhatsApp_Image_2025-12-26_at_11.55.08.jpeg"
     },
     {
       "id": 223,
@@ -4230,12 +4230,12 @@
       "ubicacion": "Estante",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260320144020_WhatsApp_Image_2025-12-26_at_11.54.45.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20260320144020_WhatsApp_Image_2025-12-26_at_11.54.45.jpeg"
     },
     {
       "id": 224,
@@ -4249,12 +4249,12 @@
       "ubicacion": "Caja 8.A",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260320144520_WhatsApp_Image_2025-12-26_at_11.55.26.jpeg",
       "descripcion": null,
       "equipo_id": 13,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20260320144520_WhatsApp_Image_2025-12-26_at_11.55.26.jpeg"
     },
     {
       "id": 225,
@@ -4268,12 +4268,12 @@
       "ubicacion": "Estante",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260320145832_WhatsApp_Image_2025-12-26_at_11.50.46.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20260320145832_WhatsApp_Image_2025-12-26_at_11.50.46.jpeg"
     },
     {
       "id": 226,
@@ -4287,12 +4287,12 @@
       "ubicacion": "Estante",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260320150103_WhatsApp_Image_2025-12-26_at_11.50.46.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20260320150103_WhatsApp_Image_2025-12-26_at_11.50.46.jpeg"
     },
     {
       "id": 227,
@@ -4306,12 +4306,12 @@
       "ubicacion": "Estante",
       "proveedor": "Dress",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260320150222_WhatsApp_Image_2025-12-26_at_11.50.46.jpeg",
       "descripcion": null,
       "equipo_id": 7,
       "categoria_id": 16,
       "proveedor_id": 2,
-      "foto": null
+      "foto": "/static/uploads/20260320150222_WhatsApp_Image_2025-12-26_at_11.50.46.jpeg"
     },
     {
       "id": 228,
@@ -4325,12 +4325,12 @@
       "ubicacion": "Caja 6",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260330072505_WhatsApp_Image_2026-03-30_at_07.15.52.jpeg",
       "descripcion": null,
       "equipo_id": 1,
       "categoria_id": 14,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20260330072505_WhatsApp_Image_2026-03-30_at_07.15.52.jpeg"
     },
     {
       "id": 229,
@@ -4344,12 +4344,12 @@
       "ubicacion": "Estante",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260402140516_WhatsApp_Image_2026-04-02_at_14.00.44.jpeg",
       "descripcion": null,
       "equipo_id": 16,
       "categoria_id": 6,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20260402140516_WhatsApp_Image_2026-04-02_at_14.00.44.jpeg"
     },
     {
       "id": 230,
@@ -4363,12 +4363,12 @@
       "ubicacion": "Estante",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260402141005_WhatsApp_Image_2026-04-02_at_14.00.441.jpeg",
       "descripcion": null,
       "equipo_id": 16,
       "categoria_id": 6,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20260402141005_WhatsApp_Image_2026-04-02_at_14.00.441.jpeg"
     },
     {
       "id": 231,
@@ -4382,12 +4382,12 @@
       "ubicacion": "Estante",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260402141204_WhatsApp_Image_2026-04-02_at_14.00.45.jpeg",
       "descripcion": null,
       "equipo_id": 16,
       "categoria_id": 6,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20260402141204_WhatsApp_Image_2026-04-02_at_14.00.45.jpeg"
     },
     {
       "id": 232,
@@ -4401,12 +4401,12 @@
       "ubicacion": "Estante",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260402141433_WhatsApp_Image_2026-04-02_at_14.00.45_1.jpeg",
       "descripcion": null,
       "equipo_id": 16,
       "categoria_id": 4,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20260402141433_WhatsApp_Image_2026-04-02_at_14.00.45_1.jpeg"
     },
     {
       "id": 233,
@@ -4420,12 +4420,12 @@
       "ubicacion": "Estante",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260402141702_WhatsApp_Image_2026-04-02_at_14.00.45_2.jpeg",
       "descripcion": null,
       "equipo_id": 16,
       "categoria_id": 6,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20260402141702_WhatsApp_Image_2026-04-02_at_14.00.45_2.jpeg"
     },
     {
       "id": 234,
@@ -4439,12 +4439,12 @@
       "ubicacion": "Estante",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260402141854_WhatsApp_Image_2026-04-02_at_14.00.45_3.jpeg",
       "descripcion": null,
       "equipo_id": 16,
       "categoria_id": 6,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20260402141854_WhatsApp_Image_2026-04-02_at_14.00.45_3.jpeg"
     },
     {
       "id": 235,
@@ -4458,12 +4458,12 @@
       "ubicacion": "Estante",
       "proveedor": "Rotox",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260402142056_WhatsApp_Image_2026-04-02_at_14.00.45_4.jpeg",
       "descripcion": null,
       "equipo_id": 16,
       "categoria_id": 6,
       "proveedor_id": 5,
-      "foto": null
+      "foto": "/static/uploads/20260402142056_WhatsApp_Image_2026-04-02_at_14.00.45_4.jpeg"
     },
     {
       "id": 236,
@@ -4477,12 +4477,12 @@
       "ubicacion": "Estante",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260408101007_WhatsApp_Image_2026-04-08_at_09.50.44.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20260408101007_WhatsApp_Image_2026-04-08_at_09.50.44.jpeg"
     },
     {
       "id": 237,
@@ -4496,12 +4496,12 @@
       "ubicacion": "Estante",
       "proveedor": "Lisec",
       "precio": 0.0,
-      "imagen_url": null,
+      "imagen_url": "/static/uploads/20260408120457_WhatsApp_Image_2026-04-08_at_12.00.14.jpeg",
       "descripcion": null,
       "equipo_id": 2,
       "categoria_id": 10,
       "proveedor_id": 1,
-      "foto": null
+      "foto": "/static/uploads/20260408120457_WhatsApp_Image_2026-04-08_at_12.00.14.jpeg"
     },
     {
       "id": 238,
@@ -5422,6 +5422,193 @@
       "usuario": "Jimmy",
       "motivo": "",
       "usuario_id": null
+    }
+  ],
+  "equipos": [
+    {
+      "id": 1,
+      "nombre": "Selladora Automatica"
+    },
+    {
+      "id": 2,
+      "nombre": "Lavadora"
+    },
+    {
+      "id": 3,
+      "nombre": "Spacer"
+    },
+    {
+      "id": 4,
+      "nombre": "Prensa "
+    },
+    {
+      "id": 5,
+      "nombre": "s"
+    },
+    {
+      "id": 6,
+      "nombre": "TermoPanel "
+    },
+    {
+      "id": 7,
+      "nombre": "CNC"
+    },
+    {
+      "id": 8,
+      "nombre": "Desaguadora Americana "
+    },
+    {
+      "id": 9,
+      "nombre": "Pantografo"
+    },
+    {
+      "id": 10,
+      "nombre": "--"
+    },
+    {
+      "id": 11,
+      "nombre": "Haffner"
+    },
+    {
+      "id": 12,
+      "nombre": "Taladro pedestal "
+    },
+    {
+      "id": 13,
+      "nombre": "Soldadora de marco americano "
+    },
+    {
+      "id": 14,
+      "nombre": "Cortadora europeo "
+    },
+    {
+      "id": 15,
+      "nombre": "Fresadora europeo"
+    },
+    {
+      "id": 16,
+      "nombre": "Maquinarias Rotox"
+    },
+    {
+      "id": 17,
+      "nombre": "Rotox"
+    },
+    {
+      "id": 18,
+      "nombre": "Limpiadora Europeo"
+    }
+  ],
+  "categorias": [
+    {
+      "id": 1,
+      "nombre": "Sensor Eléctrico"
+    },
+    {
+      "id": 2,
+      "nombre": "Comando electrico"
+    },
+    {
+      "id": 3,
+      "nombre": "Bomba de vacio"
+    },
+    {
+      "id": 4,
+      "nombre": "Acople mecanico"
+    },
+    {
+      "id": 5,
+      "nombre": "Calefactor"
+    },
+    {
+      "id": 6,
+      "nombre": "Sistema neumático "
+    },
+    {
+      "id": 7,
+      "nombre": "Motores"
+    },
+    {
+      "id": 8,
+      "nombre": "Distribución eléctrica "
+    },
+    {
+      "id": 9,
+      "nombre": "Filtro"
+    },
+    {
+      "id": 10,
+      "nombre": "Accesorios"
+    },
+    {
+      "id": 11,
+      "nombre": "Accesorio eléctrico "
+    },
+    {
+      "id": 12,
+      "nombre": "Accesorio para bombas de agua "
+    },
+    {
+      "id": 13,
+      "nombre": "Bombas de agua"
+    },
+    {
+      "id": 14,
+      "nombre": "Calefactor "
+    },
+    {
+      "id": 15,
+      "nombre": "a"
+    },
+    {
+      "id": 16,
+      "nombre": "Herramientas "
+    }
+  ],
+  "proveedores": [
+    {
+      "id": 1,
+      "nombre": "Lisec",
+      "contacto": null,
+      "email": null,
+      "telefono": null
+    },
+    {
+      "id": 2,
+      "nombre": "Dress",
+      "contacto": null,
+      "email": null,
+      "telefono": null
+    },
+    {
+      "id": 3,
+      "nombre": "Austech",
+      "contacto": null,
+      "email": null,
+      "telefono": null
+    },
+    {
+      "id": 4,
+      "nombre": "d",
+      "contacto": null,
+      "email": null,
+      "telefono": null
+    },
+    {
+      "id": 5,
+      "nombre": "Rotox",
+      "contacto": null,
+      "email": null,
+      "telefono": null
+    }
+  ],
+  "usuarios": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "scrypt:32768:8:1$OGMnuV0rjiQmyuyY$00842bd6b0e6cfb4efbf91dead3892922e995d708af8ffdde76b6a96daba7bb5d4e8379b5e6f608aedc661133650e696de6e896762dd4f7e9468bedd41fd6d3b",
+      "nombre": "Administrador",
+      "role": "admin",
+      "created_at": "2026-04-29 16:16:43"
     }
   ]
 }

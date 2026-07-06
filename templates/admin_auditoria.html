@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Auditoría — Wintec{% endblock %}
+{% block topbar_title %}Registro de auditoría{% endblock %}
+
+{% block content %}
+<div class="table-card">
+  <div class="table-header">
+    <h6><i class="bi bi-shield-check me-2"></i>Últimos {{ logs|length }} eventos</h6>
+  </div>
+  {% if logs %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>Tabla</th>
+          <th>Acción</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in logs %}
+        <tr>
+          <td class="text-muted small">{{ l['fecha']|string|truncate(19, True, '') }}</td>
+          <td class="fw-semibold">{{ l['usuario'] or '—' }}</td>
+          <td><span class="badge bg-light text-dark border">{{ l['tabla'] }}</span></td>
+          <td>
+            <span class="badge {% if l['accion'] in ['crear','entrada','login'] %}bg-success
+                        {% elif l['accion'] in ['eliminar','salida'] %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+              {{ l['accion'] }}
+            </span>
+          </td>
+          <td class="text-muted small">{{ l['detalle'] or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+    Todavía no hay eventos registrados.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

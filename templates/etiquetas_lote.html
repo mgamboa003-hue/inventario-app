@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Etiquetas de repuestos — Wintec</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      background: #f1f3f5;
+    }
+    .toolbar {
+      padding: 14px 20px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toolbar button {
+      padding: 8px 18px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      background: #1B4F8A;
+      color: #fff;
+      cursor: pointer;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6mm;
+      padding: 10mm;
+    }
+    .etiqueta {
+      border: 1px dashed #999;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      background: #fff;
+      break-inside: avoid;
+    }
+    .etiqueta img {
+      width: 2.8cm;
+      height: 2.8cm;
+      flex-shrink: 0;
+    }
+    .etiqueta .codigo {
+      font-weight: bold;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+    }
+    .etiqueta .nombre {
+      font-size: 12px;
+      margin-top: 3px;
+      line-height: 1.2;
+    }
+    .etiqueta .ubicacion {
+      font-size: 10px;
+      color: #555;
+      margin-top: 3px;
+    }
+    .vacio {
+      padding: 40px;
+      text-align: center;
+      color: #777;
+    }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .grid { grid-template-columns: repeat(2, 1fr); padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>{{ etiquetas|length }} etiqueta{{ 's' if etiquetas|length != 1 }} para imprimir</div>
+    <button onclick="window.print()">Imprimir todas</button>
+  </div>
+
+  {% if etiquetas %}
+  <div class="grid">
+    {% for e in etiquetas %}
+    <div class="etiqueta">
+      <img src="{{ e.qr_data_uri }}" alt="QR {{ e.codigo }}">
+      <div>
+        <div class="codigo">{{ e.codigo }}</div>
+        <div class="nombre">{{ e.nombre }}</div>
+        {% if e.ubicacion %}<div class="ubicacion">Ubic.: {{ e.ubicacion }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="vacio">No hay productos para generar etiquetas con estos filtros.</div>
+  {% endif %}
+</body>
+</html>

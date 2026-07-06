@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Sistema — Wintec{% endblock %}
+{% block topbar_title %}Sistema y respaldos{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <!-- Estado de configuración -->
+  <div class="col-12">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Estado de la configuración</h6>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-{{ 'check-circle-fill text-success' if use_postgres else 'exclamation-triangle-fill text-warning' }} fs-5"></i>
+            <div>
+              <div class="fw-semibold small">Base de datos</div>
+              <div class="text-muted small">{{ 'PostgreSQL (nube)' if use_postgres else 'SQLite (local)' }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-{{ 'check-circle-fill text-success' if force_https else 'dash-circle text-muted' }} fs-5"></i>
+            <div>
+              <div class="fw-semibold small">HTTPS forzado</div>
+              <div class="text-muted small">{{ 'Activo' if force_https else 'Inactivo (normal en local)' }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-{{ 'check-circle-fill text-success' if email_ok else 'dash-circle text-muted' }} fs-5"></i>
+            <div>
+              <div class="fw-semibold small">Alertas por email</div>
+              <div class="text-muted small">{{ 'Configurado' if email_ok else 'No configurado' }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-{{ 'check-circle-fill text-success' if s3_ok else 'dash-circle text-muted' }} fs-5"></i>
+            <div>
+              <div class="fw-semibold small">Fotos en la nube (S3/R2)</div>
+              <div class="text-muted small">{{ 'Configurado' if s3_ok else 'Usando disco local' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% if not use_postgres or not email_ok or not s3_ok %}
+      <div class="alert alert-info small mt-3 mb-0">
+        <i class="bi bi-lightbulb me-1"></i>
+        Estas opciones se activan agregando variables de entorno en el archivo <code>.env</code>
+        (o en las variables de Railway/Render): <code>DATABASE_URL</code>, <code>SMTP_HOST</code>/<code>SMTP_TO</code>,
+        <code>S3_BUCKET</code>/<code>S3_ACCESS_KEY</code>. No requieren cambios de código.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Alertas de stock -->
+  <div class="col-lg-6">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-2"><i class="bi bi-envelope-exclamation me-2 text-primary"></i>Alertas de stock bajo</h6>
+      <p class="text-muted small">Envía ahora mismo un correo con los productos bajo el stock mínimo.</p>
+      <form method="post" action="{{ url_for('enviar_alerta_manual') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-primary btn-sm" {% if not email_ok %}disabled{% endif %}>
+          <i class="bi bi-send me-1"></i>Enviar alerta ahora
+        </button>
+      </form>
+      {% if not email_ok %}
+      <div class="text-muted small mt-2">Configura <code>SMTP_HOST</code> y <code>SMTP_TO</code> para habilitar esto.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Backups -->
+  <div class="col-lg-6">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-2"><i class="bi bi-cloud-download me-2 text-primary"></i>Respaldos</h6>
+      <p class="text-muted small">
+        Crea un respaldo manual ahora. Para respaldos diarios automáticos,
+        ejecuta <code>registrar_backup_programado.bat</code> una vez (como administrador).
+      </p>
+      <form method="post" action="{{ url_for('ejecutar_backup') }}" class="mb-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-success btn-sm">
+          <i class="bi bi-archive me-1"></i>Crear respaldo ahora
+        </button>
+      </form>
+      {% if backups %}
+      <div class="small fw-semibold mb-1">Últimos respaldos:</div>
+      <ul class="list-unstyled small mb-0" style="max-height:220px;overflow-y:auto">
+        {% for b in backups %}
+        <li class="d-flex justify-content-between align-items-center border-bottom py-1">
+          <span class="font-monospace">{{ b }}</span>
+          <a href="{{ url_for('descargar_backup', filename=b) }}" class="btn btn-sm btn-link py-0"><i class="bi bi-download"></i></a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="text-muted small">Todavía no hay respaldos.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

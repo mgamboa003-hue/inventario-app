@@ -3,6 +3,11 @@
 
 # Base de datos (no versionar datos de producción)
 inventario.db
+inventario_test*.db
+inventario_smoketest*.db
+
+# Respaldos locales
+backups/
 
 # Python
 __pycache__/
@@ -10,6 +15,7 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+.pytest_cache/
 
 # Entorno virtual
 venv/
@@ -29,3 +35,7 @@ static/uploads/*
 .vscode/
 .idea/
 *.swp
+
+# Archivos temporales del entorno de sincronizacion (no son del proyecto)
+.fuse_hidden*
+.claude/

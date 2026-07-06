@@ -1,93 +1,158 @@
 {% extends "base.html" %}
+{% set editing = producto is not none %}
+{% block title %}{{ 'Editar' if editing else 'Nuevo' }} repuesto — Wintec{% endblock %}
+{% block topbar_title %}{{ 'Editar repuesto' if editing else 'Nuevo repuesto' }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('listar_productos') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+{% endblock %}
+
 {% block content %}
-<h2>{{ "Editar producto" if producto else "Nuevo producto" }}</h2>
+<div class="row justify-content-center">
+  <div class="col-xl-9">
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-<form method="post" enctype="multipart/form-data" class="mt-3">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div class="form-row">
-    <div class="form-group col-md-6">
-      <label>Código</label>
-      <input type="text" name="codigo" class="form-control"
-             value="{{ producto.codigo if producto else '' }}">
-    </div>
-    <div class="form-group col-md-6">
-      <label>Nombre</label>
-      <input type="text" name="nombre" class="form-control" required
-             value="{{ producto.nombre if producto else '' }}">
-    </div>
-  </div>
+      <div class="row g-3">
+        <!-- Columna izquierda -->
+        <div class="col-lg-8">
+          <div class="table-card p-4 mb-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Información básica</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="nombre" value="{{ producto['nombre'] if editing else '' }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Código</label>
+                <input type="text" class="form-control font-monospace" name="codigo" value="{{ producto['codigo'] if editing else '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Descripción</label>
+                <textarea class="form-control" name="descripcion" rows="2">{{ producto['descripcion'] if editing else '' }}</textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Categoría</label>
+                <input type="text" class="form-control" name="categoria" value="{{ producto['categoria'] if editing else '' }}" list="lista-categorias">
+                <datalist id="lista-categorias"></datalist>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Equipo</label>
+                <input type="text" class="form-control" name="equipo" value="{{ producto['equipo'] if editing else '' }}" list="lista-equipos">
+                <datalist id="lista-equipos"></datalist>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Línea</label>
+                <input type="text" class="form-control" name="linea" value="{{ producto['linea'] if editing else '' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Proveedor</label>
+                <input type="text" class="form-control" name="proveedor" value="{{ producto['proveedor'] if editing else '' }}" list="lista-proveedores">
+                <datalist id="lista-proveedores"></datalist>
+              </div>
+            </div>
+          </div>
 
-  <div class="form-row">
-    <div class="form-group col-md-4">
-      <label>Categoría</label>
-      <input type="text" name="categoria" class="form-control"
-             value="{{ producto.categoria if producto else '' }}">
-    </div>
-    <div class="form-group col-md-4">
-      <label>Equipo</label>
-      <input type="text" name="equipo" class="form-control"
-             value="{{ producto.equipo if producto else '' }}">
-    </div>
-    <div class="form-group col-md-4">
-      <label>Línea</label>
-      <input type="text" name="linea" class="form-control"
-             value="{{ producto.linea if producto else '' }}">
-    </div>
-  </div>
+          <div class="table-card p-4">
+            <h6 class="fw-bold mb-3"><i class="bi bi-boxes me-2 text-success"></i>Stock y ubicación</h6>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Stock actual</label>
+                <input type="number" class="form-control" name="stock_actual" min="0" value="{{ producto['stock_actual'] if editing else 0 }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Stock mínimo</label>
+                <input type="number" class="form-control" name="stock_minimo" min="0" value="{{ producto['stock_minimo'] if editing else 0 }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Precio (ref.)</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" name="precio" min="0" step="0.01" value="{{ producto['precio'] if editing else 0 }}">
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Ubicación en bodega</label>
+                <input type="text" class="form-control" name="ubicacion" value="{{ producto['ubicacion'] if editing else '' }}" placeholder="Ej: Caja 6, Estante B-3" list="lista-ubicaciones">
+                <datalist id="lista-ubicaciones"></datalist>
+                <div class="form-text">Usa el mismo nombre de una ubicación existente para que el QR de esa caja/estante muestre este repuesto.</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-  <div class="form-row">
-    <div class="form-group col-md-4">
-      <label>Stock mínimo</label>
-      <input type="number" name="stock_minimo" class="form-control"
-             value="{{ producto.stock_minimo if producto else 0 }}">
-    </div>
-    <div class="form-group col-md-4">
-      <label>Stock actual</label>
-      <input type="number" name="stock_actual" class="form-control"
-             value="{{ producto.stock_actual if producto else 0 }}">
-    </div>
-  </div>
+        <!-- Columna derecha: Imagen -->
+        <div class="col-lg-4">
+          <div class="table-card p-4">
+            <h6 class="fw-bold mb-3"><i class="bi bi-image me-2 text-warning"></i>Foto del repuesto</h6>
+            {% set img = (producto['imagen_url'] or producto['foto']) if editing else None %}
+            {% if img %}
+              <img src="{{ img }}" class="product-thumb-lg mb-3" id="preview-img" style="display:block">
+            {% else %}
+              <img src="" class="product-thumb-lg mb-3" id="preview-img">
+            {% endif %}
+            <label class="form-label fw-semibold">Subir imagen</label>
+            <input type="file" class="form-control" name="imagen_archivo" id="imagenInput" accept="image/*">
+            <div class="form-text">PNG, JPG, WEBP. Se comprimirá automáticamente.</div>
+            <div class="mt-3">
+              <label class="form-label fw-semibold">O URL de imagen</label>
+              <input type="url" class="form-control" name="imagen_url" placeholder="https://..." value="{{ producto['imagen_url'] if editing else '' }}">
+            </div>
+          </div>
+        </div>
+      </div>
 
-  <div class="form-row">
-    <div class="form-group col-md-4">
-      <label>Ubicación</label>
-      <input type="text" name="ubicacion" class="form-control"
-             value="{{ producto.ubicacion if producto else '' }}">
-    </div>
-    <div class="form-group col-md-4">
-      <label>Proveedor</label>
-      <input type="text" name="proveedor" class="form-control"
-             value="{{ producto.proveedor if producto else '' }}">
-    </div>
-    <div class="form-group col-md-4">
-      <label>Precio</label>
-      <input type="number" step="0.01" name="precio" class="form-control"
-             value="{{ producto.precio if producto else '' }}">
-    </div>
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="bi bi-check-lg me-1"></i>{{ 'Actualizar' if editing else 'Guardar' }}
+        </button>
+        <a href="{{ url_for('listar_productos') }}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
   </div>
+</div>
+{% endblock %}
 
-  <div class="form-group">
-    <label>URL de imagen / foto del producto</label>
-    <input type="text" name="imagen_url" class="form-control"
-           placeholder="https://... o ruta en /static"
-           value="{{ producto.imagen_url if producto else '' }}">
-    <small class="form-text text-muted">
-      Aquí puedes pegar un enlace de imagen o algo como
-      <code>/static/img/cable01.jpg</code>. Más adelante, si quieres,
-      podemos hacer subida de archivos directa.
-    </small>
-  </div>
-    <div class="form-group">
-    <label>Foto del producto</label>
-    <input type="file" name="imagen_archivo" class="form-control-file" accept="image/*" capture="environment">
-    {% if producto and producto.imagen_url %}
-      <small class="form-text text-muted">
-        Imagen actual: {{ producto.imagen_url }}
-      </small>
-    {% endif %}
-  </div>
+{% block scripts %}
+<script>
+// Preview imagen
+document.getElementById('imagenInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.getElementById('preview-img');
+      img.src = e.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+});
 
-  <button type="submit" class="btn btn-success">Guardar</button>
-  <a href="{{ url_for('listar_productos') }}" class="btn btn-secondary">Cancelar</a>
-</form>
+// Autocompletar desde la BD
+fetch('/api/productos').then(r=>r.json()).then(prods => {
+  const cats = [...new Set(prods.map(p=>p.categoria).filter(Boolean))].sort();
+  const equips = [...new Set(prods.map(p=>p.equipo).filter(Boolean))].sort();
+  const provs = [...new Set(prods.map(p=>p.proveedor).filter(Boolean))].sort();
+
+  cats.forEach(c => {
+    const opt = document.createElement('option'); opt.value = c;
+    document.getElementById('lista-categorias').appendChild(opt);
+  });
+  equips.forEach(e => {
+    const opt = document.createElement('option'); opt.value = e;
+    document.getElementById('lista-equipos').appendChild(opt);
+  });
+  provs.forEach(p => {
+    const opt = document.createElement('option'); opt.value = p;
+    document.getElementById('lista-proveedores').appendChild(opt);
+  });
+  const ubis = [...new Set(prods.map(p=>p.ubicacion).filter(Boolean))].sort();
+  ubis.forEach(u => {
+    const opt = document.createElement('option'); opt.value = u;
+    document.getElementById('lista-ubicaciones').appendChild(opt);
+  });
+});
+</script>
 {% endblock %}

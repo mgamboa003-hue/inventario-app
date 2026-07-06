@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Cotizaciones — Wintec{% endblock %}
+{% block topbar_title %}Cotizaciones de proveedores{% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') == 'admin' %}
+  <a href="{{ url_for('nueva_cotizacion') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Nueva cotización
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="table-card mb-3">
+  <div class="p-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <select name="proveedor" class="form-select form-select-sm select2">
+          <option value="">Todos los proveedores</option>
+          {% for pv in proveedores %}<option value="{{ pv }}" {% if pv == proveedor_filtro %}selected{% endif %}>{{ pv }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select name="estado" class="form-select form-select-sm">
+          <option value="">Todos los estados</option>
+          {% for est in ['pendiente','aceptada','rechazada','vencida','cancelada'] %}
+          <option value="{{ est }}" {% if est == estado_filtro %}selected{% endif %}>{{ est|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-1">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-funnel"></i></button>
+        <a href="{{ url_for('listar_cotizaciones') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="table-card">
+  <div class="table-header">
+    <h6><i class="bi bi-file-earmark-text me-2"></i>{{ cotizaciones|length }} cotización{{ 'es' if cotizaciones|length != 1 }}</h6>
+  </div>
+  {% if cotizaciones %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>Proveedor</th>
+          <th>Recibida</th>
+          <th>Vigencia</th>
+          <th class="text-end">Monto</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in cotizaciones %}
+        <tr>
+          <td><span class="badge bg-light text-dark border font-monospace">{{ c['numero'] }}</span></td>
+          <td class="fw-semibold">{{ c['proveedor_nombre'] or '—' }}</td>
+          <td class="text-muted small">{{ c['fecha_recibida'] or '—' }}</td>
+          <td class="text-muted small">{{ c['fecha_vigencia'] or '—' }}</td>
+          <td class="text-end">{{ '{:,.0f}'.format(c['monto_total'] or 0) }}</td>
+          <td>
+            <span class="badge
+              {% if c['estado'] == 'aceptada' %}bg-success
+              {% elif c['estado'] == 'rechazada' or c['estado'] == 'vencida' or c['estado'] == 'cancelada' %}bg-danger
+              {% else %}bg-secondary{% endif %}">
+              {{ c['estado']|capitalize }}
+            </span>
+          </td>
+          <td class="text-end">
+            <a href="{{ url_for('detalle_cotizacion', cid=c['id']) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-file-earmark-text fs-1 d-block mb-2"></i>
+    No hay cotizaciones registradas todavía.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

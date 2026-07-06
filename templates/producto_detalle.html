@@ -1,79 +1,144 @@
 {% extends "base.html" %}
+{% block title %}{{ producto['nombre'] }} — Wintec{% endblock %}
+{% block topbar_title %}Detalle del repuesto{% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') == 'admin' %}
+  <a href="{{ url_for('editar_producto', pid=producto['id']) }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-pencil me-1"></i>Editar
+  </a>
+  {% endif %}
+  <a href="{{ url_for('listar_productos') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+{% endblock %}
 
 {% block content %}
-<h2>Detalle de producto</h2>
+{% set img = producto['imagen_url'] or producto['foto'] %}
+<div class="row g-3">
+  <!-- Imagen -->
+  <div class="col-lg-4">
+    <div class="table-card p-3 text-center">
+      {% if img %}
+        <img src="{{ img }}" class="img-fluid rounded" style="max-height:320px;object-fit:contain;background:#f8f9fa;padding:.5rem;width:100%">
+      {% else %}
+        <div class="d-flex align-items-center justify-content-center bg-light rounded" style="height:260px">
+          <i class="bi bi-image text-muted" style="font-size:4rem"></i>
+        </div>
+      {% endif %}
+    </div>
+  </div>
 
-<div class="card mb-4">
-  <div class="card-body d-flex align-items-start">
-    {% if producto.imagen_url %}
-      <div class="product-photo-wrapper mr-4">
-        <img src="{{ producto.imagen_url }}"
-             alt="Foto del producto"
-             id="productMainImage"
-             class="product-photo">
+  <!-- Info -->
+  <div class="col-lg-8">
+    <div class="table-card p-4 mb-3">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h4 class="fw-bold mb-1">{{ producto['nombre'] }}</h4>
+          {% if producto['codigo'] %}
+          <span class="badge bg-light text-dark border font-monospace fs-6">{{ producto['codigo'] }}</span>
+          {% endif %}
+        </div>
+        {% if producto['stock_actual'] == 0 %}
+          <span class="badge fs-6 badge-stock-zero">Sin stock</span>
+        {% elif producto['stock_actual'] < producto['stock_minimo'] %}
+          <span class="badge fs-6 badge-stock-low">Stock bajo</span>
+        {% else %}
+          <span class="badge fs-6 badge-stock-ok">Stock OK</span>
+        {% endif %}
       </div>
-    {% endif %}
-    <div class="ml-3">
-      <h4>{{ producto.nombre }}</h4>
-      <p class="mb-1"><strong>Código:</strong> {{ producto.codigo or "-" }}</p>
-      <p class="mb-1"><strong>Categoría:</strong> {{ producto.categoria or "-" }}</p>
-      <p class="mb-1"><strong>Equipo:</strong> {{ producto.equipo or "-" }}</p>
-      <p class="mb-1"><strong>Línea:</strong> {{ producto.linea or "-" }}</p>
-      <p class="mb-1"><strong>Ubicación:</strong> {{ producto.ubicacion or "-" }}</p>
-      <p class="mb-1"><strong>Proveedor:</strong> {{ producto.proveedor or "-" }}</p>
-      <p class="mb-1"><strong>Stock actual:</strong> {{ producto.stock_actual }}</p>
-      <p class="mb-1"><strong>Stock mínimo:</strong> {{ producto.stock_minimo }}</p>
+
+      {% if producto['descripcion'] %}
+      <p class="text-muted">{{ producto['descripcion'] }}</p>
+      {% endif %}
+
+      <div class="row g-2 mt-1">
+        {% macro info_row(icon, label, value) %}
+        {% if value %}
+        <div class="col-sm-6">
+          <div class="d-flex align-items-center gap-2 py-1">
+            <i class="bi bi-{{ icon }} text-muted"></i>
+            <span class="text-muted small">{{ label }}:</span>
+            <span class="fw-semibold small">{{ value }}</span>
+          </div>
+        </div>
+        {% endif %}
+        {% endmacro %}
+        {{ info_row('tags', 'Categoría', producto['categoria']) }}
+        {{ info_row('gear', 'Equipo', producto['equipo']) }}
+        {{ info_row('diagram-3', 'Línea', producto['linea']) }}
+        {{ info_row('building', 'Proveedor', producto['proveedor']) }}
+        {{ info_row('geo-alt', 'Ubicación', producto['ubicacion']) }}
+        {% if producto['precio'] %}
+        <div class="col-sm-6">
+          <div class="d-flex align-items-center gap-2 py-1">
+            <i class="bi bi-currency-dollar text-muted"></i>
+            <span class="text-muted small">Precio ref.:</span>
+            <span class="fw-semibold small">${{ "%.2f"|format(producto['precio']) }}</span>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Stock widget -->
+    <div class="row g-2">
+      <div class="col-6">
+        <div class="stat-card blue text-center p-3">
+          <div class="stat-value">{{ producto['stock_actual'] }}</div>
+          <div class="stat-label">Stock actual</div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="stat-card {% if producto['stock_actual'] < producto['stock_minimo'] %}red{% else %}green{% endif %} text-center p-3">
+          <div class="stat-value">{{ producto['stock_minimo'] }}</div>
+          <div class="stat-label">Stock mínimo</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<h5>Últimos movimientos</h5>
-<table class="table table-sm table-hover bg-white">
-  <thead class="thead-dark">
-    <tr>
-      <th>Fecha</th>
-      <th>Tipo</th>
-      <th>Cantidad</th>
-      <th>Usuario</th>
-      <th>Motivo</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for m in movimientos %}
-      <tr class="{% if m.tipo == 'entrada' %}table-success{% else %}table-warning{% endif %}">
-        <td>{{ m.fecha }}</td>
-        <td>{{ m.tipo|capitalize }}</td>
-        <td>{{ m.cantidad }}</td>
-        <td>{{ m.usuario or "-" }}</td>
-        <td>{{ m.motivo or "-" }}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<a href="{{ url_for('listar_productos') }}" class="btn btn-secondary">Volver</a>
-
-<!-- Modal para zoom de imagen -->
-<div id="imgModal" class="img-modal" onclick="closeImgModal()">
-  <span class="img-modal-close">&times;</span>
-  <img class="img-modal-content" id="imgModalImg">
+<!-- Movimientos -->
+<div class="table-card mt-3">
+  <div class="table-header">
+    <h6><i class="bi bi-clock-history me-2"></i>Historial de movimientos (últimos 50)</h6>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('nuevo_movimiento', tipo='entrada') }}?producto_id={{ producto['id'] }}" class="btn btn-sm btn-success">
+        <i class="bi bi-plus-circle me-1"></i>Entrada
+      </a>
+      <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}?producto_id={{ producto['id'] }}" class="btn btn-sm btn-danger">
+        <i class="bi bi-dash-circle me-1"></i>Salida
+      </a>
+    </div>
+  </div>
+  {% if movimientos %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead><tr>
+        <th>Fecha</th><th>Tipo</th><th class="text-center">Cantidad</th>
+        <th>Usuario</th><th>Motivo</th>
+      </tr></thead>
+      <tbody>
+        {% for m in movimientos %}
+        <tr>
+          <td class="text-muted small">{{ m['fecha'][:16] }}</td>
+          <td>
+            {% if m['tipo'] == 'entrada' %}
+              <span class="badge bg-success"><i class="bi bi-plus"></i> Entrada</span>
+            {% else %}
+              <span class="badge bg-danger"><i class="bi bi-dash"></i> Salida</span>
+            {% endif %}
+          </td>
+          <td class="text-center fw-bold">{{ m['cantidad'] }}</td>
+          <td class="text-muted small">{{ m['usuario'] or '—' }}</td>
+          <td class="text-muted small">{{ m['motivo'] or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-4 text-muted"><i class="bi bi-inbox d-block fs-2 mb-2"></i>Sin movimientos registrados.</div>
+  {% endif %}
 </div>
-
-<script>
-  const mainImg = document.getElementById('productMainImage');
-  const modal = document.getElementById('imgModal');
-  const modalImg = document.getElementById('imgModalImg');
-
-  if (mainImg) {
-    mainImg.addEventListener('click', function (event) {
-      event.stopPropagation();
-      modal.style.display = 'flex';
-      modalImg.src = this.src;
-    });
-  }
-
-  function closeImgModal() {
-    modal.style.display = 'none';
-  }
-</script>
 {% endblock %}
