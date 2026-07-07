@@ -66,7 +66,7 @@
                   <span class="badge bg-secondary">Inactivo</span>
                 {% endif %}
               </td>
-              <td class="text-muted small">{{ u['created_at'][:10] if u['created_at'] else '—' }}</td>
+              <td class="text-muted small">{{ u['created_at']|string|truncate(10, True, '') if u['created_at'] else '—' }}</td>
               <td>
                 <div class="d-flex gap-1 justify-content-end">
                   <!-- Reset password -->

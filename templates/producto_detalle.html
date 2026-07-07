@@ -121,7 +121,7 @@
       <tbody>
         {% for m in movimientos %}
         <tr>
-          <td class="text-muted small">{{ m['fecha'][:16] }}</td>
+          <td class="text-muted small">{{ m['fecha']|string|truncate(16, True, '') }}</td>
           <td>
             {% if m['tipo'] == 'entrada' %}
               <span class="badge bg-success"><i class="bi bi-plus"></i> Entrada</span>
