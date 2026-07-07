@@ -2,6 +2,7 @@
 import io
 import os
 import zipfile
+import urllib.parse
 from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import wraps
@@ -1620,7 +1621,7 @@ def nueva_solicitud():
         })
 
         flash("Solicitud registrada." + (" Se avisó por correo al comprador." if ok else ""), "success")
-        return redirect(url_for("listar_solicitudes"))
+        return redirect(url_for("detalle_solicitud", sid=sol_id))
 
     return render_template("solicitud_form.html")
 
@@ -1646,7 +1647,25 @@ def detalle_solicitud(sid):
         flash("Esa solicitud no es tuya.", "warning")
         return redirect(url_for("listar_solicitudes"))
 
-    return render_template("solicitud_detalle.html", solicitud=solicitud)
+    urgencia_texto = "Urgente" if solicitud["urgencia"] == "urgente" else "Normal"
+    fecha_texto = str(solicitud["fecha_solicitud"])[:16] if solicitud["fecha_solicitud"] else ""
+    lineas = [
+        "*Nueva solicitud - Inventario Wintec*",
+        "",
+        f"📦 Ítem: {solicitud['nombre_item']}",
+        f"🔢 Cantidad: {solicitud['cantidad']}",
+        f"⚡ Urgencia: {urgencia_texto}",
+    ]
+    if solicitud["descripcion"]:
+        lineas.append(f"📝 Detalle: {solicitud['descripcion']}")
+    lineas.append(f"👤 Pide: {solicitud['solicitado_por'] or '-'}")
+    lineas.append(f"📅 Fecha: {fecha_texto}")
+    lineas.append("")
+    lineas.append(f"Ver en la app: {url_for('detalle_solicitud', sid=sid, _external=True)}")
+    texto_whatsapp = "\n".join(lineas)
+    whatsapp_url = "https://wa.me/?text=" + urllib.parse.quote(texto_whatsapp)
+
+    return render_template("solicitud_detalle.html", solicitud=solicitud, whatsapp_url=whatsapp_url)
 
 
 @app.route("/solicitudes/<int:sid>/estado", methods=["POST"])

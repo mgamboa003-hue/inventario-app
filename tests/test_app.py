@@ -565,3 +565,18 @@ def test_no_admin_no_puede_ver_control_de_accesos(client):
     r = client.get("/admin/accesos", follow_redirects=True)
     assert r.status_code == 200
     assert "no tienes permiso" in r.get_data(as_text=True).lower()
+
+
+def test_nueva_solicitud_redirige_a_detalle_con_boton_whatsapp(admin_client):
+    r = admin_client.post("/solicitudes/nueva", data={
+        "nombre_item": "Correa dentada 5M-450", "cantidad": "3", "urgencia": "urgente",
+        "descripcion": "Para la maquina 2",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    # deberia haber aterrizado en la pagina de detalle, no en el listado
+    assert "wa.me" in body
+    assert "Enviar este pedido por WhatsApp" in body
+    # el texto codificado del mensaje debe incluir el nombre del item (url-encoded)
+    import urllib.parse
+    assert urllib.parse.quote("Correa dentada 5M-450") in body

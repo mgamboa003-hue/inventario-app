@@ -10,6 +10,11 @@
 {% block content %}
 <div class="row g-3 justify-content-center">
   <div class="col-lg-7">
+    {% if whatsapp_url %}
+    <a href="{{ whatsapp_url }}" target="_blank" class="btn btn-success w-100 mb-3 py-2">
+      <i class="bi bi-whatsapp me-2"></i>Enviar este pedido por WhatsApp
+    </a>
+    {% endif %}
     <div class="table-card p-4">
       {% if solicitud['foto_url'] %}
       <img src="{{ solicitud['foto_url'] }}" class="mb-3" style="max-width:100%; border-radius:8px;">
@@ -43,7 +48,7 @@
         </div>
       </div>
 
-      {% if session.get('role') == 'admin' %}
+      {% if session.get('role') in ('admin', 'comprador') %}
       <form method="post" action="{{ url_for('cambiar_estado_solicitud', sid=solicitud['id']) }}" class="mt-3">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label class="form-label small fw-semibold">Cambiar estado</label>
