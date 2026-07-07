@@ -21,7 +21,9 @@
   <div class="sidebar-header">
     <a href="{{ url_for('index') }}" class="sidebar-brand">
       {% if logo_path %}
-        <img src="{{ url_for('static', filename='logo_wintec.png') }}" alt="Wintec" class="sidebar-logo">
+        <span class="sidebar-logo-chip">
+          <img src="{{ url_for('static', filename='logo_wintec.png') }}" alt="Wintec" class="sidebar-logo">
+        </span>
       {% else %}
         <span class="brand-icon"><i class="bi bi-boxes"></i></span>
         <span class="brand-text">WINTEC</span>

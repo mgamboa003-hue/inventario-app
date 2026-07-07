@@ -35,7 +35,12 @@ body { background: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; }
   min-height: var(--topbar-h);
 }
 .sidebar-brand { display: flex; align-items: center; gap: .6rem; text-decoration: none; }
-.sidebar-logo { height: 38px; width: auto; object-fit: contain; }
+.sidebar-logo-chip {
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border-radius: 10px; padding: .5rem .75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.sidebar-logo { height: 28px; width: auto; object-fit: contain; display: block; }
 .brand-icon { font-size: 1.5rem; color: #fff; }
 .brand-text { font-size: 1.1rem; font-weight: 700; color: #fff; letter-spacing: .05em; }
 .sidebar-toggle { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; }
