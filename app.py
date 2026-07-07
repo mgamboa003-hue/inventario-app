@@ -251,7 +251,7 @@ def registrar_actividad_sesion():
     try:
         conn = get_db_connection()
         ph = p()
-        conn.execute(
+        conn.cursor().execute(
             f"UPDATE sesiones SET ultima_actividad = {ph} WHERE id = {ph} AND fin IS NULL",
             (ahora_dt.strftime("%Y-%m-%d %H:%M:%S"), session.get("sesion_id")),
         )
@@ -321,7 +321,7 @@ def login():
                         new_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
                         conn2 = get_db_connection()
                         ph2 = p()
-                        conn2.execute(
+                        conn2.cursor().execute(
                             f"UPDATE usuarios SET password = {ph2} WHERE id = {ph2}",
                             (new_hash, usuario["id"])
                         )
@@ -338,7 +338,7 @@ def login():
                         new_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
                         conn2 = get_db_connection()
                         ph2 = p()
-                        conn2.execute(
+                        conn2.cursor().execute(
                             f"UPDATE usuarios SET password = {ph2} WHERE id = {ph2}",
                             (new_hash, usuario["id"])
                         )
@@ -700,7 +700,7 @@ def eliminar_producto(pid):
     conn = get_db_connection()
     ph = p()
     try:
-        conn.execute(f"UPDATE productos SET activo = {ACTIVO_FALSE} WHERE id = {ph}", (pid,))
+        conn.cursor().execute(f"UPDATE productos SET activo = {ACTIVO_FALSE} WHERE id = {ph}", (pid,))
         conn.commit()
         registrar_auditoria("productos", pid, "eliminar", session.get("user_id"), session.get("nombre"),
                              "Producto desactivado (soft delete)")
@@ -717,7 +717,7 @@ def restaurar_producto(pid):
     conn = get_db_connection()
     ph = p()
     try:
-        conn.execute(f"UPDATE productos SET activo = {ACTIVO_TRUE} WHERE id = {ph}", (pid,))
+        conn.cursor().execute(f"UPDATE productos SET activo = {ACTIVO_TRUE} WHERE id = {ph}", (pid,))
         conn.commit()
         registrar_auditoria("productos", pid, "restaurar", session.get("user_id"), session.get("nombre"),
                              "Producto reactivado")
@@ -1184,7 +1184,7 @@ def cambiar_estado_orden(oid):
         nuevo_estado = "pendiente"
     conn = get_db_connection()
     ph = p()
-    conn.execute(f"UPDATE ordenes_compra SET estado = {ph} WHERE id = {ph}", (nuevo_estado, oid))
+    conn.cursor().execute(f"UPDATE ordenes_compra SET estado = {ph} WHERE id = {ph}", (nuevo_estado, oid))
     conn.commit()
     conn.close()
     registrar_auditoria("ordenes_compra", oid, "cambiar_estado", session.get("user_id"), session.get("nombre"),
@@ -1660,7 +1660,7 @@ def cambiar_estado_solicitud(sid):
     ph = p()
     conn = get_db_connection()
     fecha_atendida = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if nuevo_estado in ("comprado", "rechazado", "cancelado") else None
-    conn.execute(
+    conn.cursor().execute(
         f"UPDATE solicitudes SET estado = {ph}, fecha_atendida = {ph}, comprado_por = {ph} WHERE id = {ph}",
         (nuevo_estado, fecha_atendida, session.get("nombre") if nuevo_estado == "comprado" else None, sid),
     )
@@ -1755,7 +1755,7 @@ def reset_password(uid):
     hashed = bcrypt.hashpw(nueva.encode(), bcrypt.gensalt()).decode()
     ph = p()
     conn = get_db_connection()
-    conn.execute(f"UPDATE usuarios SET password = {ph}, failed_attempts = 0, locked_until = NULL WHERE id = {ph}", (hashed, uid))
+    conn.cursor().execute(f"UPDATE usuarios SET password = {ph}, failed_attempts = 0, locked_until = NULL WHERE id = {ph}", (hashed, uid))
     conn.commit()
     conn.close()
     registrar_auditoria("usuarios", uid, "reset_password", session.get("user_id"), session.get("nombre"),
@@ -1823,7 +1823,7 @@ def admin_nuevo_catalogo(tipo):
         conn = get_db_connection()
         ignore = "OR IGNORE" if ph == "?" else ""
         conflict = "ON CONFLICT DO NOTHING" if ph == "%s" else ""
-        conn.execute(f"INSERT {ignore} INTO {tipo} (nombre) VALUES ({ph}) {conflict}".strip(), (nombre,))
+        conn.cursor().execute(f"INSERT {ignore} INTO {tipo} (nombre) VALUES ({ph}) {conflict}".strip(), (nombre,))
         conn.commit()
         registrar_auditoria(tipo, None, "crear", session.get("user_id"), session.get("nombre"), f"'{nombre}' agregado")
         flash(f"'{nombre}' agregado.", "success")
@@ -1843,7 +1843,7 @@ def admin_eliminar_catalogo(tipo, item_id):
     ph = p()
     conn = get_db_connection()
     try:
-        conn.execute(f"DELETE FROM {tipo} WHERE id = {ph}", (item_id,))
+        conn.cursor().execute(f"DELETE FROM {tipo} WHERE id = {ph}", (item_id,))
         conn.commit()
         registrar_auditoria(tipo, item_id, "eliminar", session.get("user_id"), session.get("nombre"))
         flash("Elemento eliminado.", "info")
@@ -1864,7 +1864,7 @@ def nuevo_proveedor():
         conn = get_db_connection()
         ignore = "OR IGNORE" if ph == "?" else ""
         conflict = "ON CONFLICT DO NOTHING" if ph == "%s" else ""
-        conn.execute(
+        conn.cursor().execute(
             f"INSERT {ignore} INTO proveedores (nombre, contacto, email, telefono) VALUES ({ph},{ph},{ph},{ph}) {conflict}".strip(),
             (nombre, request.form.get("contacto",""), request.form.get("email",""), request.form.get("telefono",""))
         )
@@ -1885,7 +1885,7 @@ def eliminar_proveedor(pid):
     ph = p()
     conn = get_db_connection()
     try:
-        conn.execute(f"DELETE FROM proveedores WHERE id = {ph}", (pid,))
+        conn.cursor().execute(f"DELETE FROM proveedores WHERE id = {ph}", (pid,))
         conn.commit()
         registrar_auditoria("proveedores", pid, "eliminar", session.get("user_id"), session.get("nombre"))
         flash("Proveedor eliminado.", "info")

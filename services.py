@@ -32,7 +32,7 @@ def registrar_auditoria(tabla, registro_id, accion, usuario_id=None, usuario=Non
     try:
         conn = get_db_connection()
         ph = p()
-        conn.execute(
+        conn.cursor().execute(
             f"""INSERT INTO auditoria (tabla, registro_id, accion, usuario_id, usuario, detalle)
                 VALUES ({ph},{ph},{ph},{ph},{ph},{ph})""",
             (tabla, registro_id, accion, usuario_id, usuario, str(detalle)[:1000]),
@@ -74,12 +74,12 @@ def registrar_intento_fallido(user_id, intentos_actuales):
     if nuevos_intentos >= MAX_INTENTOS:
         hasta = (datetime.now() + timedelta(minutes=BLOQUEO_MINUTOS))
         hasta_str = hasta.strftime("%Y-%m-%d %H:%M:%S")
-        conn.execute(
+        conn.cursor().execute(
             f"UPDATE usuarios SET failed_attempts = {ph}, locked_until = {ph} WHERE id = {ph}",
             (nuevos_intentos, hasta_str, user_id),
         )
     else:
-        conn.execute(
+        conn.cursor().execute(
             f"UPDATE usuarios SET failed_attempts = {ph} WHERE id = {ph}",
             (nuevos_intentos, user_id),
         )
@@ -91,7 +91,7 @@ def registrar_intento_fallido(user_id, intentos_actuales):
 def resetear_intentos(user_id):
     conn = get_db_connection()
     ph = p()
-    conn.execute(
+    conn.cursor().execute(
         f"UPDATE usuarios SET failed_attempts = 0, locked_until = NULL WHERE id = {ph}",
         (user_id,),
     )
@@ -110,7 +110,7 @@ def generar_api_token(usuario_id, nombre):
     token_hash = _hash_token(token_plano)
     conn = get_db_connection()
     ph = p()
-    conn.execute(
+    conn.cursor().execute(
         f"INSERT INTO api_tokens (usuario_id, nombre, token_hash) VALUES ({ph},{ph},{ph})",
         (usuario_id, nombre, token_hash),
     )
@@ -135,7 +135,7 @@ def verificar_api_token(token_plano):
     row = cur.fetchone()
     if row:
         ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        conn.execute(f"UPDATE api_tokens SET last_used_at = {ph} WHERE id = {ph}", (ahora, row["id"]))
+        conn.cursor().execute(f"UPDATE api_tokens SET last_used_at = {ph} WHERE id = {ph}", (ahora, row["id"]))
         conn.commit()
     conn.close()
     return row
@@ -144,7 +144,7 @@ def verificar_api_token(token_plano):
 def revocar_api_token(token_id):
     conn = get_db_connection()
     ph = p()
-    conn.execute(f"UPDATE api_tokens SET activo = 0 WHERE id = {ph}" if not USE_POSTGRES
+    conn.cursor().execute(f"UPDATE api_tokens SET activo = 0 WHERE id = {ph}" if not USE_POSTGRES
                  else f"UPDATE api_tokens SET activo = FALSE WHERE id = {ph}", (token_id,))
     conn.commit()
     conn.close()
@@ -276,7 +276,7 @@ def asegurar_codigo_producto(producto_id, codigo_actual):
     nuevo_codigo = f"WTC-{producto_id:05d}"
     conn = get_db_connection()
     ph = p()
-    conn.execute(f"UPDATE productos SET codigo = {ph} WHERE id = {ph}", (nuevo_codigo, producto_id))
+    conn.cursor().execute(f"UPDATE productos SET codigo = {ph} WHERE id = {ph}", (nuevo_codigo, producto_id))
     conn.commit()
     conn.close()
     return nuevo_codigo
