@@ -159,4 +159,20 @@ body { background: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; }
 
 /* ── Badges stock ── */
 .badge-stock-ok   { background-color: #d1f0e0; color: #0f6b3a; }
-.badge-stock-l
+.badge-stock-low  { background-color: #fde8d5; color: #7c3a00; }
+.badge-stock-zero { background-color: #f8d7da; color: #842029; }
+
+/* ── Imagen producto ── */
+.product-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: .5rem; border: 1px solid #dee2e6; }
+.product-thumb-lg { max-height: 280px; width: 100%; object-fit: contain; border-radius: .75rem; background: #f8f9fa; padding: .5rem; }
+
+/* ── Foto upload preview ── */
+#preview-img { max-height: 160px; border-radius: .5rem; display: none; margin-top: .5rem; }
+
+/* ── Alerts dashboard ── */
+.alert-stock-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .6rem .75rem; border-radius: .5rem; margin-bottom: .4rem;
+  background: #fff8f5; border: 1px solid #fde8d5;
+  font-size: .85rem;
+}
