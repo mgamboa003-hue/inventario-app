@@ -447,14 +447,25 @@ def index():
         LIMIT 5
     """)
     top_salidas = cur.fetchall()
-    cur.execute("""
-        SELECT date(fecha) AS dia,
-               SUM(CASE WHEN tipo='entrada' THEN cantidad ELSE 0 END) AS entradas,
-               SUM(CASE WHEN tipo='salida' THEN cantidad ELSE 0 END) AS salidas
-        FROM movimientos
-        WHERE date(fecha) >= date('now', '-13 days')
-        GROUP BY dia ORDER BY dia
-    """)
+    if USE_POSTGRES:
+        sql_dias = """
+            SELECT fecha::date AS dia,
+                   SUM(CASE WHEN tipo='entrada' THEN cantidad ELSE 0 END) AS entradas,
+                   SUM(CASE WHEN tipo='salida' THEN cantidad ELSE 0 END) AS salidas
+            FROM movimientos
+            WHERE fecha::date >= CURRENT_DATE - INTERVAL '13 days'
+            GROUP BY dia ORDER BY dia
+        """
+    else:
+        sql_dias = """
+            SELECT date(fecha) AS dia,
+                   SUM(CASE WHEN tipo='entrada' THEN cantidad ELSE 0 END) AS entradas,
+                   SUM(CASE WHEN tipo='salida' THEN cantidad ELSE 0 END) AS salidas
+            FROM movimientos
+            WHERE date(fecha) >= date('now', '-13 days')
+            GROUP BY dia ORDER BY dia
+        """
+    cur.execute(sql_dias)
     filas_dias = cur.fetchall()
     cur.execute(f"""
         SELECT id, codigo, nombre, stock_actual, stock_minimo, categoria, equipo
