@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Etiquetas de ubicaciones — Wintec</title>
   <style>
+    @page { size: 100mm 25mm; margin: 0; }
+    * { box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f1f3f5; }
     .toolbar {
       padding: 14px 20px;
@@ -22,36 +24,43 @@
       color: #fff;
       cursor: pointer;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8mm;
-      padding: 10mm;
-    }
-    .etiqueta {
-      border: 2px dashed #999;
-      border-radius: 10px;
+    .lista {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 14px;
-      background: #fff;
-      text-align: center;
-      break-inside: avoid;
+      gap: 4mm;
+      padding: 6mm 0;
     }
-    .etiqueta img { width: 4.5cm; height: 4.5cm; }
+    .etiqueta {
+      width: 100mm;
+      height: 25mm;
+      border: 1px dashed #999;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 3mm;
+      padding: 2mm 4mm;
+      background: #fff;
+      overflow: hidden;
+      break-inside: avoid;
+      page-break-after: always;
+    }
+    .etiqueta:last-child { page-break-after: auto; }
+    .etiqueta img { width: 20mm; height: 20mm; flex-shrink: 0; }
     .etiqueta .nombre {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: bold;
-      color: #1B4F8A;
+      color: #000;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .vacio { padding: 40px; text-align: center; color: #777; }
     @media print {
       body { background: #fff; }
       .toolbar { display: none; }
-      .grid { grid-template-columns: repeat(2, 1fr); padding: 0; }
+      .lista { padding: 0; gap: 0; }
+      .etiqueta { border: none; }
     }
   </style>
 </head>
@@ -62,11 +71,11 @@
   </div>
 
   {% if etiquetas %}
-  <div class="grid">
+  <div class="lista">
     {% for e in etiquetas %}
     <div class="etiqueta">
-      <div class="nombre">{{ e.nombre }}</div>
       <img src="{{ e.qr_data_uri }}" alt="QR {{ e.nombre }}">
+      <div class="nombre">{{ e.nombre }}</div>
     </div>
     {% endfor %}
   </div>

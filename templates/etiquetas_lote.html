@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Etiquetas de repuestos — Wintec</title>
   <style>
+    @page { size: 100mm 25mm; margin: 0; }
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, Helvetica, sans-serif;
       margin: 0;
@@ -26,41 +28,56 @@
       color: #fff;
       cursor: pointer;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6mm;
-      padding: 10mm;
+    .lista {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4mm;
+      padding: 6mm 0;
     }
     .etiqueta {
+      width: 100mm;
+      height: 25mm;
       border: 1px dashed #999;
-      border-radius: 6px;
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px;
+      gap: 3mm;
+      padding: 2mm 4mm;
       background: #fff;
+      overflow: hidden;
       break-inside: avoid;
+      page-break-after: always;
     }
+    .etiqueta:last-child { page-break-after: auto; }
     .etiqueta img {
-      width: 2.8cm;
-      height: 2.8cm;
+      width: 20mm;
+      height: 20mm;
       flex-shrink: 0;
     }
+    .etiqueta .info { overflow: hidden; white-space: nowrap; min-width: 0; }
     .etiqueta .codigo {
       font-weight: bold;
-      font-size: 14px;
+      font-size: 16px;
       font-family: 'Courier New', monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .etiqueta .nombre {
-      font-size: 12px;
-      margin-top: 3px;
-      line-height: 1.2;
+      font-size: 15px;
+      margin-top: 2px;
+      line-height: 1.15;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .etiqueta .ubicacion {
-      font-size: 10px;
+      font-size: 11px;
       color: #555;
-      margin-top: 3px;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .vacio {
       padding: 40px;
@@ -70,7 +87,8 @@
     @media print {
       body { background: #fff; }
       .toolbar { display: none; }
-      .grid { grid-template-columns: repeat(2, 1fr); padding: 0; }
+      .lista { padding: 0; gap: 0; }
+      .etiqueta { border: none; }
     }
   </style>
 </head>
@@ -81,11 +99,11 @@
   </div>
 
   {% if etiquetas %}
-  <div class="grid">
+  <div class="lista">
     {% for e in etiquetas %}
     <div class="etiqueta">
       <img src="{{ e.qr_data_uri }}" alt="QR {{ e.codigo }}">
-      <div>
+      <div class="info">
         <div class="codigo">{{ e.codigo }}</div>
         <div class="nombre">{{ e.nombre }}</div>
         {% if e.ubicacion %}<div class="ubicacion">Ubic.: {{ e.ubicacion }}</div>{% endif %}

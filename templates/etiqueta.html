@@ -4,19 +4,19 @@
   <meta charset="UTF-8">
   <title>Etiqueta — {{ producto['nombre'] }}</title>
   <style>
+    @page { size: 100mm 25mm; margin: 0; }
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      background: #f1f3f5;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 100vh;
-      margin: 0;
-      background: #f1f3f5;
+      justify-content: center;
     }
-    .toolbar {
-      margin-bottom: 20px;
-    }
+    .toolbar { margin-bottom: 20px; }
     .toolbar button {
       padding: 8px 18px;
       font-size: 14px;
@@ -27,44 +27,54 @@
       cursor: pointer;
     }
     .etiqueta {
-      width: 7.5cm;
-      height: 5cm;
+      width: 100mm;
+      height: 25mm;
       background: #fff;
       border: 1px solid #999;
-      border-radius: 6px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px;
-      box-sizing: border-box;
+      gap: 3mm;
+      padding: 2mm 4mm;
+      overflow: hidden;
     }
     .etiqueta img {
-      width: 3.2cm;
-      height: 3.2cm;
+      width: 20mm;
+      height: 20mm;
       flex-shrink: 0;
     }
     .etiqueta .info {
       overflow: hidden;
+      white-space: nowrap;
+      min-width: 0;
     }
     .etiqueta .codigo {
       font-weight: bold;
-      font-size: 15px;
+      font-size: 16px;
       font-family: 'Courier New', monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .etiqueta .nombre {
-      font-size: 13px;
-      margin-top: 4px;
-      line-height: 1.2;
+      font-size: 15px;
+      margin-top: 2px;
+      line-height: 1.15;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .etiqueta .ubicacion {
       font-size: 11px;
       color: #555;
-      margin-top: 4px;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     @media print {
-      body { background: #fff; }
+      body { background: #fff; min-height: 0; }
       .toolbar { display: none; }
-      .etiqueta { border: 1px dashed #999; }
+      .etiqueta { border: none; }
     }
   </style>
 </head>

@@ -4,15 +4,17 @@
   <meta charset="UTF-8">
   <title>Etiqueta ubicación — {{ ubicacion['nombre'] }}</title>
   <style>
+    @page { size: 100mm 25mm; margin: 0; }
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      background: #f1f3f5;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 100vh;
-      margin: 0;
-      background: #f1f3f5;
+      justify-content: center;
     }
     .toolbar { margin-bottom: 20px; }
     .toolbar button {
@@ -25,38 +27,44 @@
       cursor: pointer;
     }
     .etiqueta {
-      width: 10cm;
-      height: 10cm;
+      width: 100mm;
+      height: 25mm;
       background: #fff;
-      border: 2px solid #1B4F8A;
-      border-radius: 10px;
+      border: 1px solid #999;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 16px;
-      box-sizing: border-box;
-      text-align: center;
+      gap: 3mm;
+      padding: 2mm 4mm;
+      overflow: hidden;
     }
     .etiqueta img {
-      width: 6.5cm;
-      height: 6.5cm;
+      width: 20mm;
+      height: 20mm;
+      flex-shrink: 0;
+    }
+    .etiqueta .texto {
+      overflow: hidden;
+      white-space: nowrap;
     }
     .etiqueta .nombre {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: bold;
-      color: #1B4F8A;
+      color: #000;
       line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .etiqueta .hint {
-      font-size: 12px;
+      font-size: 9px;
       color: #777;
+      margin-top: 2px;
     }
     @media print {
-      body { background: #fff; }
+      body { background: #fff; min-height: 0; }
       .toolbar { display: none; }
-      .etiqueta { border: 2px dashed #999; }
+      .etiqueta { border: none; }
     }
   </style>
 </head>
@@ -65,9 +73,11 @@
     <button onclick="window.print()">Imprimir etiqueta</button>
   </div>
   <div class="etiqueta">
-    <div class="nombre">{{ ubicacion['nombre'] }}</div>
     <img src="{{ qr_data_uri }}" alt="QR {{ ubicacion['nombre'] }}">
-    <div class="hint">Escanea para ver el contenido</div>
+    <div class="texto">
+      <div class="nombre">{{ ubicacion['nombre'] }}</div>
+      <div class="hint">Escanea para ver el contenido</div>
+    </div>
   </div>
 </body>
 </html>
