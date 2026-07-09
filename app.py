@@ -1955,6 +1955,47 @@ def crear_usuario():
     return redirect(url_for("admin_usuarios"))
 
 
+@app.route("/admin/usuarios/<int:uid>/editar", methods=["POST"])
+@admin_required
+def editar_usuario(uid):
+    nombre = (request.form.get("nombre") or "").strip()
+    role = request.form.get("role", "viewer")
+    if role not in ("admin", "viewer", "solicitante", "comprador"):
+        flash("Rol invalido.", "danger")
+        return redirect(url_for("admin_usuarios"))
+    if uid == session.get("user_id") and role != "admin":
+        flash("No puedes quitarte el rol de administrador a ti mismo.", "warning")
+        return redirect(url_for("admin_usuarios"))
+
+    ph = p()
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(f"SELECT nombre, role, planta FROM usuarios WHERE id = {ph}", (uid,))
+    actual = cur.fetchone()
+    if not actual:
+        conn.close()
+        flash("Usuario no encontrado.", "warning")
+        return redirect(url_for("admin_usuarios"))
+
+    planta = actual["planta"]
+    if role in ROLES_RESTRINGIDOS_POR_PLANTA:
+        if planta not in PLANTAS:
+            planta = "quilicura"
+    else:
+        planta = None
+
+    cur.execute(
+        f"UPDATE usuarios SET nombre = {ph}, role = {ph}, planta = {ph} WHERE id = {ph}",
+        (nombre, role, planta, uid),
+    )
+    conn.commit()
+    conn.close()
+    registrar_auditoria("usuarios", uid, "editar", session.get("user_id"), session.get("nombre"),
+                         f"Nombre/rol actualizado: '{actual['nombre']}' ({actual['role']}) -> '{nombre}' ({role})")
+    flash("Usuario actualizado.", "success")
+    return redirect(url_for("admin_usuarios"))
+
+
 @app.route("/admin/usuarios/<int:uid>/toggle", methods=["POST"])
 @admin_required
 def toggle_usuario(uid):

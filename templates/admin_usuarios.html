@@ -90,6 +90,10 @@
               <td class="text-muted small">{{ u['created_at']|string|truncate(10, True, '') if u['created_at'] else '—' }}</td>
               <td>
                 <div class="d-flex gap-1 justify-content-end">
+                  <!-- Editar nombre/rol -->
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEditar{{ u['id'] }}" title="Editar nombre y rol">
+                    <i class="bi bi-pencil"></i>
+                  </button>
                   <!-- Reset password -->
                   <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalReset{{ u['id'] }}" title="Cambiar contraseña">
                     <i class="bi bi-key"></i>
@@ -106,6 +110,44 @@
                 </div>
               </td>
             </tr>
+            <!-- Modal editar nombre/rol -->
+            <div class="modal fade" id="modalEditar{{ u['id'] }}" tabindex="-1">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h6 class="modal-title">Editar — {{ u['username'] }}</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="post" action="{{ url_for('editar_usuario', uid=u['id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-body">
+                      <div class="mb-2">
+                        <label class="form-label small fw-semibold">Nombre completo</label>
+                        <input type="text" class="form-control form-control-sm" name="nombre" value="{{ u['nombre'] or '' }}">
+                      </div>
+                      <div class="mb-1">
+                        <label class="form-label small fw-semibold">Rol</label>
+                        <select name="role" class="form-select form-select-sm" {% if u['id'] == session.get('user_id') %}disabled{% endif %}>
+                          <option value="viewer" {% if u['role'] == 'viewer' %}selected{% endif %}>Solo lectura</option>
+                          <option value="solicitante" {% if u['role'] == 'solicitante' %}selected{% endif %}>Solicitante (equipo de mantenimiento)</option>
+                          <option value="comprador" {% if u['role'] == 'comprador' %}selected{% endif %}>Comprador (gestiona solicitudes)</option>
+                          <option value="admin" {% if u['role'] == 'admin' %}selected{% endif %}>Administrador</option>
+                        </select>
+                        {% if u['id'] == session.get('user_id') %}
+                        <input type="hidden" name="role" value="{{ u['role'] }}">
+                        <div class="form-text" style="font-size:.72rem">No puedes cambiar tu propio rol.</div>
+                        {% else %}
+                        <div class="form-text" style="font-size:.72rem">Si cambias a Solicitante/Solo lectura, revisa la planta despues de guardar.</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
             <!-- Modal reset password -->
             <div class="modal fade" id="modalReset{{ u['id'] }}" tabindex="-1">
               <div class="modal-dialog modal-sm">

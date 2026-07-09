@@ -857,3 +857,41 @@ def test_toggle_usuario_activa_y_desactiva(client):
 
     r2 = client.post(f"/admin/usuarios/{uid}/toggle", follow_redirects=True)
     assert r2.status_code == 200
+
+
+def test_admin_puede_editar_nombre_y_rol_de_usuario(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "editable1", "password": "clave123", "nombre": "Nombre Viejo", "role": "viewer", "planta": "quilicura",
+    })
+    body = client.get("/admin/usuarios").get_data(as_text=True)
+    import re
+    m = re.search(r"<strong>editable1</strong>.*?/admin/usuarios/(\d+)/editar", body, re.DOTALL)
+    assert m, "no se encontro el id del usuario"
+    uid = m.group(1)
+
+    r = client.post(f"/admin/usuarios/{uid}/editar", data={
+        "nombre": "Nombre Nuevo", "role": "comprador",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    body2 = r.get_data(as_text=True)
+    assert "Usuario actualizado" in body2
+    assert "Nombre Nuevo" in body2
+    assert "Comprador" in body2
+
+    # como ahora es comprador, ya no deberia mostrar el dropdown de planta (deberia decir "Ambas")
+    idx = body2.find("Nombre Nuevo")
+    seccion = body2[idx:idx+600]
+    assert "Ambas" in seccion
+
+
+def test_admin_no_puede_quitarse_a_si_mismo_el_rol_admin(admin_client):
+    body = admin_client.get("/admin/usuarios").get_data(as_text=True)
+    import re
+    m = re.search(r'admin</strong>.*?/admin/usuarios/(\d+)/editar', body, re.DOTALL)
+    assert m
+    uid = m.group(1)
+    r = admin_client.post(f"/admin/usuarios/{uid}/editar", data={
+        "nombre": "Administrador", "role": "viewer",
+    }, follow_redirects=True)
+    assert "no puedes quitarte" in r.get_data(as_text=True).lower()
