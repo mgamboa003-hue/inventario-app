@@ -235,6 +235,18 @@ def forzar_https():
 
 
 @app.before_request
+def forzar_cambio_password():
+    """Si el usuario tiene una contrasena temporal/generica pendiente, lo obliga
+    a cambiarla antes de poder usar el resto de la app."""
+    if not session.get("logged_in") or not session.get("debe_cambiar_password"):
+        return
+    endpoints_permitidos = ("cambiar_password_obligatorio", "logout", "static")
+    if request.endpoint in endpoints_permitidos:
+        return
+    return redirect(url_for("cambiar_password_obligatorio"))
+
+
+@app.before_request
 def registrar_actividad_sesion():
     """Actualiza 'ultima_actividad' de la sesion actual (con throttle de 60s para no saturar la BD)."""
     if not session.get("logged_in") or not session.get("sesion_id"):
@@ -356,6 +368,10 @@ def login():
                 session["nombre"] = usuario["nombre"] or username
                 session["role"] = usuario["role"]
                 session["user_id"] = usuario["id"]
+                try:
+                    session["debe_cambiar_password"] = bool(usuario["debe_cambiar_password"])
+                except (KeyError, IndexError):
+                    session["debe_cambiar_password"] = False
 
                 ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 ip_cliente = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
@@ -389,6 +405,39 @@ def login():
 
         flash("Usuario o contrasena incorrectos.", "danger")
     return render_template("login.html", next=request.args.get("next", ""))
+
+
+@app.route("/cambiar-password-obligatorio", methods=["GET", "POST"])
+@login_required
+def cambiar_password_obligatorio():
+    if not session.get("debe_cambiar_password"):
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        nueva = request.form.get("nueva_password", "")
+        confirmar = request.form.get("confirmar_password", "")
+        if len(nueva) < 6:
+            flash("La nueva contrasena debe tener al menos 6 caracteres.", "danger")
+        elif nueva != confirmar:
+            flash("Las contrasenas no coinciden.", "danger")
+        else:
+            hashed = bcrypt.hashpw(nueva.encode(), bcrypt.gensalt()).decode()
+            ph = p()
+            conn = get_db_connection()
+            conn.cursor().execute(
+                f"UPDATE usuarios SET password = {ph}, debe_cambiar_password = {ph} WHERE id = {ph}",
+                (hashed, 0, session.get("user_id"))
+            )
+            conn.commit()
+            conn.close()
+            session["debe_cambiar_password"] = False
+            registrar_auditoria("usuarios", session.get("user_id"), "cambiar_password",
+                                 session.get("user_id"), session.get("nombre"), "Contrasena cambiada por el usuario")
+            flash("Contrasena actualizada correctamente.", "success")
+            destino = url_for("listar_solicitudes") if session.get("role") == "comprador" else url_for("index")
+            return redirect(destino)
+
+    return render_template("cambiar_password_obligatorio.html")
 
 
 @app.route("/logout")
@@ -1107,6 +1156,9 @@ def exportar_abc():
 @login_required
 @admin_required
 def etiqueta_producto(pid):
+    formato = request.args.get("formato", "zebra")
+    if formato not in ("zebra", "normal"):
+        formato = "zebra"
     conn = get_db_connection()
     cur = conn.cursor()
     ph = p()
@@ -1119,7 +1171,10 @@ def etiqueta_producto(pid):
 
     codigo = asegurar_codigo_producto(pid, producto["codigo"])
     qr_data_uri = generar_qr_base64(codigo)
-    return render_template("etiqueta.html", producto=producto, codigo=codigo, qr_data_uri=qr_data_uri)
+    url_zebra = url_for("etiqueta_producto", pid=pid, formato="zebra")
+    url_normal = url_for("etiqueta_producto", pid=pid, formato="normal")
+    return render_template("etiqueta.html", producto=producto, codigo=codigo, qr_data_uri=qr_data_uri,
+                            formato=formato, url_zebra=url_zebra, url_normal=url_normal)
 
 
 @app.route("/productos/etiquetas")
@@ -1128,6 +1183,9 @@ def etiqueta_producto(pid):
 def etiquetas_lote():
     ids_param = request.args.get("ids", "").strip()
     solo_stock_bajo = request.args.get("stock_bajo", "").strip() == "1"
+    formato = request.args.get("formato", "zebra")
+    if formato not in ("zebra", "normal"):
+        formato = "zebra"
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -1157,7 +1215,15 @@ def etiquetas_lote():
             "ubicacion": prod["ubicacion"], "qr_data_uri": generar_qr_base64(codigo),
         })
 
-    return render_template("etiquetas_lote.html", etiquetas=etiquetas)
+    extra = {}
+    if ids_param:
+        extra["ids"] = ids_param
+    if solo_stock_bajo:
+        extra["stock_bajo"] = "1"
+    url_zebra = url_for("etiquetas_lote", formato="zebra", **extra)
+    url_normal = url_for("etiquetas_lote", formato="normal", **extra)
+    return render_template("etiquetas_lote.html", etiquetas=etiquetas, formato=formato,
+                            url_zebra=url_zebra, url_normal=url_normal)
 
 
 # ORDENES DE COMPRA
@@ -1321,6 +1387,9 @@ def ver_ubicacion(uid):
 @login_required
 @admin_required
 def etiqueta_ubicacion(uid):
+    formato = request.args.get("formato", "zebra")
+    if formato not in ("zebra", "normal"):
+        formato = "zebra"
     conn = get_db_connection()
     cur = conn.cursor()
     ph = p()
@@ -1333,7 +1402,11 @@ def etiqueta_ubicacion(uid):
 
     url_ubicacion = url_for("ver_ubicacion", uid=uid, _external=True)
     qr_data_uri = generar_qr_base64(url_ubicacion, box_size=10)
-    return render_template("etiqueta_ubicacion.html", ubicacion=ubicacion, qr_data_uri=qr_data_uri, url_ubicacion=url_ubicacion)
+    url_zebra = url_for("etiqueta_ubicacion", uid=uid, formato="zebra")
+    url_normal = url_for("etiqueta_ubicacion", uid=uid, formato="normal")
+    return render_template("etiqueta_ubicacion.html", ubicacion=ubicacion, qr_data_uri=qr_data_uri,
+                            url_ubicacion=url_ubicacion, formato=formato,
+                            url_zebra=url_zebra, url_normal=url_normal)
 
 
 @app.route("/ubicaciones/etiquetas")
@@ -1341,6 +1414,9 @@ def etiqueta_ubicacion(uid):
 @admin_required
 def etiquetas_ubicaciones_lote():
     ids_param = request.args.get("ids", "").strip()
+    formato = request.args.get("formato", "zebra")
+    if formato not in ("zebra", "normal"):
+        formato = "zebra"
     conn = get_db_connection()
     cur = conn.cursor()
     ph = p()
@@ -1364,7 +1440,13 @@ def etiquetas_ubicaciones_lote():
             "nombre": u["nombre"],
             "qr_data_uri": generar_qr_base64(url_ubicacion, box_size=10),
         })
-    return render_template("etiquetas_ubicaciones_lote.html", etiquetas=etiquetas)
+    extra = {}
+    if ids_param:
+        extra["ids"] = ids_param
+    url_zebra = url_for("etiquetas_ubicaciones_lote", formato="zebra", **extra)
+    url_normal = url_for("etiquetas_ubicaciones_lote", formato="normal", **extra)
+    return render_template("etiquetas_ubicaciones_lote.html", etiquetas=etiquetas, formato=formato,
+                            url_zebra=url_zebra, url_normal=url_normal)
 
 
 # COTIZACIONES
@@ -1709,7 +1791,7 @@ def cambiar_estado_solicitud(sid):
 def admin_usuarios():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, username, nombre, role, activo, created_at FROM usuarios ORDER BY id")
+    cur.execute("SELECT id, username, nombre, role, activo, created_at, debe_cambiar_password FROM usuarios ORDER BY id")
     usuarios = cur.fetchall()
     conn.close()
     return render_template("admin_usuarios.html", usuarios=usuarios)
@@ -1736,8 +1818,8 @@ def crear_usuario():
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            f"INSERT INTO usuarios (username, password, nombre, role) VALUES ({ph},{ph},{ph},{ph})",
-            (username, hashed, nombre, role)
+            f"INSERT INTO usuarios (username, password, nombre, role, debe_cambiar_password) VALUES ({ph},{ph},{ph},{ph},{ph})",
+            (username, hashed, nombre, role, 1)
         )
         conn.commit()
         cur.execute(f"SELECT id FROM usuarios WHERE username = {ph}", (username,))
@@ -1785,12 +1867,15 @@ def reset_password(uid):
     hashed = bcrypt.hashpw(nueva.encode(), bcrypt.gensalt()).decode()
     ph = p()
     conn = get_db_connection()
-    conn.cursor().execute(f"UPDATE usuarios SET password = {ph}, failed_attempts = 0, locked_until = NULL WHERE id = {ph}", (hashed, uid))
+    conn.cursor().execute(
+        f"UPDATE usuarios SET password = {ph}, failed_attempts = 0, locked_until = NULL, debe_cambiar_password = {ph} WHERE id = {ph}",
+        (hashed, 1, uid)
+    )
     conn.commit()
     conn.close()
     registrar_auditoria("usuarios", uid, "reset_password", session.get("user_id"), session.get("nombre"),
                          "Contrasena restablecida por admin")
-    flash("Contrasena actualizada.", "success")
+    flash("Contrasena actualizada. Se le pedira cambiarla en su proximo ingreso.", "success")
     return redirect(url_for("admin_usuarios"))
 
 

@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <title>Etiqueta — {{ producto['nombre'] }}</title>
   <style>
+    {% if formato == 'normal' %}
+    @page { size: 7.5cm 5cm; margin: 0; }
+    {% else %}
     @page { size: 100mm 25mm; margin: 0; }
+    {% endif %}
     * { box-sizing: border-box; }
     body {
       font-family: Arial, Helvetica, sans-serif;
@@ -16,8 +20,8 @@
       min-height: 100vh;
       justify-content: center;
     }
-    .toolbar { margin-bottom: 20px; }
-    .toolbar button {
+    .toolbar { margin-bottom: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .toolbar button, .toolbar a {
       padding: 8px 18px;
       font-size: 14px;
       border: none;
@@ -25,38 +29,28 @@
       background: #1B4F8A;
       color: #fff;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
     }
+    .toolbar a.activo { background: #123a66; box-shadow: inset 0 0 0 2px #fff; }
+    .toolbar a.inactivo { background: #6c8caf; }
+
     .etiqueta {
-      width: 100mm;
-      height: 25mm;
       background: #fff;
       border: 1px solid #999;
       display: flex;
       align-items: center;
-      gap: 3mm;
-      padding: 2mm 4mm;
       overflow: hidden;
     }
-    .etiqueta img {
-      width: 20mm;
-      height: 20mm;
-      flex-shrink: 0;
-    }
-    .etiqueta .info {
-      overflow: hidden;
-      white-space: nowrap;
-      min-width: 0;
-    }
+    .etiqueta .info { overflow: hidden; min-width: 0; }
     .etiqueta .codigo {
       font-weight: bold;
-      font-size: 16px;
       font-family: 'Courier New', monospace;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .etiqueta .nombre {
-      font-size: 15px;
       margin-top: 2px;
       line-height: 1.15;
       overflow: hidden;
@@ -64,13 +58,28 @@
       white-space: nowrap;
     }
     .etiqueta .ubicacion {
-      font-size: 11px;
       color: #555;
       margin-top: 2px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
+    /* ── Formato Zebra (rollo 100x25mm) ── */
+    .fmt-zebra .etiqueta { width: 100mm; height: 25mm; gap: 3mm; padding: 2mm 4mm; }
+    .fmt-zebra .etiqueta img { width: 20mm; height: 20mm; flex-shrink: 0; }
+    .fmt-zebra .codigo { font-size: 16px; }
+    .fmt-zebra .nombre { font-size: 15px; }
+    .fmt-zebra .ubicacion { font-size: 11px; }
+
+    /* ── Formato hoja normal ── */
+    .fmt-normal .etiqueta { width: 7.5cm; height: 5cm; gap: 12px; padding: 10px; border-radius: 6px; }
+    .fmt-normal .etiqueta img { width: 3.2cm; height: 3.2cm; flex-shrink: 0; }
+    .fmt-normal .info { white-space: normal; }
+    .fmt-normal .codigo { font-size: 15px; }
+    .fmt-normal .nombre { font-size: 13px; white-space: normal; }
+    .fmt-normal .ubicacion { font-size: 11px; white-space: normal; }
+
     @media print {
       body { background: #fff; min-height: 0; }
       .toolbar { display: none; }
@@ -78,8 +87,10 @@
     }
   </style>
 </head>
-<body>
+<body class="fmt-{{ formato }}">
   <div class="toolbar">
+    <a href="{{ url_zebra }}" class="{{ 'activo' if formato == 'zebra' else 'inactivo' }}">Formato Zebra (rollo)</a>
+    <a href="{{ url_normal }}" class="{{ 'activo' if formato == 'normal' else 'inactivo' }}">Formato hoja normal</a>
     <button onclick="window.print()">Imprimir etiqueta</button>
   </div>
   <div class="etiqueta">

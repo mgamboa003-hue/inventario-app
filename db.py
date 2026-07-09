@@ -380,6 +380,7 @@ def _run_migrations(conn):
         ("usuarios",   "locked_until",    "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),
         ("usuarios",   "ultimo_login",    "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),
         ("usuarios",   "ultima_ip",       "TEXT"),
+        ("usuarios",   "debe_cambiar_password", "INTEGER DEFAULT 0" if not USE_POSTGRES else "BOOLEAN DEFAULT FALSE"),
         ("productos",  "descripcion",     "TEXT"),
         ("productos",  "updated_at",      "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),
         ("productos",  "created_at",      "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),

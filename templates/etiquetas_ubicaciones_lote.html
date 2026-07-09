@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <title>Etiquetas de ubicaciones — Wintec</title>
   <style>
+    {% if formato == 'normal' %}
+    @page { size: auto; margin: 10mm; }
+    {% else %}
     @page { size: 100mm 25mm; margin: 0; }
+    {% endif %}
     * { box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f1f3f5; }
     .toolbar {
@@ -14,8 +18,11 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
     }
-    .toolbar button {
+    .toolbar-links { display: flex; gap: 8px; }
+    .toolbar button, .toolbar a {
       padding: 8px 18px;
       font-size: 14px;
       border: none;
@@ -23,51 +30,53 @@
       background: #1B4F8A;
       color: #fff;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
     }
-    .lista {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4mm;
-      padding: 6mm 0;
-    }
+    .toolbar a.activo { background: #123a66; box-shadow: inset 0 0 0 2px #fff; }
+    .toolbar a.inactivo { background: #6c8caf; }
+
     .etiqueta {
-      width: 100mm;
-      height: 25mm;
       border: 1px dashed #999;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 3mm;
-      padding: 2mm 4mm;
       background: #fff;
+      display: flex;
+      align-items: center;
       overflow: hidden;
       break-inside: avoid;
-      page-break-after: always;
     }
-    .etiqueta:last-child { page-break-after: auto; }
-    .etiqueta img { width: 20mm; height: 20mm; flex-shrink: 0; }
-    .etiqueta .nombre {
-      font-size: 22px;
-      font-weight: bold;
-      color: #000;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    .etiqueta .nombre { font-weight: bold; color: #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Formato Zebra: lista, una etiqueta por página del rollo ── */
+    .fmt-zebra .lista { display: flex; flex-direction: column; align-items: center; gap: 4mm; padding: 6mm 0; }
+    .fmt-zebra .etiqueta { width: 100mm; height: 25mm; flex-direction: row; gap: 3mm; padding: 2mm 4mm; page-break-after: always; }
+    .fmt-zebra .etiqueta:last-child { page-break-after: auto; }
+    .fmt-zebra .etiqueta img { width: 20mm; height: 20mm; flex-shrink: 0; }
+    .fmt-zebra .nombre { font-size: 22px; }
+
+    /* ── Formato hoja normal: cuadrícula de 2 columnas ── */
+    .fmt-normal .lista { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8mm; padding: 10mm; }
+    .fmt-normal .etiqueta { flex-direction: column; justify-content: center; text-align: center; gap: 8px; padding: 14px; border-radius: 10px; }
+    .fmt-normal .etiqueta img { width: 4.5cm; height: 4.5cm; }
+    .fmt-normal .nombre { font-size: 20px; white-space: normal; }
+
     .vacio { padding: 40px; text-align: center; color: #777; }
     @media print {
       body { background: #fff; }
       .toolbar { display: none; }
-      .lista { padding: 0; gap: 0; }
+      .fmt-zebra .lista { padding: 0; gap: 0; }
+      .fmt-normal .lista { padding: 0; }
       .etiqueta { border: none; }
     }
   </style>
 </head>
-<body>
+<body class="fmt-{{ formato }}">
   <div class="toolbar">
     <div>{{ etiquetas|length }} etiqueta{{ 's' if etiquetas|length != 1 }} de ubicación</div>
-    <button onclick="window.print()">Imprimir todas</button>
+    <div class="toolbar-links">
+      <a href="{{ url_zebra }}" class="{{ 'activo' if formato == 'zebra' else 'inactivo' }}">Formato Zebra (rollo)</a>
+      <a href="{{ url_normal }}" class="{{ 'activo' if formato == 'normal' else 'inactivo' }}">Formato hoja normal</a>
+      <button onclick="window.print()">Imprimir todas</button>
+    </div>
   </div>
 
   {% if etiquetas %}

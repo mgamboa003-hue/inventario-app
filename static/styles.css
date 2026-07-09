@@ -13,6 +13,28 @@
   --text-muted-sidebar: #8fa8c8;
 }
 
+/* ── Tema de color del menu segun el rol del usuario ──
+   Admin se queda con el azul de --root (sin override).
+   Los demas roles tienen un acento distinto para identificarlos a simple vista. */
+body.role-solicitante {
+  --sidebar-hover: #1f4d34;
+  --sidebar-active: #1B6E44;
+  --accent: #1B6E44;
+  --accent-light: #2F8F5F;
+}
+body.role-comprador {
+  --sidebar-hover: #7a5207;
+  --sidebar-active: #A9720A;
+  --accent: #A9720A;
+  --accent-light: #C98F1D;
+}
+body.role-viewer {
+  --sidebar-hover: #5c1620;
+  --sidebar-active: #7A1F2B;
+  --accent: #7A1F2B;
+  --accent-light: #9E2E3D;
+}
+
 /* ── Layout ── */
 body { background: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; }
 

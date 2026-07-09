@@ -6,6 +6,15 @@ Ejecutar con: pytest -v
 """
 
 
+def _completar_cambio_password_obligatorio(client, password):
+    """Los usuarios nuevos (o con password reseteado) deben cambiar su
+    contrasena en el primer acceso. Los tests que crean un usuario nuevo
+    y luego intentan usar la app deben completar ese paso primero."""
+    client.post("/cambiar-password-obligatorio", data={
+        "nueva_password": password, "confirmar_password": password,
+    })
+
+
 def test_login_page_carga(client):
     r = client.get("/login")
     assert r.status_code == 200
@@ -334,6 +343,7 @@ def test_solicitante_puede_crear_y_ver_su_propia_solicitud(client):
 
     # loguear como el solicitante
     client.post("/login", data={"username": "mantenimiento1", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
     r = client.post("/solicitudes/nueva", data={
         "nombre_item": "Llave Allen 5mm", "cantidad": "2", "urgencia": "urgente",
         "descripcion": "Para reparar la maquina 3",
@@ -355,6 +365,7 @@ def test_viewer_puede_ver_pero_no_crear_solicitudes(client):
     client.get("/logout")
 
     client.post("/login", data={"username": "solovista", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
     r = client.get("/solicitudes")
     assert r.status_code == 200
     assert "Cable de red" in r.get_data(as_text=True)
@@ -372,6 +383,7 @@ def test_viewer_no_puede_ver_ordenes_ni_cotizaciones_ni_exportar(client):
     })
     client.get("/logout")
     client.post("/login", data={"username": "solovista2", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
 
     for path in ["/ordenes_compra", "/cotizaciones", "/exportar/stock_bajo", "/productos/1/etiqueta", "/ubicaciones/etiquetas"]:
         r = client.get(path, follow_redirects=True)
@@ -464,7 +476,9 @@ def test_comprador_solo_ve_solicitudes_en_el_menu(client):
     })
     client.get("/logout")
 
-    r = client.post("/login", data={"username": "comprador1", "password": "clave123"}, follow_redirects=True)
+    client.post("/login", data={"username": "comprador1", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    r = client.get("/solicitudes")
     assert r.status_code == 200
     body = r.get_data(as_text=True)
     # el login sin "next" lo manda directo a Solicitudes, no al dashboard
@@ -489,10 +503,12 @@ def test_comprador_puede_cambiar_estado_pero_no_crear_solicitud(client):
     client.get("/logout")
 
     client.post("/login", data={"username": "mantenimiento2", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
     client.post("/solicitudes/nueva", data={"nombre_item": "Sierra circular", "cantidad": "1"})
     client.get("/logout")
 
     client.post("/login", data={"username": "comprador2", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
 
     # no puede crear
     r = client.post("/solicitudes/nueva", data={"nombre_item": "No deberia crear"}, follow_redirects=True)
@@ -562,6 +578,7 @@ def test_no_admin_no_puede_ver_control_de_accesos(client):
     })
     client.get("/logout")
     client.post("/login", data={"username": "solovista3", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
     r = client.get("/admin/accesos", follow_redirects=True)
     assert r.status_code == 200
     assert "no tienes permiso" in r.get_data(as_text=True).lower()
@@ -580,3 +597,95 @@ def test_nueva_solicitud_redirige_a_detalle_con_boton_whatsapp(admin_client):
     # el texto codificado del mensaje debe incluir el nombre del item (url-encoded)
     import urllib.parse
     assert urllib.parse.quote("Correa dentada 5M-450") in body
+
+
+def test_usuario_nuevo_es_obligado_a_cambiar_password(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "nuevo1", "password": "generica123", "nombre": "Nuevo Uno", "role": "viewer",
+    })
+    client.get("/logout")
+
+    client.post("/login", data={"username": "nuevo1", "password": "generica123"})
+    r = client.get("/productos", follow_redirects=True)
+    assert r.status_code == 200
+    assert "/cambiar-password-obligatorio" in r.request.path
+
+
+def test_cambiar_password_obligatorio_desbloquea_la_app(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "nuevo2", "password": "generica123", "nombre": "Nuevo Dos", "role": "viewer",
+    })
+    client.get("/logout")
+
+    client.post("/login", data={"username": "nuevo2", "password": "generica123"})
+    r = client.post("/cambiar-password-obligatorio", data={
+        "nueva_password": "otraclave456", "confirmar_password": "otraclave456",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    assert "/cambiar-password-obligatorio" not in r.request.path
+
+    # ahora puede navegar libremente
+    r = client.get("/productos")
+    assert r.status_code == 200
+
+    # y la contrasena vieja ya no sirve
+    client.get("/logout")
+    r = client.post("/login", data={"username": "nuevo2", "password": "generica123"}, follow_redirects=True)
+    assert "incorrectos" in r.get_data(as_text=True).lower()
+
+
+def test_admin_reset_password_tambien_fuerza_cambio(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "nuevo3", "password": "generica123", "nombre": "Nuevo Tres", "role": "viewer",
+    })
+    body = client.get("/admin/usuarios").get_data(as_text=True)
+
+    import re
+    m = re.search(r"Cambiar contrase\u00f1a . nuevo3.*?/admin/usuarios/(\d+)/reset_password", body, re.DOTALL)
+    assert m, "no se encontro el id del usuario nuevo3 en la pagina de admin"
+    uid = m.group(1)
+
+    client.post(f"/admin/usuarios/{uid}/reset_password", data={"nueva_password": "reseteada789"})
+    client.get("/logout")
+
+    client.post("/login", data={"username": "nuevo3", "password": "reseteada789"})
+    r = client.get("/productos", follow_redirects=True)
+    assert "/cambiar-password-obligatorio" in r.request.path
+
+
+def test_botones_excel_pedidos_etiquetas_solo_para_admin(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "solovista4", "password": "clave123", "nombre": "Solo Vista 4", "role": "viewer",
+    })
+    r_admin = client.get("/productos")
+    body_admin = r_admin.get_data(as_text=True)
+    assert "Imprimir etiquetas" in body_admin
+    assert "Pedidos" in body_admin
+    client.get("/logout")
+
+    client.post("/login", data={"username": "solovista4", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    r = client.get("/productos")
+    body = r.get_data(as_text=True)
+    assert "Imprimir etiquetas" not in body
+    assert ">Pedidos<" not in body
+    assert "Imprimir etiqueta QR" not in body
+
+
+def test_tema_de_color_cambia_segun_el_rol(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    body = client.get("/").get_data(as_text=True)
+    assert 'class="role-admin"' in body
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "solicitante_tema", "password": "clave123", "nombre": "Sol Tema", "role": "solicitante",
+    })
+    client.get("/logout")
+
+    client.post("/login", data={"username": "solicitante_tema", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    body = client.get("/").get_data(as_text=True)
+    assert 'class="role-solicitante"' in body
