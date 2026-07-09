@@ -426,7 +426,7 @@ def cambiar_password_obligatorio():
             conn = get_db_connection()
             conn.cursor().execute(
                 f"UPDATE usuarios SET password = {ph}, debe_cambiar_password = {ph} WHERE id = {ph}",
-                (hashed, 0, session.get("user_id"))
+                (hashed, False, session.get("user_id"))
             )
             conn.commit()
             conn.close()
@@ -1819,7 +1819,7 @@ def crear_usuario():
         cur = conn.cursor()
         cur.execute(
             f"INSERT INTO usuarios (username, password, nombre, role, debe_cambiar_password) VALUES ({ph},{ph},{ph},{ph},{ph})",
-            (username, hashed, nombre, role, 1)
+            (username, hashed, nombre, role, True)
         )
         conn.commit()
         cur.execute(f"SELECT id FROM usuarios WHERE username = {ph}", (username,))
@@ -1869,7 +1869,7 @@ def reset_password(uid):
     conn = get_db_connection()
     conn.cursor().execute(
         f"UPDATE usuarios SET password = {ph}, failed_attempts = 0, locked_until = NULL, debe_cambiar_password = {ph} WHERE id = {ph}",
-        (hashed, 1, uid)
+        (hashed, True, uid)
     )
     conn.commit()
     conn.close()
