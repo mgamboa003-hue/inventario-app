@@ -3,7 +3,8 @@
 {% block topbar_title %}Detalle del repuesto{% endblock %}
 {% block topbar_actions %}
   {% if session.get('role') in ('admin', 'solicitante') and producto['stock_actual'] < producto['stock_minimo'] %}
-  <a href="{{ url_for('nueva_solicitud', producto_id=producto['id'], nombre_item=producto['nombre'], cantidad=(producto['stock_minimo'] - producto['stock_actual']) if producto['stock_minimo'] > producto['stock_actual'] else 1) }}" class="btn btn-warning btn-sm">
+  {% set img_producto = producto['imagen_url'] or producto['foto'] %}
+  <a href="{{ url_for('nueva_solicitud', producto_id=producto['id'], nombre_item=producto['nombre'], cantidad=(producto['stock_minimo'] - producto['stock_actual']) if producto['stock_minimo'] > producto['stock_actual'] else 1, foto_url_pref=img_producto or None) }}" class="btn btn-warning btn-sm">
     <i class="bi bi-cart-plus me-1"></i>Hacer pedido
   </a>
   {% endif %}

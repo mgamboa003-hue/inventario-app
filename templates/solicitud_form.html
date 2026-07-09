@@ -42,8 +42,15 @@
           <textarea class="form-control" name="descripcion" rows="2" placeholder="Marca, medida, para qué equipo es, etc.">{{ descripcion_pref or '' }}</textarea>
         </div>
 
+        <input type="hidden" name="foto_url_existente" value="{{ foto_url_pref or '' }}">
         <div class="mb-4">
-          <label class="form-label fw-semibold">Foto (opcional)</label>
+          <label class="form-label fw-semibold">Foto {% if not foto_url_pref %}(opcional){% endif %}</label>
+          {% if foto_url_pref %}
+          <div class="d-flex align-items-center gap-3 border rounded p-2 mb-2 bg-light">
+            <img src="{{ foto_url_pref }}" style="width:70px;height:70px;object-fit:contain;background:#fff;border-radius:6px" class="border">
+            <div class="small text-muted">Se usará la foto que ya tiene el repuesto. Si tomas una foto nueva abajo, la reemplaza.</div>
+          </div>
+          {% endif %}
           <input type="file" class="form-control" name="foto" accept="image/*" capture="environment">
           <div class="form-text">Puedes tomar la foto directo con la cámara del celular.</div>
         </div>

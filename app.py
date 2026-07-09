@@ -1816,7 +1816,8 @@ def nueva_solicitud():
         if urgencia not in ("normal", "urgente"):
             urgencia = "normal"
 
-        foto_url = save_uploaded_image(request.files.get("foto"))
+        foto_nueva = save_uploaded_image(request.files.get("foto"))
+        foto_url = foto_nueva or (request.form.get("foto_url_existente") or None)
 
         ph = p()
         fecha_ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1849,12 +1850,14 @@ def nueva_solicitud():
     nombre_item_pref = request.args.get("nombre_item", "")
     cantidad_pref = request.args.get("cantidad", type=int)
     descripcion_pref = request.args.get("descripcion", "")
+    foto_url_pref = request.args.get("foto_url_pref", "")
     return render_template(
         "solicitud_form.html",
         producto_id_pref=producto_id_pref,
         nombre_item_pref=nombre_item_pref,
         cantidad_pref=cantidad_pref,
         descripcion_pref=descripcion_pref,
+        foto_url_pref=foto_url_pref,
     )
 
 
@@ -1890,6 +1893,11 @@ def detalle_solicitud(sid):
     ]
     if solicitud["descripcion"]:
         lineas.append(f"📝 Detalle: {solicitud['descripcion']}")
+    if solicitud["foto_url"]:
+        foto_absoluta = solicitud["foto_url"]
+        if foto_absoluta.startswith("/"):
+            foto_absoluta = request.url_root.rstrip("/") + foto_absoluta
+        lineas.append(f"📷 Foto: {foto_absoluta}")
     lineas.append(f"👤 Pide: {solicitud['solicitado_por'] or '-'}")
     lineas.append(f"📅 Fecha: {fecha_texto}")
     lineas.append("")

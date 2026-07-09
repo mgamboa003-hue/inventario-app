@@ -1043,3 +1043,48 @@ def test_boton_hacer_pedido_no_aparece_para_viewer(client):
     _completar_cambio_password_obligatorio(client, "clave123")
     body = client.get(f"/productos/{pid}").get_data(as_text=True)
     assert "Hacer pedido" not in body
+
+
+def test_hacer_pedido_precarga_foto_del_producto_y_la_pasa_a_la_solicitud(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Repuesto con foto bajo stock", "planta": "quilicura",
+        "stock_actual": "1", "stock_minimo": "5", "imagen_url": "https://pub-test.r2.dev/repuesto.webp",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1",
+                ("Repuesto con foto bajo stock",))
+    pid = cur.fetchone()["id"]
+    conn.close()
+
+    detalle = admin_client.get(f"/productos/{pid}").get_data(as_text=True)
+    assert f"foto_url_pref=https" in detalle or "foto_url_pref=https%3A" in detalle
+
+    r = admin_client.get(f"/solicitudes/nueva?producto_id={pid}&nombre_item=Repuesto+con+foto+bajo+stock&cantidad=4&foto_url_pref=https://pub-test.r2.dev/repuesto.webp")
+    body = r.get_data(as_text=True)
+    assert 'name="foto_url_existente" value="https://pub-test.r2.dev/repuesto.webp"' in body
+
+    r2 = admin_client.post("/solicitudes/nueva", data={
+        "producto_id": str(pid), "nombre_item": "Repuesto con foto bajo stock", "cantidad": "4",
+        "foto_url_existente": "https://pub-test.r2.dev/repuesto.webp",
+    }, follow_redirects=True)
+    assert r2.status_code == 200
+    assert "https://pub-test.r2.dev/repuesto.webp" in r2.get_data(as_text=True)
+
+
+def test_whatsapp_de_solicitud_incluye_link_de_la_foto(admin_client):
+    r = admin_client.post("/solicitudes/nueva", data={
+        "nombre_item": "Item con foto para whatsapp", "cantidad": "1",
+        "foto_url_existente": "https://pub-test.r2.dev/otra.webp",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "wa.me" in body
+    import urllib.parse
+    import re
+    m = re.search(r'href="(https://wa\.me/\?text=[^"]+)"', body)
+    assert m
+    texto = urllib.parse.unquote(m.group(1).split("text=")[1])
+    assert "https://pub-test.r2.dev/otra.webp" in texto
