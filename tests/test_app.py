@@ -966,3 +966,80 @@ def test_admin_no_puede_promoverse_a_si_mismo(admin_client):
     r2 = admin_client.get("/admin/usuarios")
     assert r2.status_code == 200
     assert "gestión de usuarios" in r2.get_data(as_text=True).lower()
+
+
+def test_boton_hacer_pedido_aparece_con_stock_bajo_y_crea_solicitud_precargada(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Aceite de vacio bajo stock", "planta": "quilicura",
+        "stock_actual": "1", "stock_minimo": "5",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1",
+                ("Aceite de vacio bajo stock",))
+    pid = cur.fetchone()["id"]
+    conn.close()
+
+    body = admin_client.get(f"/productos/{pid}").get_data(as_text=True)
+    assert "Hacer pedido" in body
+    assert f"/solicitudes/nueva?producto_id={pid}" in body
+
+    r = admin_client.get(f"/solicitudes/nueva?producto_id={pid}&nombre_item=Aceite+de+vacio+bajo+stock&cantidad=4")
+    prefill_body = r.get_data(as_text=True)
+    assert 'value="Aceite de vacio bajo stock"' in prefill_body
+    assert f'value="{pid}"' in prefill_body
+    assert 'value="4"' in prefill_body
+
+    r2 = admin_client.post("/solicitudes/nueva", data={
+        "producto_id": str(pid), "nombre_item": "Aceite de vacio bajo stock", "cantidad": "4",
+    }, follow_redirects=True)
+    assert r2.status_code == 200
+    assert "Aceite de vacio bajo stock" in r2.get_data(as_text=True)
+
+    lista = admin_client.get("/solicitudes").get_data(as_text=True)
+    assert "Aceite de vacio bajo stock" in lista
+
+
+def test_boton_hacer_pedido_no_aparece_con_stock_ok(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Repuesto con stock ok", "planta": "quilicura",
+        "stock_actual": "10", "stock_minimo": "2",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1",
+                ("Repuesto con stock ok",))
+    pid = cur.fetchone()["id"]
+    conn.close()
+
+    body = admin_client.get(f"/productos/{pid}").get_data(as_text=True)
+    assert "Hacer pedido" not in body
+
+
+def test_boton_hacer_pedido_no_aparece_para_viewer(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/productos/nuevo", data={
+        "nombre": "Repuesto bajo para viewer", "planta": "quilicura",
+        "stock_actual": "1", "stock_minimo": "5",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1",
+                ("Repuesto bajo para viewer",))
+    pid = cur.fetchone()["id"]
+    conn.close()
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "viewerpedido", "password": "clave123", "nombre": "Viewer Pedido", "role": "viewer", "planta": "quilicura",
+    })
+    client.get("/logout")
+
+    client.post("/login", data={"username": "viewerpedido", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    body = client.get(f"/productos/{pid}").get_data(as_text=True)
+    assert "Hacer pedido" not in body

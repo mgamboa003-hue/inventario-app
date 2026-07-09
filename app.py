@@ -1845,7 +1845,17 @@ def nueva_solicitud():
         flash("Solicitud registrada." + (" Se avisó por correo al comprador." if ok else ""), "success")
         return redirect(url_for("detalle_solicitud", sid=sol_id))
 
-    return render_template("solicitud_form.html")
+    producto_id_pref = request.args.get("producto_id", type=int)
+    nombre_item_pref = request.args.get("nombre_item", "")
+    cantidad_pref = request.args.get("cantidad", type=int)
+    descripcion_pref = request.args.get("descripcion", "")
+    return render_template(
+        "solicitud_form.html",
+        producto_id_pref=producto_id_pref,
+        nombre_item_pref=nombre_item_pref,
+        cantidad_pref=cantidad_pref,
+        descripcion_pref=descripcion_pref,
+    )
 
 
 @app.route("/solicitudes/<int:sid>")

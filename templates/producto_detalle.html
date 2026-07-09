@@ -2,6 +2,11 @@
 {% block title %}{{ producto['nombre'] }} — Wintec{% endblock %}
 {% block topbar_title %}Detalle del repuesto{% endblock %}
 {% block topbar_actions %}
+  {% if session.get('role') in ('admin', 'solicitante') and producto['stock_actual'] < producto['stock_minimo'] %}
+  <a href="{{ url_for('nueva_solicitud', producto_id=producto['id'], nombre_item=producto['nombre'], cantidad=(producto['stock_minimo'] - producto['stock_actual']) if producto['stock_minimo'] > producto['stock_actual'] else 1) }}" class="btn btn-warning btn-sm">
+    <i class="bi bi-cart-plus me-1"></i>Hacer pedido
+  </a>
+  {% endif %}
   {% if session.get('role') == 'admin' %}
   <a href="{{ url_for('editar_producto', pid=producto['id']) }}" class="btn btn-primary btn-sm">
     <i class="bi bi-pencil me-1"></i>Editar

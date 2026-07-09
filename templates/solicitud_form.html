@@ -13,12 +13,12 @@
     <div class="table-card p-4">
       <form method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="producto_id" id="productoIdOculto">
+        <input type="hidden" name="producto_id" id="productoIdOculto" value="{{ producto_id_pref or '' }}">
 
         <div class="mb-3">
           <label class="form-label fw-semibold">¿Qué necesitas? <span class="text-danger">*</span></label>
           <input type="text" class="form-control" name="nombre_item" id="nombreItem" list="lista-productos-existentes" required
-                 placeholder="Ej: Correa dentada 5M-450, o el nombre que sea">
+                 placeholder="Ej: Correa dentada 5M-450, o el nombre que sea" value="{{ nombre_item_pref or '' }}">
           <datalist id="lista-productos-existentes"></datalist>
           <div class="form-text">Si ya existe en el inventario, selecciónalo de la lista para vincularlo.</div>
         </div>
@@ -26,7 +26,7 @@
         <div class="row g-3 mb-3">
           <div class="col-md-4">
             <label class="form-label fw-semibold">Cantidad</label>
-            <input type="number" class="form-control" name="cantidad" min="1" value="1">
+            <input type="number" class="form-control" name="cantidad" min="1" value="{{ cantidad_pref or 1 }}">
           </div>
           <div class="col-md-8">
             <label class="form-label fw-semibold">Urgencia</label>
@@ -39,7 +39,7 @@
 
         <div class="mb-3">
           <label class="form-label fw-semibold">Descripción / detalles</label>
-          <textarea class="form-control" name="descripcion" rows="2" placeholder="Marca, medida, para qué equipo es, etc."></textarea>
+          <textarea class="form-control" name="descripcion" rows="2" placeholder="Marca, medida, para qué equipo es, etc.">{{ descripcion_pref or '' }}</textarea>
         </div>
 
         <div class="mb-4">
