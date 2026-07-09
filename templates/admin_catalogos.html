@@ -11,6 +11,13 @@
       <form method="post" action="{{ url_for('admin_nuevo_catalogo', tipo=tipo) }}" class="d-flex gap-2">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="text" class="form-control" name="nombre" placeholder="Nombre..." required>
+        {% if tipo == 'ubicaciones' %}
+        <select name="planta" class="form-select" style="max-width:160px" required>
+          {% for clave, nombre in PLANTAS.items() %}
+          <option value="{{ clave }}">{{ nombre }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
         <button type="submit" class="btn btn-primary px-3"><i class="bi bi-plus"></i></button>
       </form>
     </div>
@@ -23,11 +30,22 @@
       {% if items %}
       <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
-          <thead><tr><th>Nombre</th><th></th></tr></thead>
+          <thead><tr><th>Nombre</th>{% if tipo == 'ubicaciones' %}<th>Planta</th>{% endif %}<th></th></tr></thead>
           <tbody>
             {% for item in items %}
             <tr>
               <td class="fw-semibold">{{ item['nombre'] }}</td>
+              {% if tipo == 'ubicaciones' %}
+              <td>
+                <form method="post" action="{{ url_for('cambiar_planta_ubicacion', item_id=item['id']) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select name="planta" class="form-select form-select-sm" style="min-width:120px" onchange="this.form.submit()">
+                    <option value="quilicura" {% if item['planta'] == 'quilicura' %}selected{% endif %}>Quilicura</option>
+                    <option value="balmaceda" {% if item['planta'] == 'balmaceda' %}selected{% endif %}>Balmaceda</option>
+                  </select>
+                </form>
+              </td>
+              {% endif %}
               <td class="text-end">
                 <form method="post" action="{{ url_for('admin_eliminar_catalogo', tipo=tipo, item_id=item['id']) }}"
                       onsubmit="return confirm('¿Eliminar este elemento?')">

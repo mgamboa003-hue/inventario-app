@@ -14,6 +14,17 @@
 <div class="table-card mb-3">
   <div class="p-3">
     <form method="get" class="row g-2 align-items-end">
+      {% if not planta_restringida %}
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Planta</label>
+        <select name="planta" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Ambas</option>
+          {% for clave, nombre in PLANTAS.items() %}
+          <option value="{{ clave }}" {% if clave == planta_activa %}selected{% endif %}>{{ nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
       <div class="col-md-3">
         <label class="form-label small fw-semibold">Tipo</label>
         <select name="tipo" class="form-select form-select-sm">

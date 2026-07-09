@@ -10,6 +10,23 @@
 {% endblock %}
 
 {% block content %}
+{% if planta_restringida %}
+<div class="mb-3">
+  <span class="badge bg-dark bg-opacity-75"><i class="bi bi-geo-alt me-1"></i>Planta {{ PLANTAS.get(planta_restringida, planta_restringida) }}</span>
+</div>
+{% elif session.get('role') == 'admin' %}
+<div class="mb-3">
+  <form method="get" class="d-inline-flex align-items-center gap-2">
+    <label class="form-label small fw-semibold mb-0">Planta</label>
+    <select name="planta" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+      <option value="">Ambas plantas</option>
+      {% for clave, nombre in PLANTAS.items() %}
+      <option value="{{ clave }}" {% if clave == planta_activa %}selected{% endif %}>{{ nombre }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+{% endif %}
 <!-- Stats -->
 <div class="row g-3 mb-4">
   <div class="col-sm-6 col-xl-3">

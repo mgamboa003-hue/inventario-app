@@ -381,7 +381,10 @@ def _run_migrations(conn):
         ("usuarios",   "ultimo_login",    "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),
         ("usuarios",   "ultima_ip",       "TEXT"),
         ("usuarios",   "debe_cambiar_password", "INTEGER DEFAULT 0" if not USE_POSTGRES else "BOOLEAN DEFAULT FALSE"),
+        ("usuarios",   "planta",          "TEXT"),
+        ("ubicaciones","planta",          "TEXT"),
         ("productos",  "descripcion",     "TEXT"),
+        ("productos",  "planta",          "TEXT"),
         ("productos",  "updated_at",      "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),
         ("productos",  "created_at",      "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),
         ("productos",  "activo",          "INTEGER DEFAULT 1" if not USE_POSTGRES else "BOOLEAN DEFAULT TRUE"),
@@ -405,6 +408,16 @@ def _run_migrations(conn):
             cur.execute("UPDATE productos SET activo = TRUE WHERE activo IS NULL")
         else:
             cur.execute("UPDATE productos SET activo = 1 WHERE activo IS NULL")
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+
+    try:
+        cur.execute("UPDATE productos SET planta = 'quilicura' WHERE planta IS NULL")
+        cur.execute("UPDATE ubicaciones SET planta = 'quilicura' WHERE planta IS NULL")
         conn.commit()
     except Exception:
         try:
@@ -465,6 +478,16 @@ def init_db():
             _seed_data(cur)
             conn.commit()
             _sincronizar_ubicaciones(conn)
+
+        try:
+            cur.execute("UPDATE productos SET planta = 'quilicura' WHERE planta IS NULL")
+            cur.execute("UPDATE ubicaciones SET planta = 'quilicura' WHERE planta IS NULL")
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
 
     finally:
         conn.close()

@@ -55,6 +55,31 @@ csrf = CSRFProtect(app)
 ACTIVO_TRUE = "TRUE" if USE_POSTGRES else "1"
 ACTIVO_FALSE = "FALSE" if USE_POSTGRES else "0"
 
+PLANTAS = {"quilicura": "Quilicura", "balmaceda": "Balmaceda"}
+ROLES_RESTRINGIDOS_POR_PLANTA = ("solicitante", "viewer")
+
+
+def planta_restringida():
+    """Planta a la que esta limitado el usuario actual, o None si puede ver todas (admin/comprador)."""
+    if session.get("role") in ROLES_RESTRINGIDOS_POR_PLANTA and session.get("planta") in PLANTAS:
+        return session["planta"]
+    return None
+
+
+def planta_filtro_activo():
+    """Planta por la que se debe filtrar la consulta actual:
+    - la planta fija del usuario, si esta restringido
+    - la elegida manualmente por un admin via ?planta=, si aplica
+    - None si se deben mostrar ambas plantas"""
+    restringida = planta_restringida()
+    if restringida:
+        return restringida
+    if session.get("role") == "admin":
+        val = request.args.get("planta", "").strip().lower()
+        if val in PLANTAS:
+            return val
+    return None
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -372,6 +397,10 @@ def login():
                     session["debe_cambiar_password"] = bool(usuario["debe_cambiar_password"])
                 except (KeyError, IndexError):
                     session["debe_cambiar_password"] = False
+                try:
+                    session["planta"] = usuario["planta"]
+                except (KeyError, IndexError):
+                    session["planta"] = None
 
                 ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 ip_cliente = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
@@ -478,49 +507,77 @@ def logout():
 def index():
     if session.get("role") == "comprador":
         return redirect(url_for("listar_solicitudes"))
+    planta_activa = planta_filtro_activo()
+    ph = p()
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE activo = {ACTIVO_TRUE}")
+
+    if planta_activa:
+        cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE activo = {ACTIVO_TRUE} AND planta = {ph}", (planta_activa,))
+    else:
+        cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE activo = {ACTIVO_TRUE}")
     total_productos = cur.fetchone()["n"]
-    cur.execute(f"SELECT COALESCE(SUM(stock_actual), 0) AS n FROM productos WHERE activo = {ACTIVO_TRUE}")
+
+    if planta_activa:
+        cur.execute(f"SELECT COALESCE(SUM(stock_actual), 0) AS n FROM productos WHERE activo = {ACTIVO_TRUE} AND planta = {ph}", (planta_activa,))
+    else:
+        cur.execute(f"SELECT COALESCE(SUM(stock_actual), 0) AS n FROM productos WHERE activo = {ACTIVO_TRUE}")
     total_stock = cur.fetchone()["n"]
-    cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE stock_actual < stock_minimo AND activo = {ACTIVO_TRUE}")
+
+    if planta_activa:
+        cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE stock_actual < stock_minimo AND activo = {ACTIVO_TRUE} AND planta = {ph}", (planta_activa,))
+    else:
+        cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE stock_actual < stock_minimo AND activo = {ACTIVO_TRUE}")
     stock_bajo = cur.fetchone()["n"]
-    cur.execute("""
+
+    sql_top = """
         SELECT p.nombre, SUM(m.cantidad) AS total_salidas
         FROM movimientos m
         JOIN productos p ON p.id = m.producto_id
         WHERE m.tipo = 'salida'
-        GROUP BY p.id, p.nombre
-        ORDER BY total_salidas DESC
-        LIMIT 5
-    """)
+    """
+    params_top = []
+    if planta_activa:
+        sql_top += f" AND p.planta = {ph}"; params_top.append(planta_activa)
+    sql_top += " GROUP BY p.id, p.nombre ORDER BY total_salidas DESC LIMIT 5"
+    cur.execute(sql_top, params_top)
     top_salidas = cur.fetchall()
+
+    join_planta = "JOIN productos p ON p.id = m.producto_id" if planta_activa else ""
+    filtro_planta = f"AND p.planta = {ph}" if planta_activa else ""
+    params_dias = [planta_activa] if planta_activa else []
     if USE_POSTGRES:
-        sql_dias = """
-            SELECT fecha::date AS dia,
-                   SUM(CASE WHEN tipo='entrada' THEN cantidad ELSE 0 END) AS entradas,
-                   SUM(CASE WHEN tipo='salida' THEN cantidad ELSE 0 END) AS salidas
-            FROM movimientos
-            WHERE fecha::date >= CURRENT_DATE - INTERVAL '13 days'
+        sql_dias = f"""
+            SELECT m.fecha::date AS dia,
+                   SUM(CASE WHEN m.tipo='entrada' THEN m.cantidad ELSE 0 END) AS entradas,
+                   SUM(CASE WHEN m.tipo='salida' THEN m.cantidad ELSE 0 END) AS salidas
+            FROM movimientos m
+            {join_planta}
+            WHERE m.fecha::date >= CURRENT_DATE - INTERVAL '13 days' {filtro_planta}
             GROUP BY dia ORDER BY dia
         """
     else:
-        sql_dias = """
-            SELECT date(fecha) AS dia,
-                   SUM(CASE WHEN tipo='entrada' THEN cantidad ELSE 0 END) AS entradas,
-                   SUM(CASE WHEN tipo='salida' THEN cantidad ELSE 0 END) AS salidas
-            FROM movimientos
-            WHERE date(fecha) >= date('now', '-13 days')
+        sql_dias = f"""
+            SELECT date(m.fecha) AS dia,
+                   SUM(CASE WHEN m.tipo='entrada' THEN m.cantidad ELSE 0 END) AS entradas,
+                   SUM(CASE WHEN m.tipo='salida' THEN m.cantidad ELSE 0 END) AS salidas
+            FROM movimientos m
+            {join_planta}
+            WHERE date(m.fecha) >= date('now', '-13 days') {filtro_planta}
             GROUP BY dia ORDER BY dia
         """
-    cur.execute(sql_dias)
+    cur.execute(sql_dias, params_dias)
     filas_dias = cur.fetchall()
-    cur.execute(f"""
+
+    sql_alertas = f"""
         SELECT id, codigo, nombre, stock_actual, stock_minimo, categoria, equipo
         FROM productos WHERE stock_actual < stock_minimo AND activo = {ACTIVO_TRUE}
-        ORDER BY (stock_minimo - stock_actual) DESC LIMIT 8
-    """)
+    """
+    params_alertas = []
+    if planta_activa:
+        sql_alertas += f" AND planta = {ph}"; params_alertas.append(planta_activa)
+    sql_alertas += " ORDER BY (stock_minimo - stock_actual) DESC LIMIT 8"
+    cur.execute(sql_alertas, params_alertas)
     alertas = cur.fetchall()
     conn.close()
 
@@ -536,6 +593,7 @@ def index():
         salidas=[f["salidas"] for f in filas_dias],
         alertas=alertas,
         email_configurado=email_configurado(),
+        planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS,
     )
 
 
@@ -583,6 +641,12 @@ def listar_productos():
         params.append(equipo_filtro)
     if stock_bajo_param:
         sql += " AND stock_actual < stock_minimo"
+
+    planta_activa = planta_filtro_activo()
+    if planta_activa:
+        sql += " AND planta = ?"
+        params.append(planta_activa)
+
     sql += " ORDER BY nombre"
 
     if p() == "%s":
@@ -599,6 +663,7 @@ def listar_productos():
         categoria_filtro=categoria_filtro, proveedor_filtro=proveedor_filtro,
         equipo_filtro=equipo_filtro, stock_bajo=stock_bajo_param,
         mostrar_inactivos=mostrar_inactivos,
+        planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS,
     )
 
 
@@ -610,7 +675,7 @@ def nuevo_producto():
         nombre = (request.form.get("nombre") or "").strip()
         if not nombre:
             flash("El nombre del producto es obligatorio.", "danger")
-            return render_template("producto_form.html", producto=None)
+            return render_template("producto_form.html", producto=None, PLANTAS=PLANTAS)
 
         codigo = (request.form.get("codigo") or "").strip() or None
         categoria = (request.form.get("categoria") or "").strip()
@@ -622,6 +687,9 @@ def nuevo_producto():
         ubicacion = (request.form.get("ubicacion") or "").strip()
         proveedor = (request.form.get("proveedor") or "").strip()
         precio = safe_float(request.form.get("precio"))
+        planta = (request.form.get("planta") or "").strip().lower()
+        if planta not in PLANTAS:
+            planta = "quilicura"
 
         imagen_url = (request.form.get("imagen_url") or "").strip() or None
         url_subida = save_uploaded_image(request.files.get("imagen_archivo"))
@@ -634,10 +702,10 @@ def nuevo_producto():
             cur = conn.cursor()
             cur.execute(
                 f"""INSERT INTO productos (codigo,nombre,descripcion,categoria,equipo,linea,
-                    stock_minimo,stock_actual,ubicacion,proveedor,precio,imagen_url)
-                    VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})""",
+                    stock_minimo,stock_actual,ubicacion,proveedor,precio,imagen_url,planta)
+                    VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})""",
                 (codigo, nombre, descripcion, categoria, equipo, linea,
-                 stock_minimo, stock_actual, ubicacion, proveedor, precio, imagen_url),
+                 stock_minimo, stock_actual, ubicacion, proveedor, precio, imagen_url, planta),
             )
             conn.commit()
             cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1", (nombre,))
@@ -653,7 +721,7 @@ def nuevo_producto():
         finally:
             conn.close()
 
-    return render_template("producto_form.html", producto=None)
+    return render_template("producto_form.html", producto=None, PLANTAS=PLANTAS)
 
 
 @app.route("/productos/<int:pid>/editar", methods=["GET", "POST"])
@@ -687,6 +755,9 @@ def editar_producto(pid):
         ubicacion = (request.form.get("ubicacion") or "").strip()
         proveedor = (request.form.get("proveedor") or "").strip()
         precio = safe_float(request.form.get("precio"))
+        planta = (request.form.get("planta") or "").strip().lower()
+        if planta not in PLANTAS:
+            planta = producto["planta"] if producto["planta"] in PLANTAS else "quilicura"
 
         imagen_url = (request.form.get("imagen_url") or "").strip() or producto["imagen_url"]
         url_subida = save_uploaded_image(request.files.get("imagen_archivo"))
@@ -707,14 +778,16 @@ def editar_producto(pid):
                 cambios.append(f"stock_actual {producto['stock_actual']}->{stock_actual}")
             if float(producto["precio"] or 0) != precio:
                 cambios.append(f"precio {producto['precio']}->{precio}")
+            if producto["planta"] != planta:
+                cambios.append(f"planta {producto['planta']}->{planta}")
 
             cur.execute(
                 f"""UPDATE productos SET codigo={ph}, nombre={ph}, descripcion={ph},
                     categoria={ph}, equipo={ph}, linea={ph}, stock_minimo={ph},
                     stock_actual={ph}, ubicacion={ph}, proveedor={ph}, precio={ph},
-                    imagen_url={ph} WHERE id={ph}""",
+                    imagen_url={ph}, planta={ph} WHERE id={ph}""",
                 (codigo, nombre, descripcion, categoria, equipo, linea,
-                 stock_minimo, stock_actual, ubicacion, proveedor, precio, imagen_url, pid),
+                 stock_minimo, stock_actual, ubicacion, proveedor, precio, imagen_url, planta, pid),
             )
             conn.commit()
             registrar_auditoria("productos", pid, "editar", session.get("user_id"), session.get("nombre"),
@@ -728,7 +801,7 @@ def editar_producto(pid):
         return redirect(url_for("listar_productos"))
 
     conn.close()
-    return render_template("producto_form.html", producto=producto)
+    return render_template("producto_form.html", producto=producto, PLANTAS=PLANTAS)
 
 
 @app.route("/productos/<int:pid>")
@@ -744,6 +817,11 @@ def detalle_producto(pid):
     if not producto:
         conn.close()
         flash("Producto no encontrado.", "warning")
+        return redirect(url_for("listar_productos"))
+    restringida = planta_restringida()
+    if restringida and producto["planta"] != restringida:
+        conn.close()
+        flash("Ese repuesto pertenece a otra planta.", "warning")
         return redirect(url_for("listar_productos"))
     cur.execute(f"""
         SELECT * FROM movimientos WHERE producto_id = {ph}
@@ -798,10 +876,15 @@ def listar_movimientos():
     producto_id = request.args.get("producto_id", "")
     desde = request.args.get("desde", "")
     hasta = request.args.get("hasta", "")
+    planta_activa = planta_filtro_activo()
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, nombre, codigo FROM productos ORDER BY nombre")
+    ph = p()
+    if planta_activa:
+        cur.execute(f"SELECT id, nombre, codigo FROM productos WHERE planta = {ph} ORDER BY nombre", (planta_activa,))
+    else:
+        cur.execute("SELECT id, nombre, codigo FROM productos ORDER BY nombre")
     productos = cur.fetchall()
 
     sql = """
@@ -809,15 +892,24 @@ def listar_movimientos():
         FROM movimientos m JOIN productos p ON p.id = m.producto_id WHERE 1=1
     """
     params = []
-    ph = p()
     if tipo in ("entrada", "salida"):
         sql += f" AND m.tipo = {ph}"; params.append(tipo)
     if producto_id:
         sql += f" AND m.producto_id = {ph}"; params.append(producto_id)
     if desde:
-        sql += f" AND date(m.fecha) >= date({ph})"; params.append(desde)
+        if USE_POSTGRES:
+            sql += f" AND m.fecha::date >= {ph}::date"
+        else:
+            sql += f" AND date(m.fecha) >= date({ph})"
+        params.append(desde)
     if hasta:
-        sql += f" AND date(m.fecha) <= date({ph})"; params.append(hasta)
+        if USE_POSTGRES:
+            sql += f" AND m.fecha::date <= {ph}::date"
+        else:
+            sql += f" AND date(m.fecha) <= date({ph})"
+        params.append(hasta)
+    if planta_activa:
+        sql += f" AND p.planta = {ph}"; params.append(planta_activa)
     sql += " ORDER BY m.fecha DESC, m.id DESC"
 
     cur.execute(sql, params)
@@ -828,6 +920,7 @@ def listar_movimientos():
         "movimientos.html",
         movimientos=movimientos, productos=productos,
         tipo=tipo, producto_id=producto_id, desde=desde, hasta=hasta,
+        planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS,
     )
 
 
@@ -840,11 +933,15 @@ def nuevo_movimiento(tipo):
         flash("Tipo de movimiento no valido.", "danger")
         return redirect(url_for("listar_movimientos"))
 
+    restringida = planta_restringida()
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(f"SELECT id, codigo, nombre, stock_actual, stock_minimo FROM productos WHERE activo = {ACTIVO_TRUE} ORDER BY nombre")
-    productos = cur.fetchall()
     ph = p()
+    if restringida:
+        cur.execute(f"SELECT id, codigo, nombre, stock_actual, stock_minimo FROM productos WHERE activo = {ACTIVO_TRUE} AND planta = {ph} ORDER BY nombre", (restringida,))
+    else:
+        cur.execute(f"SELECT id, codigo, nombre, stock_actual, stock_minimo FROM productos WHERE activo = {ACTIVO_TRUE} ORDER BY nombre")
+    productos = cur.fetchall()
 
     if request.method == "POST":
         try:
@@ -863,11 +960,15 @@ def nuevo_movimiento(tipo):
         usuario = request.form.get("usuario", session.get("nombre", ""))[:100]
         motivo = request.form.get("motivo", "")[:500]
 
-        cur.execute(f"SELECT stock_actual FROM productos WHERE id = {ph}", (producto_id,))
+        cur.execute(f"SELECT stock_actual, planta FROM productos WHERE id = {ph}", (producto_id,))
         prod = cur.fetchone()
         if not prod:
             conn.close()
             flash("Producto no encontrado.", "danger")
+            return redirect(url_for("nuevo_movimiento", tipo=tipo))
+        if restringida and prod["planta"] != restringida:
+            conn.close()
+            flash("Ese repuesto pertenece a otra planta.", "danger")
             return redirect(url_for("nuevo_movimiento", tipo=tipo))
 
         stock_actual = prod["stock_actual"]
@@ -1341,22 +1442,27 @@ def exportar_orden_compra(oid):
 def listar_ubicaciones():
     if session.get("role") == "comprador":
         return redirect(url_for("listar_solicitudes"))
+    planta_activa = planta_filtro_activo()
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM ubicaciones ORDER BY nombre")
+    ph = p()
+    if planta_activa:
+        cur.execute(f"SELECT * FROM ubicaciones WHERE planta = {ph} ORDER BY nombre", (planta_activa,))
+    else:
+        cur.execute("SELECT * FROM ubicaciones ORDER BY nombre")
     ubicaciones = cur.fetchall()
 
     resultado = []
     for u in ubicaciones:
-        ph = p()
         cur.execute(
             f"SELECT COUNT(*) AS n FROM productos WHERE ubicacion = {ph} AND activo = {ACTIVO_TRUE}",
             (u["nombre"],),
         )
         n = cur.fetchone()["n"]
-        resultado.append({"id": u["id"], "nombre": u["nombre"], "n_productos": n})
+        resultado.append({"id": u["id"], "nombre": u["nombre"], "planta": u["planta"], "n_productos": n})
     conn.close()
-    return render_template("ubicaciones.html", ubicaciones=resultado)
+    return render_template("ubicaciones.html", ubicaciones=resultado,
+                            planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS)
 
 
 @app.route("/ubicaciones/<int:uid>")
@@ -1372,6 +1478,12 @@ def ver_ubicacion(uid):
     if not ubicacion:
         conn.close()
         flash("Ubicación no encontrada.", "warning")
+        return redirect(url_for("listar_ubicaciones"))
+
+    restringida = planta_restringida()
+    if restringida and ubicacion["planta"] != restringida:
+        conn.close()
+        flash("Esa ubicación pertenece a otra planta.", "warning")
         return redirect(url_for("listar_ubicaciones"))
 
     cur.execute(
@@ -1791,7 +1903,7 @@ def cambiar_estado_solicitud(sid):
 def admin_usuarios():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, username, nombre, role, activo, created_at, debe_cambiar_password FROM usuarios ORDER BY id")
+    cur.execute("SELECT id, username, nombre, role, activo, created_at, debe_cambiar_password, planta FROM usuarios ORDER BY id")
     usuarios = cur.fetchall()
     conn.close()
     return render_template("admin_usuarios.html", usuarios=usuarios)
@@ -1804,6 +1916,7 @@ def crear_usuario():
     password = request.form.get("password") or ""
     nombre = (request.form.get("nombre") or "").strip()
     role = request.form.get("role", "viewer")
+    planta = (request.form.get("planta") or "").strip().lower()
 
     if not username or not password:
         flash("Usuario y contrasena son obligatorios.", "danger")
@@ -1812,14 +1925,21 @@ def crear_usuario():
     if role not in ("admin", "viewer", "solicitante", "comprador"):
         role = "viewer"
 
+    if role in ROLES_RESTRINGIDOS_POR_PLANTA:
+        if planta not in PLANTAS:
+            flash("Debes elegir una planta (Quilicura o Balmaceda) para este rol.", "danger")
+            return redirect(url_for("admin_usuarios"))
+    else:
+        planta = None
+
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     ph = p()
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            f"INSERT INTO usuarios (username, password, nombre, role, debe_cambiar_password) VALUES ({ph},{ph},{ph},{ph},{ph})",
-            (username, hashed, nombre, role, True)
+            f"INSERT INTO usuarios (username, password, nombre, role, debe_cambiar_password, planta) VALUES ({ph},{ph},{ph},{ph},{ph},{ph})",
+            (username, hashed, nombre, role, True, planta)
         )
         conn.commit()
         cur.execute(f"SELECT id FROM usuarios WHERE username = {ph}", (username,))
@@ -1854,6 +1974,24 @@ def toggle_usuario(uid):
                              f"Usuario {'activado' if nuevo else 'desactivado'}")
         flash("Estado de usuario actualizado.", "info")
     conn.close()
+    return redirect(url_for("admin_usuarios"))
+
+
+@app.route("/admin/usuarios/<int:uid>/planta", methods=["POST"])
+@admin_required
+def cambiar_planta_usuario(uid):
+    planta = (request.form.get("planta") or "").strip().lower()
+    if planta not in PLANTAS:
+        flash("Planta invalida.", "danger")
+        return redirect(url_for("admin_usuarios"))
+    ph = p()
+    conn = get_db_connection()
+    conn.cursor().execute(f"UPDATE usuarios SET planta = {ph} WHERE id = {ph}", (planta, uid))
+    conn.commit()
+    conn.close()
+    registrar_auditoria("usuarios", uid, "cambiar_planta", session.get("user_id"), session.get("nombre"),
+                         f"Planta asignada: {PLANTAS[planta]}")
+    flash("Planta actualizada.", "success")
     return redirect(url_for("admin_usuarios"))
 
 
@@ -1910,7 +2048,7 @@ def admin_ubicaciones():
     cur.execute("SELECT * FROM ubicaciones ORDER BY nombre")
     items = cur.fetchall()
     conn.close()
-    return render_template("admin_catalogos.html", items=items, tipo="ubicaciones", titulo="Ubicaciones")
+    return render_template("admin_catalogos.html", items=items, tipo="ubicaciones", titulo="Ubicaciones", PLANTAS=PLANTAS)
 
 
 @app.route("/admin/proveedores")
@@ -1933,12 +2071,26 @@ def admin_nuevo_catalogo(tipo):
     if not nombre:
         flash("El nombre es obligatorio.", "danger")
         return redirect(url_for(f"admin_{tipo}"))
+
+    planta = None
+    if tipo == "ubicaciones":
+        planta = (request.form.get("planta") or "").strip().lower()
+        if planta not in PLANTAS:
+            flash("Debes elegir la planta de esta ubicacion.", "danger")
+            return redirect(url_for("admin_ubicaciones"))
+
     ph = p()
     try:
         conn = get_db_connection()
         ignore = "OR IGNORE" if ph == "?" else ""
         conflict = "ON CONFLICT DO NOTHING" if ph == "%s" else ""
-        conn.cursor().execute(f"INSERT {ignore} INTO {tipo} (nombre) VALUES ({ph}) {conflict}".strip(), (nombre,))
+        if tipo == "ubicaciones":
+            conn.cursor().execute(
+                f"INSERT {ignore} INTO ubicaciones (nombre, planta) VALUES ({ph},{ph}) {conflict}".strip(),
+                (nombre, planta),
+            )
+        else:
+            conn.cursor().execute(f"INSERT {ignore} INTO {tipo} (nombre) VALUES ({ph}) {conflict}".strip(), (nombre,))
         conn.commit()
         registrar_auditoria(tipo, None, "crear", session.get("user_id"), session.get("nombre"), f"'{nombre}' agregado")
         flash(f"'{nombre}' agregado.", "success")
@@ -1965,6 +2117,24 @@ def admin_eliminar_catalogo(tipo, item_id):
     finally:
         conn.close()
     return redirect(url_for(f"admin_{tipo}"))
+
+
+@app.route("/admin/ubicaciones/<int:item_id>/planta", methods=["POST"])
+@admin_required
+def cambiar_planta_ubicacion(item_id):
+    planta = (request.form.get("planta") or "").strip().lower()
+    if planta not in PLANTAS:
+        flash("Planta invalida.", "danger")
+        return redirect(url_for("admin_ubicaciones"))
+    ph = p()
+    conn = get_db_connection()
+    conn.cursor().execute(f"UPDATE ubicaciones SET planta = {ph} WHERE id = {ph}", (planta, item_id))
+    conn.commit()
+    conn.close()
+    registrar_auditoria("ubicaciones", item_id, "cambiar_planta", session.get("user_id"), session.get("nombre"),
+                         f"Planta asignada: {PLANTAS[planta]}")
+    flash("Planta actualizada.", "success")
+    return redirect(url_for("admin_ubicaciones"))
 
 
 @app.route("/admin/proveedores/nuevo", methods=["POST"])

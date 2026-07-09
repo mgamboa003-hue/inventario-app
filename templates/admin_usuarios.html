@@ -22,14 +22,22 @@
           <label class="form-label small fw-semibold">Contraseña</label>
           <input type="password" class="form-control form-control-sm" name="password" required minlength="6" autocomplete="new-password">
         </div>
-        <div class="mb-3">
+        <div class="mb-2">
           <label class="form-label small fw-semibold">Rol</label>
-          <select name="role" class="form-select form-select-sm">
+          <select name="role" id="rolNuevoUsuario" class="form-select form-select-sm" onchange="togglePlantaField()">
             <option value="viewer">Solo lectura</option>
             <option value="solicitante">Solicitante (equipo de mantenimiento)</option>
             <option value="comprador">Comprador (gestiona solicitudes)</option>
             <option value="admin">Administrador</option>
           </select>
+        </div>
+        <div class="mb-3" id="campoPlantaNuevoUsuario">
+          <label class="form-label small fw-semibold">Planta</label>
+          <select name="planta" class="form-select form-select-sm">
+            <option value="quilicura">Quilicura</option>
+            <option value="balmaceda">Balmaceda</option>
+          </select>
+          <div class="form-text" style="font-size:.72rem">Este usuario solo vera el inventario, movimientos y ubicaciones de esta planta.</div>
         </div>
         <button type="submit" class="btn btn-primary btn-sm w-100">
           <i class="bi bi-plus me-1"></i>Crear usuario
@@ -47,7 +55,7 @@
       <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
           <thead><tr>
-            <th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Desde</th><th></th>
+            <th>Usuario</th><th>Nombre</th><th>Rol</th><th>Planta</th><th>Estado</th><th>Desde</th><th></th>
           </tr></thead>
           <tbody>
             {% for u in usuarios %}
@@ -58,6 +66,19 @@
                 <span class="badge {% if u['role'] == 'admin' %}bg-danger{% elif u['role'] == 'solicitante' %}bg-info text-dark{% elif u['role'] == 'comprador' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
                   {% if u['role'] == 'admin' %}Admin{% elif u['role'] == 'solicitante' %}Solicitante{% elif u['role'] == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}
                 </span>
+              </td>
+              <td>
+                {% if u['role'] in ('solicitante', 'viewer') %}
+                <form method="post" action="{{ url_for('cambiar_planta_usuario', uid=u['id']) }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select name="planta" class="form-select form-select-sm" style="min-width:120px" onchange="this.form.submit()">
+                    <option value="quilicura" {% if u['planta'] == 'quilicura' %}selected{% endif %}>Quilicura</option>
+                    <option value="balmaceda" {% if u['planta'] == 'balmaceda' %}selected{% endif %}>Balmaceda</option>
+                  </select>
+                </form>
+                {% else %}
+                <span class="text-muted small">Ambas</span>
+                {% endif %}
               </td>
               <td>
                 {% if u['activo'] %}
@@ -112,4 +133,13 @@
     </div>
   </div>
 </div>
+
+<script>
+function togglePlantaField() {
+  var rol = document.getElementById('rolNuevoUsuario').value;
+  var campo = document.getElementById('campoPlantaNuevoUsuario');
+  campo.style.display = (rol === 'solicitante' || rol === 'viewer') ? '' : 'none';
+}
+document.addEventListener('DOMContentLoaded', togglePlantaField);
+</script>
 {% endblock %}

@@ -20,6 +20,16 @@
           <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="Buscar por nombre, código, categoría...">
         </div>
       </div>
+      {% if not planta_restringida %}
+      <div class="col-6 col-lg-2">
+        <select name="planta" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Ambas plantas</option>
+          {% for clave, nombre in PLANTAS.items() %}
+          <option value="{{ clave }}" {% if clave == planta_activa %}selected{% endif %}>{{ nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
       <div class="col-6 col-lg-2">
         <select name="categoria" class="form-select form-select-sm select2">
           <option value="">Todas las categorías</option>
@@ -113,6 +123,7 @@
           </td>
           <td>
             {% if p['categoria'] %}<span class="badge bg-primary bg-opacity-10 text-primary">{{ p['categoria'] }}</span>{% endif %}
+            {% if not planta_restringida and p['planta'] %}<span class="badge bg-dark bg-opacity-75">{{ PLANTAS.get(p['planta'], p['planta']) }}</span>{% endif %}
             {% if p['equipo'] %}<div class="text-muted" style="font-size:.78rem">{{ p['equipo'] }}</div>{% endif %}
           </td>
           <td class="text-muted">{{ p['proveedor'] or '—' }}</td>

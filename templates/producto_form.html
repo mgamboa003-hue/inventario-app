@@ -72,6 +72,14 @@
                   <input type="number" class="form-control" name="precio" min="0" step="0.01" value="{{ producto['precio'] if editing else 0 }}">
                 </div>
               </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Planta</label>
+                <select class="form-select" name="planta">
+                  {% for clave, nombre in PLANTAS.items() %}
+                  <option value="{{ clave }}" {% if (editing and producto['planta'] == clave) or (not editing and clave == 'quilicura') %}selected{% endif %}>{{ nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
               <div class="col-12">
                 <label class="form-label fw-semibold">Ubicación en bodega</label>
                 <input type="text" class="form-control" name="ubicacion" value="{{ producto['ubicacion'] if editing else '' }}" placeholder="Ej: Caja 6, Estante B-3" list="lista-ubicaciones">

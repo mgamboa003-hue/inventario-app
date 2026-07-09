@@ -253,7 +253,7 @@ def test_etiquetas_ubicaciones_lote(admin_client):
 
 
 def test_admin_gestionar_ubicaciones(admin_client):
-    r = admin_client.post("/admin/ubicaciones/nuevo", data={"nombre": "Ubicacion Manual"}, follow_redirects=True)
+    r = admin_client.post("/admin/ubicaciones/nuevo", data={"nombre": "Ubicacion Manual", "planta": "quilicura"}, follow_redirects=True)
     assert r.status_code == 200
     assert "Ubicacion Manual" in r.get_data(as_text=True)
 
@@ -325,7 +325,7 @@ def test_cotizacion_requiere_admin_para_crear(client):
 
 def test_crear_usuario_solicitante(admin_client):
     r = admin_client.post("/admin/usuarios/nuevo", data={
-        "username": "juanperez", "password": "clave123", "nombre": "Juan Perez", "role": "solicitante",
+        "username": "juanperez", "password": "clave123", "nombre": "Juan Perez", "role": "solicitante", "planta": "quilicura",
     }, follow_redirects=True)
     assert r.status_code == 200
     assert "juanperez" in r.get_data(as_text=True)
@@ -337,7 +337,7 @@ def test_solicitante_puede_crear_y_ver_su_propia_solicitud(client):
     admin = client
     admin.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     admin.post("/admin/usuarios/nuevo", data={
-        "username": "mantenimiento1", "password": "clave123", "nombre": "Pedro Mantenimiento", "role": "solicitante",
+        "username": "mantenimiento1", "password": "clave123", "nombre": "Pedro Mantenimiento", "role": "solicitante", "planta": "quilicura",
     })
     admin.get("/logout")
 
@@ -359,7 +359,7 @@ def test_solicitante_puede_crear_y_ver_su_propia_solicitud(client):
 def test_viewer_puede_ver_pero_no_crear_solicitudes(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
-        "username": "solovista", "password": "clave123", "nombre": "Solo Vista", "role": "viewer",
+        "username": "solovista", "password": "clave123", "nombre": "Solo Vista", "role": "viewer", "planta": "quilicura",
     })
     client.post("/solicitudes/nueva", data={"nombre_item": "Cable de red", "cantidad": "1"})
     client.get("/logout")
@@ -379,7 +379,7 @@ def test_viewer_puede_ver_pero_no_crear_solicitudes(client):
 def test_viewer_no_puede_ver_ordenes_ni_cotizaciones_ni_exportar(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
-        "username": "solovista2", "password": "clave123", "nombre": "Solo Vista 2", "role": "viewer",
+        "username": "solovista2", "password": "clave123", "nombre": "Solo Vista 2", "role": "viewer", "planta": "quilicura",
     })
     client.get("/logout")
     client.post("/login", data={"username": "solovista2", "password": "clave123"})
@@ -495,7 +495,7 @@ def test_comprador_solo_ve_solicitudes_en_el_menu(client):
 def test_comprador_puede_cambiar_estado_pero_no_crear_solicitud(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
-        "username": "mantenimiento2", "password": "clave123", "nombre": "Ana Mantenimiento", "role": "solicitante",
+        "username": "mantenimiento2", "password": "clave123", "nombre": "Ana Mantenimiento", "role": "solicitante", "planta": "quilicura",
     })
     client.post("/admin/usuarios/nuevo", data={
         "username": "comprador2", "password": "clave123", "nombre": "El Comprador 2", "role": "comprador",
@@ -574,7 +574,7 @@ def test_admin_ve_control_de_accesos(admin_client):
 def test_no_admin_no_puede_ver_control_de_accesos(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
-        "username": "solovista3", "password": "clave123", "nombre": "Solo Vista 3", "role": "viewer",
+        "username": "solovista3", "password": "clave123", "nombre": "Solo Vista 3", "role": "viewer", "planta": "quilicura",
     })
     client.get("/logout")
     client.post("/login", data={"username": "solovista3", "password": "clave123"})
@@ -602,7 +602,7 @@ def test_nueva_solicitud_redirige_a_detalle_con_boton_whatsapp(admin_client):
 def test_usuario_nuevo_es_obligado_a_cambiar_password(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
-        "username": "nuevo1", "password": "generica123", "nombre": "Nuevo Uno", "role": "viewer",
+        "username": "nuevo1", "password": "generica123", "nombre": "Nuevo Uno", "role": "viewer", "planta": "quilicura",
     })
     client.get("/logout")
 
@@ -615,7 +615,7 @@ def test_usuario_nuevo_es_obligado_a_cambiar_password(client):
 def test_cambiar_password_obligatorio_desbloquea_la_app(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
-        "username": "nuevo2", "password": "generica123", "nombre": "Nuevo Dos", "role": "viewer",
+        "username": "nuevo2", "password": "generica123", "nombre": "Nuevo Dos", "role": "viewer", "planta": "quilicura",
     })
     client.get("/logout")
 
@@ -639,7 +639,7 @@ def test_cambiar_password_obligatorio_desbloquea_la_app(client):
 def test_admin_reset_password_tambien_fuerza_cambio(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
-        "username": "nuevo3", "password": "generica123", "nombre": "Nuevo Tres", "role": "viewer",
+        "username": "nuevo3", "password": "generica123", "nombre": "Nuevo Tres", "role": "viewer", "planta": "quilicura",
     })
     body = client.get("/admin/usuarios").get_data(as_text=True)
 
@@ -659,7 +659,7 @@ def test_admin_reset_password_tambien_fuerza_cambio(client):
 def test_botones_excel_pedidos_etiquetas_solo_para_admin(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
-        "username": "solovista4", "password": "clave123", "nombre": "Solo Vista 4", "role": "viewer",
+        "username": "solovista4", "password": "clave123", "nombre": "Solo Vista 4", "role": "viewer", "planta": "quilicura",
     })
     r_admin = client.get("/productos")
     body_admin = r_admin.get_data(as_text=True)
@@ -681,7 +681,7 @@ def test_tema_de_color_cambia_segun_el_rol(client):
     body = client.get("/").get_data(as_text=True)
     assert 'class="role-admin"' in body
     client.post("/admin/usuarios/nuevo", data={
-        "username": "solicitante_tema", "password": "clave123", "nombre": "Sol Tema", "role": "solicitante",
+        "username": "solicitante_tema", "password": "clave123", "nombre": "Sol Tema", "role": "solicitante", "planta": "quilicura",
     })
     client.get("/logout")
 
@@ -689,3 +689,118 @@ def test_tema_de_color_cambia_segun_el_rol(client):
     _completar_cambio_password_obligatorio(client, "clave123")
     body = client.get("/").get_data(as_text=True)
     assert 'class="role-solicitante"' in body
+
+
+def _crear_usuario_planta(client, username, role, planta):
+    client.post("/admin/usuarios/nuevo", data={
+        "username": username, "password": "clave123", "nombre": username, "role": role, "planta": planta,
+    })
+
+
+def _crear_producto_planta(admin_client, nombre, planta):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": nombre, "planta": planta, "stock_actual": "5", "stock_minimo": "1",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1", (nombre,))
+    row = cur.fetchone()
+    conn.close()
+    return row["id"]
+
+
+def test_solicitante_de_quilicura_no_ve_productos_de_balmaceda(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    _crear_producto_planta(client, "Repuesto Solo Quilicura", "quilicura")
+    _crear_producto_planta(client, "Repuesto Solo Balmaceda", "balmaceda")
+    _crear_usuario_planta(client, "sol_quili", "solicitante", "quilicura")
+    client.get("/logout")
+
+    client.post("/login", data={"username": "sol_quili", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    body = client.get("/productos").get_data(as_text=True)
+    assert "Repuesto Solo Quilicura" in body
+    assert "Repuesto Solo Balmaceda" not in body
+
+
+def test_solicitante_no_puede_ver_detalle_de_producto_de_otra_planta(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    pid = _crear_producto_planta(client, "Torno Balmaceda Unico", "balmaceda")
+
+    _crear_usuario_planta(client, "sol_quili2", "solicitante", "quilicura")
+    client.get("/logout")
+
+    client.post("/login", data={"username": "sol_quili2", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    r = client.get(f"/productos/{pid}", follow_redirects=True)
+    assert r.status_code == 200
+    assert "otra planta" in r.get_data(as_text=True).lower()
+
+
+def test_admin_ve_ambas_plantas_y_puede_filtrar(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    _crear_producto_planta(client, "Item Admin Quilicura", "quilicura")
+    _crear_producto_planta(client, "Item Admin Balmaceda", "balmaceda")
+
+    body = client.get("/productos").get_data(as_text=True)
+    assert "Item Admin Quilicura" in body
+    assert "Item Admin Balmaceda" in body
+
+    body_q = client.get("/productos?planta=quilicura").get_data(as_text=True)
+    assert "Item Admin Quilicura" in body_q
+    assert "Item Admin Balmaceda" not in body_q
+
+    body_b = client.get("/productos?planta=balmaceda").get_data(as_text=True)
+    assert "Item Admin Balmaceda" in body_b
+    assert "Item Admin Quilicura" not in body_b
+
+
+def test_viewer_de_balmaceda_no_ve_movimientos_de_quilicura(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    pid_quili = _crear_producto_planta(client, "Correa Quilicura Mov", "quilicura")
+    pid_balma = _crear_producto_planta(client, "Correa Balmaceda Mov", "balmaceda")
+
+    client.post("/movimientos/nuevo/entrada", data={"producto_id": pid_quili, "cantidad": "3"})
+    client.post("/movimientos/nuevo/entrada", data={"producto_id": pid_balma, "cantidad": "4"})
+
+    _crear_usuario_planta(client, "view_balma", "viewer", "balmaceda")
+    client.get("/logout")
+
+    client.post("/login", data={"username": "view_balma", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    body_mov = client.get("/movimientos").get_data(as_text=True)
+    assert "Correa Balmaceda Mov" in body_mov
+    assert "Correa Quilicura Mov" not in body_mov
+
+    # tampoco puede registrar un movimiento sobre un producto de la otra planta
+    r = client.post("/movimientos/nuevo/entrada", data={"producto_id": pid_quili, "cantidad": "1"}, follow_redirects=True)
+    assert "otra planta" in r.get_data(as_text=True).lower()
+
+
+def test_ubicaciones_filtradas_por_planta(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/ubicaciones/nuevo", data={"nombre": "Estante Quilicura X", "planta": "quilicura"})
+    client.post("/admin/ubicaciones/nuevo", data={"nombre": "Estante Balmaceda X", "planta": "balmaceda"})
+    _crear_usuario_planta(client, "sol_ubic", "solicitante", "balmaceda")
+    client.get("/logout")
+
+    client.post("/login", data={"username": "sol_ubic", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    body = client.get("/ubicaciones").get_data(as_text=True)
+    assert "Estante Balmaceda X" in body
+    assert "Estante Quilicura X" not in body
+
+
+def test_dashboard_cuenta_solo_la_planta_del_usuario(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    _crear_producto_planta(client, "Extra Balmaceda Dash", "balmaceda")
+    _crear_usuario_planta(client, "sol_dash", "solicitante", "quilicura")
+    client.get("/logout")
+
+    client.post("/login", data={"username": "sol_dash", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    body = client.get("/").get_data(as_text=True)
+    assert "Planta Quilicura" in body
+    assert "Extra Balmaceda Dash" not in body
