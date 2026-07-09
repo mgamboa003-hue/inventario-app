@@ -581,7 +581,8 @@ def test_no_admin_no_puede_ver_control_de_accesos(client):
     _completar_cambio_password_obligatorio(client, "clave123")
     r = client.get("/admin/accesos", follow_redirects=True)
     assert r.status_code == 200
-    assert "no tienes permiso" in r.get_data(as_text=True).lower()
+    body = r.get_data(as_text=True).lower()
+    assert "no tienes permiso" in body or "administrador principal" in body
 
 
 def test_nueva_solicitud_redirige_a_detalle_con_boton_whatsapp(admin_client):
@@ -895,3 +896,73 @@ def test_admin_no_puede_quitarse_a_si_mismo_el_rol_admin(admin_client):
         "nombre": "Administrador", "role": "viewer",
     }, follow_redirects=True)
     assert "no puedes quitarte" in r.get_data(as_text=True).lower()
+
+
+def test_admin_regular_no_ve_secciones_solo_admin_principal(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "admin_regular", "password": "clave123", "nombre": "Admin Regular", "role": "admin",
+    })
+    client.get("/logout")
+
+    client.post("/login", data={"username": "admin_regular", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+
+    for path in ["/admin/usuarios", "/admin/auditoria", "/admin/accesos", "/admin/sistema"]:
+        r = client.get(path, follow_redirects=True)
+        assert r.status_code == 200
+        assert "administrador principal" in r.get_data(as_text=True).lower()
+
+    # pero SI puede seguir usando el resto de Administracion
+    for path in ["/admin/categorias", "/admin/equipos", "/admin/proveedores", "/admin/ubicaciones", "/admin/api_tokens"]:
+        r = client.get(path)
+        assert r.status_code == 200
+
+    # y no deberia ver los links en el menu
+    body = client.get("/").get_data(as_text=True)
+    assert "Auditoría" not in body
+    assert "Control de accesos" not in body
+    assert "Sistema y respaldos" not in body
+    assert "Categorías" in body  # este si debe seguir visible
+
+
+def test_admin_principal_puede_promover_a_otro_admin(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "admin_promovible", "password": "clave123", "nombre": "Admin Promovible", "role": "admin",
+    })
+    body = client.get("/admin/usuarios").get_data(as_text=True)
+    import re
+    m = re.search(r"<strong>admin_promovible</strong>.*?/admin/usuarios/(\d+)/editar", body, re.DOTALL)
+    assert m
+    uid = m.group(1)
+
+    r = client.post(f"/admin/usuarios/{uid}/editar", data={
+        "nombre": "Admin Promovible", "role": "admin", "super_admin": "1",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    client.get("/logout")
+
+    client.post("/login", data={"username": "admin_promovible", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    r = client.get("/admin/usuarios")
+    assert r.status_code == 200
+    assert "gestión de usuarios" in r.get_data(as_text=True).lower()
+
+
+def test_admin_no_puede_promoverse_a_si_mismo(admin_client):
+    body = admin_client.get("/admin/usuarios").get_data(as_text=True)
+    import re
+    m = re.search(r'admin</strong>.*?/admin/usuarios/(\d+)/editar', body, re.DOTALL)
+    assert m
+    uid = m.group(1)
+    # el propio admin principal no deberia poder cambiar su propio rol (el select viene disabled),
+    # y el backend tampoco deberia permitir tocar su propio nivel
+    r = admin_client.post(f"/admin/usuarios/{uid}/editar", data={
+        "nombre": "Administrador", "role": "admin", "super_admin": "0",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    # sigue teniendo acceso a la seccion de usuarios (no se pudo quitar el nivel a si mismo)
+    r2 = admin_client.get("/admin/usuarios")
+    assert r2.status_code == 200
+    assert "gestión de usuarios" in r2.get_data(as_text=True).lower()

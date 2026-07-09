@@ -64,7 +64,7 @@
               <td class="text-muted">{{ u['nombre'] or '—' }}</td>
               <td>
                 <span class="badge {% if u['role'] == 'admin' %}bg-danger{% elif u['role'] == 'solicitante' %}bg-info text-dark{% elif u['role'] == 'comprador' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                  {% if u['role'] == 'admin' %}Admin{% elif u['role'] == 'solicitante' %}Solicitante{% elif u['role'] == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}
+                  {% if u['role'] == 'admin' and u['super_admin'] %}Admin principal{% elif u['role'] == 'admin' %}Admin{% elif u['role'] == 'solicitante' %}Solicitante{% elif u['role'] == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}
                 </span>
               </td>
               <td>
@@ -140,6 +140,15 @@
                         <div class="form-text" style="font-size:.72rem">Si cambias a Solicitante/Solo lectura, revisa la planta despues de guardar.</div>
                         {% endif %}
                       </div>
+                      {% if session.get('super_admin') and u['id'] != session.get('user_id') %}
+                      <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" name="super_admin" value="1" id="superAdmin{{ u['id'] }}" {% if u['super_admin'] %}checked{% endif %}>
+                        <label class="form-check-label small" for="superAdmin{{ u['id'] }}">
+                          Admin principal (control total: Usuarios, Auditoría, Accesos, Sistema)
+                        </label>
+                        <div class="form-text" style="font-size:.7rem">Solo aplica si el rol es Administrador.</div>
+                      </div>
+                      {% endif %}
                     </div>
                     <div class="modal-footer">
                       <button type="submit" class="btn btn-primary btn-sm">Guardar</button>

@@ -180,6 +180,19 @@ def admin_required(f):
     return decorated
 
 
+def super_admin_required(f):
+    """Como admin_required, pero solo para el/los administrador(es) principal(es)."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        if session.get("role") != "admin" or not session.get("super_admin"):
+            flash("Solo el administrador principal puede acceder a esta seccion.", "danger")
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+    return decorated
+
+
 def solicitante_o_admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -401,6 +414,10 @@ def login():
                     session["planta"] = usuario["planta"]
                 except (KeyError, IndexError):
                     session["planta"] = None
+                try:
+                    session["super_admin"] = bool(usuario["super_admin"])
+                except (KeyError, IndexError):
+                    session["super_admin"] = False
 
                 ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 ip_cliente = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
@@ -1899,18 +1916,18 @@ def cambiar_estado_solicitud(sid):
 
 # ADMIN -- USUARIOS
 @app.route("/admin/usuarios")
-@admin_required
+@super_admin_required
 def admin_usuarios():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, username, nombre, role, activo, created_at, debe_cambiar_password, planta FROM usuarios ORDER BY id")
+    cur.execute("SELECT id, username, nombre, role, activo, created_at, debe_cambiar_password, planta, super_admin FROM usuarios ORDER BY id")
     usuarios = cur.fetchall()
     conn.close()
     return render_template("admin_usuarios.html", usuarios=usuarios)
 
 
 @app.route("/admin/usuarios/nuevo", methods=["POST"])
-@admin_required
+@super_admin_required
 def crear_usuario():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
@@ -1956,7 +1973,7 @@ def crear_usuario():
 
 
 @app.route("/admin/usuarios/<int:uid>/editar", methods=["POST"])
-@admin_required
+@super_admin_required
 def editar_usuario(uid):
     nombre = (request.form.get("nombre") or "").strip()
     role = request.form.get("role", "viewer")
@@ -1970,7 +1987,7 @@ def editar_usuario(uid):
     ph = p()
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(f"SELECT nombre, role, planta FROM usuarios WHERE id = {ph}", (uid,))
+    cur.execute(f"SELECT nombre, role, planta, super_admin FROM usuarios WHERE id = {ph}", (uid,))
     actual = cur.fetchone()
     if not actual:
         conn.close()
@@ -1984,20 +2001,29 @@ def editar_usuario(uid):
     else:
         planta = None
 
+    # Solo un admin principal puede otorgar/quitar el nivel de admin principal,
+    # y solo tiene sentido para usuarios con rol admin. No puede quitarselo a si mismo.
+    super_admin_nuevo = bool(actual["super_admin"])
+    if role == "admin" and uid != session.get("user_id"):
+        super_admin_nuevo = request.form.get("super_admin") == "1"
+    elif role != "admin":
+        super_admin_nuevo = False
+
     cur.execute(
-        f"UPDATE usuarios SET nombre = {ph}, role = {ph}, planta = {ph} WHERE id = {ph}",
-        (nombre, role, planta, uid),
+        f"UPDATE usuarios SET nombre = {ph}, role = {ph}, planta = {ph}, super_admin = {ph} WHERE id = {ph}",
+        (nombre, role, planta, super_admin_nuevo, uid),
     )
     conn.commit()
     conn.close()
     registrar_auditoria("usuarios", uid, "editar", session.get("user_id"), session.get("nombre"),
-                         f"Nombre/rol actualizado: '{actual['nombre']}' ({actual['role']}) -> '{nombre}' ({role})")
+                         f"Nombre/rol actualizado: '{actual['nombre']}' ({actual['role']}) -> '{nombre}' ({role})"
+                         + (" [admin principal]" if super_admin_nuevo else ""))
     flash("Usuario actualizado.", "success")
     return redirect(url_for("admin_usuarios"))
 
 
 @app.route("/admin/usuarios/<int:uid>/toggle", methods=["POST"])
-@admin_required
+@super_admin_required
 def toggle_usuario(uid):
     if uid == session.get("user_id"):
         flash("No puedes desactivar tu propia cuenta.", "warning")
@@ -2019,7 +2045,7 @@ def toggle_usuario(uid):
 
 
 @app.route("/admin/usuarios/<int:uid>/planta", methods=["POST"])
-@admin_required
+@super_admin_required
 def cambiar_planta_usuario(uid):
     planta = (request.form.get("planta") or "").strip().lower()
     if planta not in PLANTAS:
@@ -2037,7 +2063,7 @@ def cambiar_planta_usuario(uid):
 
 
 @app.route("/admin/usuarios/<int:uid>/reset_password", methods=["POST"])
-@admin_required
+@super_admin_required
 def reset_password(uid):
     nueva = request.form.get("nueva_password", "")
     if len(nueva) < 6:
@@ -2222,7 +2248,7 @@ def eliminar_proveedor(pid):
 
 # ADMIN -- AUDITORIA
 @app.route("/admin/auditoria")
-@admin_required
+@super_admin_required
 def admin_auditoria():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -2234,7 +2260,7 @@ def admin_auditoria():
 
 # ADMIN -- CONTROL DE ACCESOS
 @app.route("/admin/accesos")
-@admin_required
+@super_admin_required
 def admin_accesos():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -2330,7 +2356,7 @@ def revocar_token_route(tid):
 
 # ADMIN -- SISTEMA (backups + alertas email)
 @app.route("/admin/sistema")
-@admin_required
+@super_admin_required
 def admin_sistema():
     backups_dir = os.path.join(BASE_DIR, "backups")
     backups = []
@@ -2347,7 +2373,7 @@ def admin_sistema():
 
 
 @app.route("/admin/backup", methods=["POST"])
-@admin_required
+@super_admin_required
 def ejecutar_backup():
     import backup_db
     try:
@@ -2365,7 +2391,7 @@ def ejecutar_backup():
 
 
 @app.route("/admin/backup/<path:filename>/descargar")
-@admin_required
+@super_admin_required
 def descargar_backup(filename):
     filename = secure_filename(filename)
     backups_dir = os.path.join(BASE_DIR, "backups")
@@ -2377,7 +2403,7 @@ def descargar_backup(filename):
 
 
 @app.route("/admin/alertas/enviar", methods=["POST"])
-@admin_required
+@super_admin_required
 def enviar_alerta_manual():
     ok, msg = enviar_alertas_stock_bajo()
     registrar_auditoria("alertas", None, "enviar_email", session.get("user_id"), session.get("nombre"), msg)

@@ -382,6 +382,7 @@ def _run_migrations(conn):
         ("usuarios",   "ultima_ip",       "TEXT"),
         ("usuarios",   "debe_cambiar_password", "INTEGER DEFAULT 0" if not USE_POSTGRES else "BOOLEAN DEFAULT FALSE"),
         ("usuarios",   "planta",          "TEXT"),
+        ("usuarios",   "super_admin",     "INTEGER DEFAULT 0" if not USE_POSTGRES else "BOOLEAN DEFAULT FALSE"),
         ("ubicaciones","planta",          "TEXT"),
         ("productos",  "descripcion",     "TEXT"),
         ("productos",  "planta",          "TEXT"),
@@ -483,6 +484,25 @@ def init_db():
             cur.execute("UPDATE productos SET planta = 'quilicura' WHERE planta IS NULL")
             cur.execute("UPDATE ubicaciones SET planta = 'quilicura' WHERE planta IS NULL")
             conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+
+        try:
+            cur.execute("SELECT COUNT(*) AS n FROM usuarios WHERE super_admin = " + ("TRUE" if USE_POSTGRES else "1"))
+            row = cur.fetchone()
+            n_super = row["n"] if hasattr(row, "__getitem__") else row[0]
+            if n_super == 0:
+                cur.execute("SELECT id FROM usuarios WHERE role = 'admin' ORDER BY id ASC LIMIT 1")
+                primero = cur.fetchone()
+                if primero:
+                    pid = primero["id"] if hasattr(primero, "__getitem__") else primero[0]
+                    ph_local = p()
+                    valor = True if USE_POSTGRES else 1
+                    cur.execute(f"UPDATE usuarios SET super_admin = {ph_local} WHERE id = {ph_local}", (valor, pid))
+                    conn.commit()
         except Exception:
             try:
                 conn.rollback()
