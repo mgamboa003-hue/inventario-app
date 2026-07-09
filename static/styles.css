@@ -170,6 +170,37 @@ body { background: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; }
 @media (max-width: 767.98px) {
   .table-card .table-header { flex-wrap: wrap; gap: .5rem; }
   .table-card .table-header .d-flex { flex-wrap: wrap; }
+
+  /* Topbar: titulo arriba, botones abajo en su propia fila, sin encimarse */
+  .topbar {
+    height: auto;
+    min-height: var(--topbar-h);
+    flex-wrap: wrap;
+    padding: .6rem .85rem;
+    row-gap: .5rem;
+    gap: .5rem;
+  }
+  .topbar-title {
+    font-size: .92rem;
+    line-height: 1.25;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .topbar-actions {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    gap: .4rem;
+  }
+  .topbar-actions .btn {
+    font-size: .78rem;
+    padding: .38rem .6rem;
+  }
+  .page-content { padding: 1rem; }
+}
+
+@media (max-width: 400px) {
+  .topbar-actions .btn { flex: 1 1 auto; }
 }
 
 /* ── Login ── */
