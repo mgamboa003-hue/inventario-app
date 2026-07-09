@@ -1967,7 +1967,7 @@ def toggle_usuario(uid):
     cur.execute(f"SELECT activo FROM usuarios WHERE id = {ph}", (uid,))
     u = cur.fetchone()
     if u:
-        nuevo = 0 if u["activo"] else 1
+        nuevo = False if u["activo"] else True
         cur.execute(f"UPDATE usuarios SET activo = {ph} WHERE id = {ph}", (nuevo, uid))
         conn.commit()
         registrar_auditoria("usuarios", uid, "toggle", session.get("user_id"), session.get("nombre"),

@@ -838,3 +838,22 @@ def test_solicitudes_del_equipo_muestran_ambas_plantas(client):
     body_viewer = client.get("/solicitudes").get_data(as_text=True)
     assert "Pedido desde Quilicura" in body_viewer
     assert "Pedido desde Balmaceda" in body_viewer
+
+
+def test_toggle_usuario_activa_y_desactiva(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "para_desactivar", "password": "clave123", "nombre": "Para Desactivar", "role": "viewer", "planta": "quilicura",
+    })
+    body = client.get("/admin/usuarios").get_data(as_text=True)
+    import re
+    m = re.search(r"para_desactivar.*?/admin/usuarios/(\d+)/toggle", body, re.DOTALL)
+    assert m, "no se encontro el id del usuario"
+    uid = m.group(1)
+
+    r = client.post(f"/admin/usuarios/{uid}/toggle", follow_redirects=True)
+    assert r.status_code == 200
+    assert "actualizado" in r.get_data(as_text=True).lower()
+
+    r2 = client.post(f"/admin/usuarios/{uid}/toggle", follow_redirects=True)
+    assert r2.status_code == 200
