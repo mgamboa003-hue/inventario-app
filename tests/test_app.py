@@ -804,3 +804,37 @@ def test_dashboard_cuenta_solo_la_planta_del_usuario(client):
     body = client.get("/").get_data(as_text=True)
     assert "Planta Quilicura" in body
     assert "Extra Balmaceda Dash" not in body
+
+
+def test_solicitudes_del_equipo_muestran_ambas_plantas(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    _crear_usuario_planta(client, "sol_equipo_quili", "solicitante", "quilicura")
+    _crear_usuario_planta(client, "sol_equipo_balma", "solicitante", "balmaceda")
+    client.get("/logout")
+
+    client.post("/login", data={"username": "sol_equipo_quili", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    client.post("/solicitudes/nueva", data={"nombre_item": "Pedido desde Quilicura", "cantidad": "1"})
+    client.get("/logout")
+
+    client.post("/login", data={"username": "sol_equipo_balma", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    client.post("/solicitudes/nueva", data={"nombre_item": "Pedido desde Balmaceda", "cantidad": "1"})
+    client.get("/logout")
+
+    # el admin (ve todas las solicitudes de todos) debe ver ambos pedidos
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    body_admin = client.get("/solicitudes").get_data(as_text=True)
+    assert "Pedido desde Quilicura" in body_admin
+    assert "Pedido desde Balmaceda" in body_admin
+    client.get("/logout")
+
+    # un viewer (sin restriccion de "solo mis solicitudes") tambien debe ver ambos, aunque su planta sea una sola
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    _crear_usuario_planta(client, "view_equipo", "viewer", "quilicura")
+    client.get("/logout")
+    client.post("/login", data={"username": "view_equipo", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    body_viewer = client.get("/solicitudes").get_data(as_text=True)
+    assert "Pedido desde Quilicura" in body_viewer
+    assert "Pedido desde Balmaceda" in body_viewer
