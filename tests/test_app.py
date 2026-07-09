@@ -1088,3 +1088,43 @@ def test_whatsapp_de_solicitud_incluye_link_de_la_foto(admin_client):
     assert m
     texto = urllib.parse.unquote(m.group(1).split("text=")[1])
     assert "https://pub-test.r2.dev/otra.webp" in texto
+
+
+def test_hora_de_la_app_usa_huso_horario_de_chile(admin_client):
+    """Las fechas que genera la app (login, movimientos, solicitudes) deben
+    reflejar la hora de Chile (America/Santiago) sin importar en que huso
+    horario este configurado el servidor (Railway corre en UTC)."""
+    import db
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    esperado = datetime.now(ZoneInfo("America/Santiago"))
+    generado = db.ahora()
+    diferencia = abs((generado - esperado.replace(tzinfo=None)).total_seconds())
+    assert diferencia < 5, f"ahora() no coincide con la hora de Chile: {generado} vs {esperado}"
+
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Producto para test de hora", "planta": "quilicura",
+        "stock_actual": "10", "stock_minimo": "1",
+    })
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1",
+                ("Producto para test de hora",))
+    pid = cur.fetchone()["id"]
+    conn.close()
+
+    admin_client.post("/movimientos/nuevo/entrada", data={
+        "producto_id": str(pid), "cantidad": "1", "motivo": "test",
+    })
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT fecha FROM movimientos WHERE producto_id = {ph} ORDER BY id DESC LIMIT 1", (pid,))
+    fila = cur.fetchone()
+    conn.close()
+    assert fila is not None
+    fecha_mov = datetime.fromisoformat(str(fila["fecha"])[:19])
+    diferencia_mov = abs((fecha_mov - esperado.replace(tzinfo=None)).total_seconds())
+    assert diferencia_mov < 10, f"La fecha del movimiento no coincide con hora Chile: {fecha_mov} vs {esperado}"

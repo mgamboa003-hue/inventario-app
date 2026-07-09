@@ -15,9 +15,10 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import datetime
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, BASE_DIR)
+from db import ahora
 BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 MANTENER = int(os.environ.get("BACKUPS_A_MANTENER", 14))
 
@@ -30,7 +31,7 @@ def backup_sqlite():
         print("No se encontró inventario.db, nada que respaldar.")
         return None
     os.makedirs(BACKUP_DIR, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = ahora().strftime("%Y%m%d_%H%M%S")
     destino = os.path.join(BACKUP_DIR, f"inventario_{timestamp}.db")
     shutil.copy2(origen, destino)
     print(f"Backup SQLite creado: {destino}")
@@ -39,7 +40,7 @@ def backup_sqlite():
 
 def backup_postgres():
     os.makedirs(BACKUP_DIR, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = ahora().strftime("%Y%m%d_%H%M%S")
     destino = os.path.join(BACKUP_DIR, f"inventario_{timestamp}.sql")
     try:
         with open(destino, "wb") as f:

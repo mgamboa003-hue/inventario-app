@@ -14,7 +14,7 @@ from flask import (Flask, Response, flash, jsonify, redirect, render_template,
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.utils import secure_filename
 
-from db import get_db_connection, init_db, p, USE_POSTGRES
+from db import get_db_connection, init_db, p, USE_POSTGRES, ahora
 from services import (
     registrar_auditoria,
     usuario_bloqueado, registrar_intento_fallido, resetear_intentos,
@@ -98,7 +98,7 @@ def save_uploaded_image(archivo):
         flash("Tipo de archivo no permitido (png, jpg, jpeg, gif, webp).", "warning")
         return None
 
-    prefijo = datetime.now().strftime("%Y%m%d%H%M%S")
+    prefijo = ahora().strftime("%Y%m%d%H%M%S")
     try:
         from PIL import Image
         img = Image.open(archivo.stream)
@@ -138,7 +138,7 @@ def guardar_documento_cotizacion(archivo):
     if not allowed_doc_file(archivo.filename):
         flash("Tipo de archivo no permitido para el documento (pdf, png, jpg, jpeg, webp).", "warning")
         return None
-    prefijo = datetime.now().strftime("%Y%m%d%H%M%S")
+    prefijo = ahora().strftime("%Y%m%d%H%M%S")
     filename = f"{prefijo}_{secure_filename(archivo.filename)}"
     content_type = archivo.mimetype or "application/octet-stream"
     archivo.seek(0)
@@ -291,7 +291,7 @@ def registrar_actividad_sesion():
         return
     if request.endpoint in ("static",):
         return
-    ahora_dt = datetime.now()
+    ahora_dt = ahora()
     ultima_guardada = session.get("_hb_ts")
     if ultima_guardada:
         try:
@@ -419,7 +419,7 @@ def login():
                 except (KeyError, IndexError):
                     session["super_admin"] = False
 
-                ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                ahora_login = ahora().strftime("%Y-%m-%d %H:%M:%S")
                 ip_cliente = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
                 user_agent = (request.headers.get("User-Agent", "") or "")[:255]
 
@@ -428,12 +428,12 @@ def login():
                 ph3 = p()
                 cur3.execute(
                     f"UPDATE usuarios SET ultimo_login = {ph3}, ultima_ip = {ph3} WHERE id = {ph3}",
-                    (ahora, ip_cliente, usuario["id"]),
+                    (ahora_login, ip_cliente, usuario["id"]),
                 )
                 cur3.execute(
                     f"""INSERT INTO sesiones (usuario_id, ip, user_agent, inicio, ultima_actividad)
                         VALUES ({ph3},{ph3},{ph3},{ph3},{ph3})""",
-                    (usuario["id"], ip_cliente, user_agent, ahora, ahora),
+                    (usuario["id"], ip_cliente, user_agent, ahora_login, ahora_login),
                 )
                 conn3.commit()
                 cur3.execute("SELECT last_insert_rowid() AS id" if not USE_POSTGRES else "SELECT lastval() AS id")
@@ -496,8 +496,8 @@ def logout():
             ph = p()
             cur.execute(f"SELECT inicio FROM sesiones WHERE id = {ph}", (sesion_id,))
             fila = cur.fetchone()
-            ahora_dt = datetime.now()
-            ahora = ahora_dt.strftime("%Y-%m-%d %H:%M:%S")
+            ahora_dt = ahora()
+            ahora_str_logout = ahora_dt.strftime("%Y-%m-%d %H:%M:%S")
             duracion = None
             if fila and fila["inicio"]:
                 try:
@@ -507,7 +507,7 @@ def logout():
                     duracion = None
             cur.execute(
                 f"UPDATE sesiones SET fin = {ph}, ultima_actividad = {ph}, duracion_segundos = {ph} WHERE id = {ph}",
-                (ahora, ahora, duracion, sesion_id),
+                (ahora_str_logout, ahora_str_logout, duracion, sesion_id),
             )
             conn.commit()
             conn.close()
@@ -995,7 +995,7 @@ def nuevo_movimiento(tipo):
             return redirect(url_for("nuevo_movimiento", tipo=tipo))
 
         nuevo_stock = stock_actual + cantidad if tipo == "entrada" else stock_actual - cantidad
-        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        fecha = ahora().strftime("%Y-%m-%d %H:%M:%S")
         user_id = session.get("user_id")
 
         cur.execute(
@@ -1061,7 +1061,7 @@ def exportar_stock_bajo():
         ws.column_dimensions[chr(64+i)].width = w
 
     buf = io.BytesIO(); wb.save(buf); buf.seek(0)
-    return send_file(buf, download_name=f"stock_bajo_{datetime.now().strftime('%Y-%m-%d')}.xlsx",
+    return send_file(buf, download_name=f"stock_bajo_{ahora().strftime('%Y-%m-%d')}.xlsx",
                      as_attachment=True,
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -1113,7 +1113,7 @@ def exportar_pedidos():
             zipf.writestr(f"Pedido_{nombre_prov}.xlsx", buf.read())
 
     zip_buf.seek(0)
-    return send_file(zip_buf, download_name=f"Pedidos_{datetime.now().strftime('%Y-%m-%d')}.zip",
+    return send_file(zip_buf, download_name=f"Pedidos_{ahora().strftime('%Y-%m-%d')}.zip",
                      as_attachment=True, mimetype="application/zip")
 
 
@@ -1157,7 +1157,7 @@ def exportar_valorizacion():
         ws.column_dimensions[chr(64+i)].width = w
 
     buf = io.BytesIO(); wb.save(buf); buf.seek(0)
-    return send_file(buf, download_name=f"valorizacion_{datetime.now().strftime('%Y-%m-%d')}.xlsx",
+    return send_file(buf, download_name=f"valorizacion_{ahora().strftime('%Y-%m-%d')}.xlsx",
                      as_attachment=True,
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -1179,7 +1179,7 @@ def exportar_rotacion():
     movs = cur.fetchall()
     conn.close()
 
-    cutoff = datetime.now() - timedelta(days=dias)
+    cutoff = ahora() - timedelta(days=dias)
     salidas_por_producto = defaultdict(int)
     for m in movs:
         if m["tipo"] != "salida":
@@ -1214,7 +1214,7 @@ def exportar_rotacion():
         ws.column_dimensions[chr(64+i)].width = w
 
     buf = io.BytesIO(); wb.save(buf); buf.seek(0)
-    return send_file(buf, download_name=f"rotacion_{datetime.now().strftime('%Y-%m-%d')}.xlsx",
+    return send_file(buf, download_name=f"rotacion_{ahora().strftime('%Y-%m-%d')}.xlsx",
                      as_attachment=True,
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -1264,7 +1264,7 @@ def exportar_abc():
         ws.column_dimensions[chr(64+i)].width = w
 
     buf = io.BytesIO(); wb.save(buf); buf.seek(0)
-    return send_file(buf, download_name=f"clasificacion_abc_{datetime.now().strftime('%Y-%m-%d')}.xlsx",
+    return send_file(buf, download_name=f"clasificacion_abc_{ahora().strftime('%Y-%m-%d')}.xlsx",
                      as_attachment=True,
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -1622,7 +1622,7 @@ def nueva_cotizacion():
 
     if request.method == "POST":
         proveedor_nombre = (request.form.get("proveedor") or "").strip()
-        fecha_recibida = request.form.get("fecha_recibida") or datetime.now().strftime("%Y-%m-%d")
+        fecha_recibida = request.form.get("fecha_recibida") or ahora().strftime("%Y-%m-%d")
         fecha_vigencia = request.form.get("fecha_vigencia") or None
         notas = (request.form.get("notas") or "").strip()
 
@@ -1681,7 +1681,7 @@ def nueva_cotizacion():
 
     conn.close()
     return render_template("cotizacion_form.html", proveedores=proveedores,
-                            hoy=datetime.now().strftime("%Y-%m-%d"))
+                            hoy=ahora().strftime("%Y-%m-%d"))
 
 
 @app.route("/cotizaciones/<int:cid>")
@@ -1763,7 +1763,7 @@ def listar_solicitudes():
     if vista == "historial":
         sql += " AND estado IN ('comprado','rechazado','cancelado')"
     else:
-        limite = (datetime.now() - timedelta(days=dias_gracia)).strftime("%Y-%m-%d %H:%M:%S")
+        limite = (ahora() - timedelta(days=dias_gracia)).strftime("%Y-%m-%d %H:%M:%S")
         sql += " AND estado != 'comprado'"
         sql += f" AND (estado NOT IN ('rechazado','cancelado') OR fecha_atendida IS NULL OR fecha_atendida >= {ph})"
         params.append(limite)
@@ -1780,7 +1780,7 @@ def listar_solicitudes():
     conn.close()
 
     umbral = dias_atraso_solicitud()
-    ahora = datetime.now()
+    momento_actual = ahora()
     solicitudes = []
     for s in filas:
         s_dict = dict(s)
@@ -1788,7 +1788,7 @@ def listar_solicitudes():
         if s_dict["estado"] == "pendiente" and s_dict["fecha_solicitud"]:
             try:
                 fecha_dt = datetime.fromisoformat(str(s_dict["fecha_solicitud"])[:19])
-                if (ahora - fecha_dt).days >= umbral:
+                if (momento_actual - fecha_dt).days >= umbral:
                     atrasada = True
             except Exception:
                 pass
@@ -1820,7 +1820,7 @@ def nueva_solicitud():
         foto_url = foto_nueva or (request.form.get("foto_url_existente") or None)
 
         ph = p()
-        fecha_ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        fecha_ahora = ahora().strftime("%Y-%m-%d %H:%M:%S")
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
@@ -1918,7 +1918,7 @@ def cambiar_estado_solicitud(sid):
 
     ph = p()
     conn = get_db_connection()
-    fecha_atendida = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if nuevo_estado in ("comprado", "rechazado", "cancelado") else None
+    fecha_atendida = ahora().strftime("%Y-%m-%d %H:%M:%S") if nuevo_estado in ("comprado", "rechazado", "cancelado") else None
     conn.cursor().execute(
         f"UPDATE solicitudes SET estado = {ph}, fecha_atendida = {ph}, comprado_por = {ph} WHERE id = {ph}",
         (nuevo_estado, fecha_atendida, session.get("nombre") if nuevo_estado == "comprado" else None, sid),
@@ -2296,14 +2296,14 @@ def admin_accesos():
     ultimas_sesiones = {row["usuario_id"]: dict(row) for row in cur.fetchall()}
 
     umbral_minutos = sesion_activa_minutos()
-    ahora = datetime.now()
+    momento_actual = ahora()
     for u in usuarios:
         ult = ultimas_sesiones.get(u["id"])
         en_linea = False
         if ult and not ult["fin"] and ult["ultima_actividad"]:
             try:
                 actividad_dt = datetime.fromisoformat(str(ult["ultima_actividad"])[:19])
-                if (ahora - actividad_dt).total_seconds() <= umbral_minutos * 60:
+                if (momento_actual - actividad_dt).total_seconds() <= umbral_minutos * 60:
                     en_linea = True
             except Exception:
                 pass
@@ -2521,7 +2521,7 @@ def api_crear_movimiento():
         return jsonify({"error": f"Stock insuficiente. Solo hay {stock_actual} unidades."}), 400
 
     nuevo_stock = stock_actual + cantidad if tipo == "entrada" else stock_actual - cantidad
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    fecha = ahora().strftime("%Y-%m-%d %H:%M:%S")
     motivo = str(data.get("motivo", ""))[:500]
     usuario = request.api_actor["nombre"]
 

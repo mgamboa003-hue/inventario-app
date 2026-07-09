@@ -6,12 +6,28 @@ Soporta SQLite (desarrollo/local) y PostgreSQL (produccion Railway/Render).
 import json
 import os
 import sqlite3
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 USE_POSTGRES = DATABASE_URL.startswith("postgres")
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SQLITE_PATH = os.path.join(BASE_DIR, "inventario.db")
+
+TZ_CHILE = ZoneInfo("America/Santiago")
+
+
+def ahora():
+    """Fecha/hora actual en el huso horario de Chile (America/Santiago), como
+    datetime "naive" (sin tzinfo) para poder usarse igual que datetime.now()
+    en toda la app (restas, strftime, comparaciones), sin depender del huso
+    horario del servidor donde corre el contenedor (Railway usa UTC)."""
+    return datetime.now(TZ_CHILE).replace(tzinfo=None)
+
+
+def ahora_str():
+    return ahora().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _sqlite_conn():
@@ -39,6 +55,15 @@ def _pg_conn():
         url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
         conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
         conn.autocommit = False
+        try:
+            cur = conn.cursor()
+            cur.execute("SET TIME ZONE 'America/Santiago'")
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
         return conn
     except ImportError:
         raise RuntimeError("psycopg2 no instalado. Ejecuta: pip install psycopg2-binary")

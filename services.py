@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from db import get_db_connection, p, USE_POSTGRES
+from db import get_db_connection, p, USE_POSTGRES, ahora
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -60,9 +60,9 @@ def usuario_bloqueado(usuario_row):
             hasta = locked_until.replace(tzinfo=None)
     except Exception:
         return False, 0
-    ahora = datetime.now()
-    if ahora < hasta:
-        restante = int((hasta - ahora).total_seconds() // 60) + 1
+    ahora_local = ahora()
+    if ahora_local < hasta:
+        restante = int((hasta - ahora_local).total_seconds() // 60) + 1
         return True, restante
     return False, 0
 
@@ -72,7 +72,7 @@ def registrar_intento_fallido(user_id, intentos_actuales):
     conn = get_db_connection()
     ph = p()
     if nuevos_intentos >= MAX_INTENTOS:
-        hasta = (datetime.now() + timedelta(minutes=BLOQUEO_MINUTOS))
+        hasta = (ahora() + timedelta(minutes=BLOQUEO_MINUTOS))
         hasta_str = hasta.strftime("%Y-%m-%d %H:%M:%S")
         conn.cursor().execute(
             f"UPDATE usuarios SET failed_attempts = {ph}, locked_until = {ph} WHERE id = {ph}",
@@ -134,8 +134,8 @@ def verificar_api_token(token_plano):
     )
     row = cur.fetchone()
     if row:
-        ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        conn.cursor().execute(f"UPDATE api_tokens SET last_used_at = {ph} WHERE id = {ph}", (ahora, row["id"]))
+        ahora_str = ahora().strftime("%Y-%m-%d %H:%M:%S")
+        conn.cursor().execute(f"UPDATE api_tokens SET last_used_at = {ph} WHERE id = {ph}", (ahora_str, row["id"]))
         conn.commit()
     conn.close()
     return row
@@ -195,7 +195,7 @@ def enviar_alertas_stock_bajo():
     )
     html = f"""
     <h2>Alerta de stock bajo -- Inventario Wintec</h2>
-    <p>{len(filas)} producto(s) estan bajo el stock minimo al {datetime.now().strftime('%d-%m-%Y %H:%M')}:</p>
+    <p>{len(filas)} producto(s) estan bajo el stock minimo al {ahora().strftime('%d-%m-%Y %H:%M')}:</p>
     <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
         <tr style="background:#1B4F8A;color:#fff">
             <th>Codigo</th><th>Producto</th><th>Stock actual</th><th>Stock minimo</th><th>Proveedor</th>
@@ -297,7 +297,7 @@ def _siguiente_numero_oc(cur):
     cur.execute("SELECT COUNT(*) AS n FROM ordenes_compra")
     row = cur.fetchone()
     n = (row["n"] if hasattr(row, "__getitem__") else row[0]) or 0
-    anio = datetime.now().strftime("%y")
+    anio = ahora().strftime("%y")
     return f"OC-{anio}-{n + 1:04d}"
 
 
@@ -415,7 +415,7 @@ def _siguiente_numero_cotizacion(cur):
     cur.execute("SELECT COUNT(*) AS n FROM cotizaciones")
     row = cur.fetchone()
     n = (row["n"] if hasattr(row, "__getitem__") else row[0]) or 0
-    anio = datetime.now().strftime("%y")
+    anio = ahora().strftime("%y")
     return f"COT-{anio}-{n + 1:04d}"
 
 
