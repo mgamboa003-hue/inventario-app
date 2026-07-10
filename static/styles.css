@@ -203,6 +203,40 @@ body { background: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; }
   .topbar-actions .btn { flex: 1 1 auto; }
 }
 
+/* ── Tablas: mas compactas en celular para que quepan mas columnas
+   antes de tener que hacer scroll horizontal ── */
+@media (max-width: 767.98px) {
+  .table > :not(caption) > * > * {
+    padding: .5rem .55rem;
+    font-size: .82rem;
+  }
+  .product-thumb { width: 46px; height: 46px; }
+  .table-card .table-header h6 { font-size: .92rem; }
+}
+
+/* ── Tarjetas / formularios: menos padding en celulares chicos ── */
+@media (max-width: 575.98px) {
+  .table-card > .p-4, .table-card.p-4 { padding: 1.1rem !important; }
+  .stat-card { padding: 1rem 1.1rem; }
+  .stat-card .stat-value { font-size: 1.5rem; }
+  .stat-card .stat-icon { width: 42px; height: 42px; font-size: 1.2rem; }
+  .login-card { padding: 1.75rem 1.25rem; }
+}
+
+/* ── Barra de paginacion: apilada en celulares chicos ── */
+@media (max-width: 480px) {
+  .pagination-bar { flex-direction: column; align-items: stretch; }
+  .pagination-bar > div { justify-content: space-between; }
+}
+
+/* ── Botones de formulario a lo ancho en celular, mas facil de tocar ── */
+@media (max-width: 575.98px) {
+  form .d-flex.gap-2 > .btn.px-4,
+  form .d-flex.gap-2 > .btn.btn-primary.px-4 {
+    flex: 1 1 auto;
+  }
+}
+
 /* ── Login ── */
 .login-page { min-height: 100vh; background: linear-gradient(135deg, #0f1f3d 0%, #1B4F8A 60%, #3a7bd5 100%); display: flex; align-items: center; justify-content: center; }
 .login-card { background: #fff; border-radius: 1.25rem; padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }

@@ -55,7 +55,10 @@ def test_crear_producto(admin_client):
         "stock_minimo": "5", "stock_actual": "1", "precio": "1000",
     }, follow_redirects=True)
     assert r.status_code == 200
-    assert "Producto Test" in r.get_data(as_text=True)
+    # el inventario esta paginado (20 por pagina); se busca por nombre para
+    # encontrar el producto recien creado sin importar en que pagina caiga
+    r2 = admin_client.get("/productos?q=Producto+Test")
+    assert "Producto Test" in r2.get_data(as_text=True)
 
 
 def test_soft_delete_y_restaurar_producto(admin_client):
@@ -721,7 +724,7 @@ def test_solicitante_de_quilicura_no_ve_productos_de_balmaceda(client):
 
     client.post("/login", data={"username": "sol_quili", "password": "clave123"})
     _completar_cambio_password_obligatorio(client, "clave123")
-    body = client.get("/productos").get_data(as_text=True)
+    body = client.get("/productos?q=Repuesto+Solo").get_data(as_text=True)
     assert "Repuesto Solo Quilicura" in body
     assert "Repuesto Solo Balmaceda" not in body
 
@@ -745,15 +748,15 @@ def test_admin_ve_ambas_plantas_y_puede_filtrar(client):
     _crear_producto_planta(client, "Item Admin Quilicura", "quilicura")
     _crear_producto_planta(client, "Item Admin Balmaceda", "balmaceda")
 
-    body = client.get("/productos").get_data(as_text=True)
+    body = client.get("/productos?q=Item+Admin").get_data(as_text=True)
     assert "Item Admin Quilicura" in body
     assert "Item Admin Balmaceda" in body
 
-    body_q = client.get("/productos?planta=quilicura").get_data(as_text=True)
+    body_q = client.get("/productos?q=Item+Admin&planta=quilicura").get_data(as_text=True)
     assert "Item Admin Quilicura" in body_q
     assert "Item Admin Balmaceda" not in body_q
 
-    body_b = client.get("/productos?planta=balmaceda").get_data(as_text=True)
+    body_b = client.get("/productos?q=Item+Admin&planta=balmaceda").get_data(as_text=True)
     assert "Item Admin Balmaceda" in body_b
     assert "Item Admin Quilicura" not in body_b
 
@@ -1128,3 +1131,42 @@ def test_hora_de_la_app_usa_huso_horario_de_chile(admin_client):
     fecha_mov = datetime.fromisoformat(str(fila["fecha"])[:19])
     diferencia_mov = abs((fecha_mov - esperado.replace(tzinfo=None)).total_seconds())
     assert diferencia_mov < 10, f"La fecha del movimiento no coincide con hora Chile: {fecha_mov} vs {esperado}"
+
+
+def test_inventario_muestra_20_por_pagina_y_boton_siguiente(admin_client):
+    # el seed ya trae ~239 productos activos, mas que de sobra para 2 paginas
+    r1 = admin_client.get("/productos")
+    body1 = r1.get_data(as_text=True)
+    assert "Página 1 de" in body1
+    assert "Ver 20 más" in body1
+    assert body1.count("product-thumb") >= 20  # 20 filas visibles (imagen o placeholder)
+
+    r2 = admin_client.get("/productos?pagina=2")
+    body2 = r2.get_data(as_text=True)
+    assert "Página 2 de" in body2
+    assert "Anterior" in body2
+
+
+def test_inventario_paginacion_mantiene_filtros_de_categoria(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "AAA Filtro Pagina Uno", "categoria": "CategoriaPaginacionTest",
+        "stock_minimo": "1", "stock_actual": "1",
+    })
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "ZZZ Filtro Pagina Uno", "categoria": "CategoriaPaginacionTest",
+        "stock_minimo": "1", "stock_actual": "1",
+    })
+    body = admin_client.get("/productos?categoria=CategoriaPaginacionTest").get_data(as_text=True)
+    assert "AAA Filtro Pagina Uno" in body
+    assert "ZZZ Filtro Pagina Uno" in body
+    assert "Página" not in body  # solo 2 productos, no debe mostrar paginacion
+
+
+def test_imprimir_etiquetas_incluye_productos_de_todas_las_paginas(admin_client):
+    body = admin_client.get("/productos").get_data(as_text=True)
+    import re
+    m = re.search(r'href="(/productos/etiquetas\?ids=[^"]+)"', body)
+    assert m, "no se encontro el link de Imprimir etiquetas"
+    ids_str = m.group(1).split("ids=")[1]
+    cantidad_ids = len(ids_str.split(","))
+    assert cantidad_ids > 20  # debe cubrir TODOS los productos filtrados, no solo la pagina actual

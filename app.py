@@ -615,6 +615,9 @@ def index():
 
 
 # PRODUCTOS
+PRODUCTOS_POR_PAGINA = 20
+
+
 @app.route("/productos")
 @login_required
 def listar_productos():
@@ -626,6 +629,9 @@ def listar_productos():
     equipo_filtro = request.args.get("equipo", "").strip()
     stock_bajo_param = request.args.get("stock_bajo", "").strip()
     mostrar_inactivos = request.args.get("inactivos", "").strip() == "1" and session.get("role") == "admin"
+    pagina = request.args.get("pagina", 1, type=int) or 1
+    if pagina < 1:
+        pagina = 1
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -637,41 +643,56 @@ def listar_productos():
     cur.execute("SELECT DISTINCT equipo FROM productos WHERE equipo IS NOT NULL AND equipo <> '' ORDER BY equipo")
     equipos = [r["equipo"] for r in cur.fetchall()]
 
-    sql = "SELECT * FROM productos WHERE 1=1"
+    where_sql = " WHERE 1=1"
     params = []
 
     if not mostrar_inactivos:
-        sql += f" AND activo = {ACTIVO_TRUE}"
+        where_sql += f" AND activo = {ACTIVO_TRUE}"
 
     if q:
-        sql += " AND (codigo LIKE ? OR nombre LIKE ? OR categoria LIKE ? OR ubicacion LIKE ? OR proveedor LIKE ?)"
+        where_sql += " AND (codigo LIKE ? OR nombre LIKE ? OR categoria LIKE ? OR ubicacion LIKE ? OR proveedor LIKE ?)"
         pat = f"%{q}%"
         params.extend([pat] * 5)
     if categoria_filtro:
-        sql += " AND categoria = ?"
+        where_sql += " AND categoria = ?"
         params.append(categoria_filtro)
     if proveedor_filtro:
-        sql += " AND proveedor = ?"
+        where_sql += " AND proveedor = ?"
         params.append(proveedor_filtro)
     if equipo_filtro:
-        sql += " AND equipo = ?"
+        where_sql += " AND equipo = ?"
         params.append(equipo_filtro)
     if stock_bajo_param:
-        sql += " AND stock_actual < stock_minimo"
+        where_sql += " AND stock_actual < stock_minimo"
 
     planta_activa = planta_filtro_activo()
     if planta_activa:
-        sql += " AND planta = ?"
+        where_sql += " AND planta = ?"
         params.append(planta_activa)
 
-    sql += " ORDER BY nombre"
-
     if p() == "%s":
-        sql = sql.replace("?", "%s")
+        where_sql = where_sql.replace("?", "%s")
 
-    cur.execute(sql, params)
+    cur.execute(f"SELECT COUNT(*) AS n FROM productos{where_sql}", params)
+    total_productos = cur.fetchone()["n"]
+    total_paginas = max(1, -(-total_productos // PRODUCTOS_POR_PAGINA))
+    if pagina > total_paginas:
+        pagina = total_paginas
+    offset = (pagina - 1) * PRODUCTOS_POR_PAGINA
+
+    cur.execute(f"SELECT id FROM productos{where_sql} ORDER BY nombre", params)
+    todos_ids = [r["id"] for r in cur.fetchall()]
+
+    ph_pag = p()
+    cur.execute(
+        f"SELECT * FROM productos{where_sql} ORDER BY nombre LIMIT {ph_pag} OFFSET {ph_pag}",
+        params + [PRODUCTOS_POR_PAGINA, offset],
+    )
     productos = cur.fetchall()
     conn.close()
+
+    base_params = request.args.to_dict()
+    base_params.pop("pagina", None)
 
     return render_template(
         "productos.html",
@@ -681,6 +702,8 @@ def listar_productos():
         equipo_filtro=equipo_filtro, stock_bajo=stock_bajo_param,
         mostrar_inactivos=mostrar_inactivos,
         planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS,
+        pagina=pagina, total_paginas=total_paginas, total_productos=total_productos,
+        base_params=base_params, todos_ids=todos_ids,
     )
 
 
