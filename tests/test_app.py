@@ -1170,3 +1170,19 @@ def test_imprimir_etiquetas_incluye_productos_de_todas_las_paginas(admin_client)
     ids_str = m.group(1).split("ids=")[1]
     cantidad_ids = len(ids_str.split(","))
     assert cantidad_ids > 20  # debe cubrir TODOS los productos filtrados, no solo la pagina actual
+
+
+def test_busqueda_de_productos_ignora_mayusculas_y_minusculas(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Rodamiento SKF Especial", "codigo": "ROD-CASE-01",
+        "categoria": "Rodamientos", "stock_minimo": "1", "stock_actual": "1",
+    })
+    for termino in ("rodamiento skf", "RODAMIENTO SKF", "RoDaMiEnTo SkF", "rod-case-01", "ROD-CASE-01"):
+        body = admin_client.get(f"/productos?q={termino}").get_data(as_text=True)
+        assert "Rodamiento SKF Especial" in body, f"no encontro el producto buscando '{termino}'"
+
+
+def test_foto_de_solicitud_no_fuerza_camara(admin_client):
+    body = admin_client.get("/solicitudes/nueva").get_data(as_text=True)
+    assert 'name="foto"' in body
+    assert 'capture=' not in body

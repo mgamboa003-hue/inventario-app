@@ -650,7 +650,8 @@ def listar_productos():
         where_sql += f" AND activo = {ACTIVO_TRUE}"
 
     if q:
-        where_sql += " AND (codigo LIKE ? OR nombre LIKE ? OR categoria LIKE ? OR ubicacion LIKE ? OR proveedor LIKE ?)"
+        where_sql += (" AND (LOWER(codigo) LIKE LOWER(?) OR LOWER(nombre) LIKE LOWER(?) OR "
+                       "LOWER(categoria) LIKE LOWER(?) OR LOWER(ubicacion) LIKE LOWER(?) OR LOWER(proveedor) LIKE LOWER(?))")
         pat = f"%{q}%"
         params.extend([pat] * 5)
     if categoria_filtro:
