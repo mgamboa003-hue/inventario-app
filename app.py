@@ -1907,24 +1907,26 @@ def detalle_solicitud(sid):
 
     urgencia_texto = "Urgente" if solicitud["urgencia"] == "urgente" else "Normal"
     fecha_texto = str(solicitud["fecha_solicitud"])[:16] if solicitud["fecha_solicitud"] else ""
+    separador = "-" * 40
     lineas = [
-        "*Nueva solicitud - Inventario Wintec*",
-        "",
-        f"📦 Ítem: {solicitud['nombre_item']}",
-        f"🔢 Cantidad: {solicitud['cantidad']}",
-        f"⚡ Urgencia: {urgencia_texto}",
+        "*NUEVA SOLICITUD - INVENTARIO WINTEC*",
+        separador,
+        f"*Ítem:* {solicitud['nombre_item']}",
+        f"*Cantidad:* {solicitud['cantidad']}",
+        f"*Urgencia:* {urgencia_texto}",
     ]
     if solicitud["descripcion"]:
-        lineas.append(f"📝 Detalle: {solicitud['descripcion']}")
+        lineas.append(f"*Detalle:* {solicitud['descripcion']}")
     if solicitud["foto_url"]:
         foto_absoluta = solicitud["foto_url"]
         if foto_absoluta.startswith("/"):
             foto_absoluta = request.url_root.rstrip("/") + foto_absoluta
-        lineas.append(f"📷 Foto: {foto_absoluta}")
-    lineas.append(f"👤 Pide: {solicitud['solicitado_por'] or '-'}")
-    lineas.append(f"📅 Fecha: {fecha_texto}")
-    lineas.append("")
-    lineas.append(f"Ver en la app: {url_for('detalle_solicitud', sid=sid, _external=True)}")
+        lineas.append(f"*Foto:* {foto_absoluta}")
+    lineas.append(separador)
+    lineas.append(f"*Pide:* {solicitud['solicitado_por'] or '-'}")
+    lineas.append(f"*Fecha:* {fecha_texto}")
+    lineas.append(separador)
+    lineas.append(f"*Ver en la app:* {url_for('detalle_solicitud', sid=sid, _external=True)}")
     texto_whatsapp = "\n".join(lineas)
     whatsapp_url = "https://wa.me/?text=" + urllib.parse.quote(texto_whatsapp)
 

@@ -197,6 +197,14 @@ body { background: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; }
     padding: .38rem .6rem;
   }
   .page-content { padding: 1rem; }
+
+  /* La columna de acciones fija tapaba el contenido de las filas en pantallas
+     angostas; en celular se deja scrollear normal junto con el resto de la tabla. */
+  .table-responsive .table th:last-child,
+  .table-responsive .table td:last-child {
+    position: static;
+    box-shadow: none;
+  }
 }
 
 @media (max-width: 400px) {
