@@ -37,6 +37,8 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
 MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", 10))
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 
+SESSION_IDLE_MINUTES = int(os.environ.get("SESSION_IDLE_MINUTES", 5))
+
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "False").lower() == "true"
 
@@ -51,6 +53,11 @@ if FORCE_HTTPS:
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 csrf = CSRFProtect(app)
+
+
+@app.context_processor
+def inject_session_idle_minutes():
+    return {"SESSION_IDLE_MINUTES": SESSION_IDLE_MINUTES}
 
 ACTIVO_TRUE = "TRUE" if USE_POSTGRES else "1"
 ACTIVO_FALSE = "FALSE" if USE_POSTGRES else "0"
@@ -270,6 +277,29 @@ def forzar_https():
     if FORCE_HTTPS and request.headers.get("X-Forwarded-Proto", "http") == "http":
         url = request.url.replace("http://", "https://", 1)
         return redirect(url, code=301)
+
+
+@app.before_request
+def cerrar_sesion_por_inactividad():
+    """Respaldo por si el temporizador de inactividad del navegador no llega a
+    correr (JS bloqueado, pestana congelada, etc.): si la ultima peticion de
+    esta sesion fue hace mas de SESSION_IDLE_MINUTES, se cierra la sesion."""
+    if not session.get("logged_in"):
+        return
+    if request.endpoint in ("static", "logout"):
+        return
+    ahora_dt = ahora()
+    ultima = session.get("_ultima_peticion_ts")
+    if ultima:
+        try:
+            transcurrido = (ahora_dt - datetime.fromisoformat(ultima)).total_seconds()
+            if transcurrido > SESSION_IDLE_MINUTES * 60:
+                session.clear()
+                flash("Tu sesion se cerro automaticamente por inactividad.", "info")
+                return redirect(url_for("login"))
+        except Exception:
+            pass
+    session["_ultima_peticion_ts"] = ahora_dt.isoformat()
 
 
 @app.before_request
@@ -514,7 +544,10 @@ def logout():
         except Exception:
             pass
     session.clear()
-    flash("Sesion cerrada correctamente.", "info")
+    if request.args.get("motivo") == "inactividad":
+        flash("Tu sesion se cerro automaticamente por inactividad.", "info")
+    else:
+        flash("Sesion cerrada correctamente.", "info")
     return redirect(url_for("login"))
 
 

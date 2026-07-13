@@ -225,6 +225,24 @@
       if (img) zoomPreview.classList.remove('show');
     });
   }
+
+  {% if session.get('logged_in') %}
+  // Cierre de sesion automatico por inactividad (sin tocar nada por 5 minutos).
+  (function() {
+    const LIMITE_MS = {{ SESSION_IDLE_MINUTES|default(5) }} * 60 * 1000;
+    let temporizador = null;
+    function reiniciarTemporizador() {
+      if (temporizador) clearTimeout(temporizador);
+      temporizador = setTimeout(function() {
+        window.location.href = "{{ url_for('logout') }}?motivo=inactividad";
+      }, LIMITE_MS);
+    }
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function(evento) {
+      document.addEventListener(evento, reiniciarTemporizador, { passive: true });
+    });
+    reiniciarTemporizador();
+  })();
+  {% endif %}
 </script>
 {% block scripts %}{% endblock %}
 </body>
