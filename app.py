@@ -747,10 +747,6 @@ def listar_productos():
 def nuevo_producto():
     if request.method == "POST":
         nombre = (request.form.get("nombre") or "").strip()
-        if not nombre:
-            flash("El nombre del producto es obligatorio.", "danger")
-            return render_template("producto_form.html", producto=None, PLANTAS=PLANTAS)
-
         codigo = (request.form.get("codigo") or "").strip() or None
         categoria = (request.form.get("categoria") or "").strip()
         equipo = (request.form.get("equipo") or "").strip()
@@ -764,16 +760,47 @@ def nuevo_producto():
         planta = (request.form.get("planta") or "").strip().lower()
         if planta not in PLANTAS:
             planta = "quilicura"
-
         imagen_url = (request.form.get("imagen_url") or "").strip() or None
+
+        # se guarda lo que el usuario ya escribio para no perderlo si hay que
+        # volver a mostrar el formulario (nombre vacio o codigo duplicado)
+        valores = {
+            "nombre": nombre, "codigo": codigo or "", "categoria": categoria, "equipo": equipo,
+            "linea": linea, "descripcion": descripcion, "stock_minimo": stock_minimo,
+            "stock_actual": stock_actual, "ubicacion": ubicacion, "proveedor": proveedor,
+            "precio": precio, "planta": planta, "imagen_url": imagen_url,
+        }
+
+        if not nombre:
+            flash("El nombre del producto es obligatorio.", "danger")
+            return render_template("producto_form.html", producto=None, PLANTAS=PLANTAS, valores=valores)
+
+        ph = p()
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        if codigo:
+            cur.execute(
+                f"SELECT id, nombre, stock_actual, stock_minimo FROM productos "
+                f"WHERE codigo IS NOT NULL AND LOWER(codigo) = LOWER({ph})",
+                (codigo,),
+            )
+            existente = cur.fetchone()
+            if existente:
+                conn.close()
+                flash(f"Ya existe un repuesto con el código \"{codigo}\": \"{existente['nombre']}\". "
+                      f"No se puede crear otro con el mismo código.", "warning")
+                return render_template(
+                    "producto_form.html", producto=None, PLANTAS=PLANTAS,
+                    valores=valores, codigo_duplicado=dict(existente),
+                )
+
         url_subida = save_uploaded_image(request.files.get("imagen_archivo"))
         if url_subida:
             imagen_url = url_subida
+            valores["imagen_url"] = imagen_url
 
-        ph = p()
         try:
-            conn = get_db_connection()
-            cur = conn.cursor()
             cur.execute(
                 f"""INSERT INTO productos (codigo,nombre,descripcion,categoria,equipo,linea,
                     stock_minimo,stock_actual,ubicacion,proveedor,precio,imagen_url,planta)
@@ -792,6 +819,7 @@ def nuevo_producto():
         except Exception as e:
             app.logger.error("Error al crear producto: %s", e)
             flash("No se pudo crear el producto (¿codigo duplicado?).", "danger")
+            return render_template("producto_form.html", producto=None, PLANTAS=PLANTAS, valores=valores)
         finally:
             conn.close()
 

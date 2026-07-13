@@ -1244,3 +1244,44 @@ def test_temporizador_de_inactividad_se_incluye_en_la_pagina(admin_client):
     body = admin_client.get("/").get_data(as_text=True)
     assert "5 * 60 * 1000" in body
     assert "motivo=inactividad" in body
+
+
+def test_crear_producto_con_codigo_duplicado_no_pierde_datos_y_ofrece_actualizar(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Repuesto Original Duplicado", "codigo": "DUP-001",
+        "stock_minimo": "2", "stock_actual": "3",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT id FROM productos WHERE codigo = {ph}", ("DUP-001",))
+    original_id = cur.fetchone()["id"]
+    conn.close()
+
+    r = admin_client.post("/productos/nuevo", data={
+        "nombre": "Repuesto Nuevo Con Codigo Repetido", "codigo": "dup-001",
+        "descripcion": "No se debe perder esta descripcion",
+        "categoria": "CategoriaQueNoDebePerderse",
+        "stock_minimo": "7", "stock_actual": "9",
+    })
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+
+    # no se creo un segundo producto con ese codigo
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE LOWER(codigo) = LOWER({ph})", ("DUP-001",))
+    assert cur.fetchone()["n"] == 1
+    conn.close()
+
+    # los datos que el usuario habia escrito siguen en el formulario
+    assert 'value="Repuesto Nuevo Con Codigo Repetido"' in body
+    assert "No se debe perder esta descripcion" in body
+    assert 'value="CategoriaQueNoDebePerderse"' in body
+    assert 'value="9"' in body
+
+    # se ofrece ir a editar/actualizar el repuesto existente
+    assert "Repuesto Original Duplicado" in body
+    assert f"/productos/{original_id}/editar" in body
+    assert f"/movimientos/nuevo/entrada?producto_id={original_id}" in body
