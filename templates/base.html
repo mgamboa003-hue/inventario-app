@@ -190,6 +190,41 @@
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
   }
+
+  // Zoom flotante al pasar el mouse sobre una foto de repuesto (solo en
+  // dispositivos con mouse; en celular/tablet no hace nada).
+  if (window.matchMedia('(hover: hover)').matches) {
+    const zoomPreview = document.createElement('img');
+    zoomPreview.className = 'img-zoom-preview';
+    document.body.appendChild(zoomPreview);
+
+    const margen = 18;
+    function posicionarPreview(x, y) {
+      const anchoPreview = zoomPreview.offsetWidth || 260;
+      const altoPreview = zoomPreview.offsetHeight || 260;
+      let left = x + margen;
+      let top = y + margen;
+      if (left + anchoPreview > window.innerWidth) left = x - anchoPreview - margen;
+      if (top + altoPreview > window.innerHeight) top = y - altoPreview - margen;
+      zoomPreview.style.left = Math.max(4, left) + 'px';
+      zoomPreview.style.top = Math.max(4, top) + 'px';
+    }
+
+    document.addEventListener('mouseover', (e) => {
+      const img = e.target.closest('img.product-thumb, img.product-thumb-lg');
+      if (!img || !img.src) return;
+      zoomPreview.src = img.src;
+      zoomPreview.classList.add('show');
+      posicionarPreview(e.clientX, e.clientY);
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (zoomPreview.classList.contains('show')) posicionarPreview(e.clientX, e.clientY);
+    });
+    document.addEventListener('mouseout', (e) => {
+      const img = e.target.closest('img.product-thumb, img.product-thumb-lg');
+      if (img) zoomPreview.classList.remove('show');
+    });
+  }
 </script>
 {% block scripts %}{% endblock %}
 </body>
