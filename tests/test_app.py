@@ -1186,3 +1186,30 @@ def test_foto_de_solicitud_no_fuerza_camara(admin_client):
     body = admin_client.get("/solicitudes/nueva").get_data(as_text=True)
     assert 'name="foto"' in body
     assert 'capture=' not in body
+
+
+def test_registrar_salida_desde_detalle_preselecciona_el_repuesto(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Repuesto Preseleccion Test", "planta": "quilicura",
+        "stock_actual": "5", "stock_minimo": "1",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    ph = db.p()
+    cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1",
+                ("Repuesto Preseleccion Test",))
+    pid = cur.fetchone()["id"]
+    conn.close()
+
+    body = admin_client.get(f"/movimientos/nuevo/salida?producto_id={pid}").get_data(as_text=True)
+    assert f'value="{pid}" data-codigo=' in body
+    # la opcion del repuesto debe venir marcada como seleccionada
+    import re
+    m = re.search(rf'<option value="{pid}"[^>]*>', body)
+    assert m and "selected" in m.group(0)
+
+    # sin producto_id, ninguna opcion queda preseleccionada
+    body_sin = admin_client.get("/movimientos/nuevo/salida").get_data(as_text=True)
+    m2 = re.search(rf'<option value="{pid}"[^>]*>', body_sin)
+    assert m2 and "selected" not in m2.group(0)

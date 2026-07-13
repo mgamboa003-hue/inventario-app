@@ -1035,7 +1035,8 @@ def nuevo_movimiento(tipo):
         return redirect(url_for("listar_movimientos"))
 
     conn.close()
-    return render_template("movimiento_form.html", tipo=tipo, productos=productos)
+    producto_id_pref = request.args.get("producto_id", type=int)
+    return render_template("movimiento_form.html", tipo=tipo, productos=productos, producto_id_pref=producto_id_pref)
 
 
 # EXPORTAR EXCEL

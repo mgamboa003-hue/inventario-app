@@ -28,7 +28,8 @@
             <select name="producto_id" id="productoSelect" class="form-select select2" required style="flex:1">
               <option value="">— Seleccionar repuesto —</option>
               {% for p in productos %}
-              <option value="{{ p['id'] }}" data-codigo="{{ p['codigo'] or '' }}" data-stock="{{ p['stock_actual'] }}" data-min="{{ p['stock_minimo'] }}">
+              <option value="{{ p['id'] }}" data-codigo="{{ p['codigo'] or '' }}" data-stock="{{ p['stock_actual'] }}" data-min="{{ p['stock_minimo'] }}"
+                {% if producto_id_pref and p['id'] == producto_id_pref %}selected{% endif %}>
                 {{ p['nombre'] }}{% if p['codigo'] %} [{{ p['codigo'] }}]{% endif %} — Stock: {{ p['stock_actual'] }}
               </option>
               {% endfor %}
@@ -103,6 +104,16 @@ document.getElementById('productoSelect').addEventListener('change', function() 
       info.innerHTML = `<span class="text-muted">Stock actual: <strong>${stock}</strong> unidades</span>`;
     }
   } else { info.innerHTML = ''; }
+});
+
+// Si venimos desde el detalle de un repuesto (?producto_id=...), el select ya
+// viene con ese repuesto preseleccionado; se dispara el cambio para mostrar
+// el stock disponible desde el primer momento.
+document.addEventListener('DOMContentLoaded', function() {
+  const sel = document.getElementById('productoSelect');
+  if (sel && sel.value) {
+    sel.dispatchEvent(new Event('change'));
+  }
 });
 
 let html5QrCode = null;
