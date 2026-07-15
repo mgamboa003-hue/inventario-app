@@ -1285,3 +1285,85 @@ def test_crear_producto_con_codigo_duplicado_no_pierde_datos_y_ofrece_actualizar
     assert "Repuesto Original Duplicado" in body
     assert f"/productos/{original_id}/editar" in body
     assert f"/movimientos/nuevo/entrada?producto_id={original_id}" in body
+
+
+def test_fecha_a_naive_maneja_string_sqlite_y_datetime_aware_de_postgres():
+    import db
+    from datetime import datetime, timezone, timedelta
+
+    # como llega desde SQLite (string)
+    assert db.fecha_a_naive("2026-07-15 17:53:00") == datetime(2026, 7, 15, 17, 53, 0)
+    assert db.fecha_a_naive("2026-07-15 17:53:00.123456") == datetime(2026, 7, 15, 17, 53, 0)
+
+    # como llega desde Postgres con SET TIME ZONE (datetime "aware")
+    tz_cl = timezone(timedelta(hours=-4))
+    aware = datetime(2026, 7, 15, 17, 53, 0, tzinfo=tz_cl)
+    resultado = db.fecha_a_naive(aware)
+    assert resultado == datetime(2026, 7, 15, 17, 53, 0)
+    assert resultado.tzinfo is None  # ya no debe tener tzinfo, para poder restar con ahora()
+
+    assert db.fecha_a_naive(None) is None
+    assert db.fecha_a_naive("no es una fecha valida") is None
+
+    # no debe reventar al restar contra ahora() (esto era justo el bug reportado)
+    cutoff = db.ahora() - timedelta(days=90)
+    assert (resultado >= cutoff) in (True, False)  # no lanza TypeError
+
+
+def test_exportar_rotacion_no_revienta_con_fecha_aware_simulando_postgres(admin_client, monkeypatch):
+    """Reproduce el bug reportado: en Postgres, m['fecha'] llega como datetime
+    aware (con tzinfo) y antes rompia la resta contra ahora() (naive)."""
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Producto Rotacion Aware", "stock_minimo": "1", "stock_actual": "5",
+    })
+    admin_client.post("/movimientos/nuevo/salida", data={"producto_id": "1", "cantidad": "1"})
+
+    import db
+    from datetime import datetime, timezone, timedelta
+
+    original_get_db_connection = db.get_db_connection
+
+    class FilaConFechaAware(dict):
+        def __getitem__(self, key):
+            valor = super().__getitem__(key)
+            if key == "fecha" and isinstance(valor, str):
+                dt = datetime.fromisoformat(valor[:19])
+                return dt.replace(tzinfo=timezone(timedelta(hours=-4)))
+            return valor
+
+    class CursorEnvoltorio:
+        def __init__(self, cur):
+            self._cur = cur
+
+        def execute(self, *a, **kw):
+            return self._cur.execute(*a, **kw)
+
+        def fetchall(self):
+            filas = self._cur.fetchall()
+            return [FilaConFechaAware(dict(f)) if "fecha" in dict(f) else f for f in filas]
+
+        def fetchone(self):
+            return self._cur.fetchone()
+
+        def __getattr__(self, name):
+            return getattr(self._cur, name)
+
+    class ConnEnvoltorio:
+        def __init__(self, conn):
+            self._conn = conn
+
+        def cursor(self):
+            return CursorEnvoltorio(self._conn.cursor())
+
+        def __getattr__(self, name):
+            return getattr(self._conn, name)
+
+    def fake_get_db_connection():
+        return ConnEnvoltorio(original_get_db_connection())
+
+    monkeypatch.setattr(db, "get_db_connection", fake_get_db_connection)
+    monkeypatch.setattr("app.get_db_connection", fake_get_db_connection)
+
+    r = admin_client.get("/exportar/rotacion")
+    assert r.status_code == 200
+    assert r.mimetype in ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream")

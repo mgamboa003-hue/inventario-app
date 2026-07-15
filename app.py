@@ -14,7 +14,7 @@ from flask import (Flask, Response, flash, jsonify, redirect, render_template,
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.utils import secure_filename
 
-from db import get_db_connection, init_db, p, USE_POSTGRES, ahora
+from db import get_db_connection, init_db, p, USE_POSTGRES, ahora, fecha_a_naive
 from services import (
     registrar_auditoria,
     usuario_bloqueado, registrar_intento_fallido, resetear_intentos,
@@ -530,11 +530,8 @@ def logout():
             ahora_str_logout = ahora_dt.strftime("%Y-%m-%d %H:%M:%S")
             duracion = None
             if fila and fila["inicio"]:
-                try:
-                    inicio_dt = datetime.fromisoformat(str(fila["inicio"])[:19])
-                    duracion = int((ahora_dt - inicio_dt).total_seconds())
-                except Exception:
-                    duracion = None
+                inicio_dt = fecha_a_naive(fila["inicio"])
+                duracion = int((ahora_dt - inicio_dt).total_seconds()) if inicio_dt else None
             cur.execute(
                 f"UPDATE sesiones SET fin = {ph}, ultima_actividad = {ph}, duracion_segundos = {ph} WHERE id = {ph}",
                 (ahora_str_logout, ahora_str_logout, duracion, sesion_id),
@@ -1270,12 +1267,8 @@ def exportar_rotacion():
     for m in movs:
         if m["tipo"] != "salida":
             continue
-        fecha_raw = m["fecha"]
-        try:
-            fecha_dt = fecha_raw if isinstance(fecha_raw, datetime) else datetime.fromisoformat(str(fecha_raw)[:19])
-        except Exception:
-            continue
-        if fecha_dt >= cutoff:
+        fecha_dt = fecha_a_naive(m["fecha"])
+        if fecha_dt and fecha_dt >= cutoff:
             salidas_por_producto[m["producto_id"]] += (m["cantidad"] or 0)
 
     filas = []
@@ -1872,12 +1865,9 @@ def listar_solicitudes():
         s_dict = dict(s)
         atrasada = False
         if s_dict["estado"] == "pendiente" and s_dict["fecha_solicitud"]:
-            try:
-                fecha_dt = datetime.fromisoformat(str(s_dict["fecha_solicitud"])[:19])
-                if (momento_actual - fecha_dt).days >= umbral:
-                    atrasada = True
-            except Exception:
-                pass
+            fecha_dt = fecha_a_naive(s_dict["fecha_solicitud"])
+            if fecha_dt and (momento_actual - fecha_dt).days >= umbral:
+                atrasada = True
         s_dict["atrasada"] = atrasada
         solicitudes.append(s_dict)
 
@@ -2389,12 +2379,9 @@ def admin_accesos():
         ult = ultimas_sesiones.get(u["id"])
         en_linea = False
         if ult and not ult["fin"] and ult["ultima_actividad"]:
-            try:
-                actividad_dt = datetime.fromisoformat(str(ult["ultima_actividad"])[:19])
-                if (momento_actual - actividad_dt).total_seconds() <= umbral_minutos * 60:
-                    en_linea = True
-            except Exception:
-                pass
+            actividad_dt = fecha_a_naive(ult["ultima_actividad"])
+            if actividad_dt and (momento_actual - actividad_dt).total_seconds() <= umbral_minutos * 60:
+                en_linea = True
         u["en_linea"] = en_linea
         u["ip_reciente"] = ult["ip"] if ult else None
 
@@ -2411,11 +2398,11 @@ def admin_accesos():
         if h.get("duracion_segundos") is not None:
             h["duracion_texto"] = formatear_duracion(h["duracion_segundos"])
         elif h.get("ultima_actividad") and h.get("inicio"):
-            try:
-                inicio_dt = datetime.fromisoformat(str(h["inicio"])[:19])
-                act_dt = datetime.fromisoformat(str(h["ultima_actividad"])[:19])
+            inicio_dt = fecha_a_naive(h["inicio"])
+            act_dt = fecha_a_naive(h["ultima_actividad"])
+            if inicio_dt and act_dt:
                 h["duracion_texto"] = formatear_duracion(int((act_dt - inicio_dt).total_seconds())) + " (en curso)"
-            except Exception:
+            else:
                 h["duracion_texto"] = "—"
         else:
             h["duracion_texto"] = "—"

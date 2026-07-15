@@ -30,6 +30,23 @@ def ahora_str():
     return ahora().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def fecha_a_naive(valor):
+    """Convierte un valor de fecha leido de la BD (string ISO de SQLite, o un
+    datetime "aware" con zona horaria que devuelve psycopg2 para columnas
+    TIMESTAMPTZ en Postgres) a un datetime.datetime "naive", para poder
+    restarlo/compararlo con ahora() sin importar el motor de BD. Sin esto,
+    Postgres revienta con "can't compare offset-naive and offset-aware
+    datetimes" en cualquier resta contra ahora()."""
+    if valor is None:
+        return None
+    if isinstance(valor, datetime):
+        return valor.replace(tzinfo=None)
+    try:
+        return datetime.fromisoformat(str(valor)[:19])
+    except Exception:
+        return None
+
+
 def _sqlite_conn():
     conn = sqlite3.connect(SQLITE_PATH, check_same_thread=False, timeout=15)
     conn.row_factory = sqlite3.Row
