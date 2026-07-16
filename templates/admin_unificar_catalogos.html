@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Unificar nombres — Wintec{% endblock %}
+{% block topbar_title %}Unificar nombres repetidos{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('listar_productos') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver a Inventario
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="table-card p-4 mb-3">
+  <p class="text-muted mb-0">
+    Acá aparecen los nombres de Categoría, Equipo y Proveedor que están escritos de más de una forma
+    (con o sin tilde, mayúsculas distintas, espacios de más, etc.) para lo que en el fondo es lo mismo.
+    Revisa el nombre final propuesto (puedes editarlo) y toca "Unificar" para que todos esos repuestos
+    queden con el mismo nombre.
+  </p>
+</div>
+
+{% for campo, titulo in CAMPOS_UNIFICABLES.items() %}
+<div class="table-card mb-3">
+  <div class="table-header">
+    <h6><i class="bi bi-tags me-2"></i>{{ titulo }}</h6>
+  </div>
+  <div class="p-3">
+    {% set grupos = grupos_por_campo[campo] %}
+    {% if not grupos %}
+    <div class="text-muted small py-2">
+      <i class="bi bi-check-circle text-success me-1"></i>No se encontraron nombres repetidos en {{ titulo }}.
+    </div>
+    {% else %}
+    {% for grupo in grupos %}
+    <form method="post" class="border rounded p-3 mb-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="campo" value="{{ campo }}">
+      <input type="hidden" name="variantes_json" value='{{ grupo.variantes | map(attribute="valor") | list | tojson }}'>
+      <div class="mb-2">
+        {% for v in grupo.variantes %}
+        <span class="badge bg-light text-dark border me-1 mb-1">{{ v.valor }} <span class="text-muted">({{ v.n }})</span></span>
+        {% endfor %}
+      </div>
+      <div class="row g-2 align-items-end">
+        <div class="col-sm-8 col-md-6">
+          <label class="form-label small fw-semibold">Nombre final</label>
+          <input type="text" class="form-control form-control-sm" name="valor_final" value="{{ grupo.sugerido }}" required>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary btn-sm"
+            onclick="return confirm('Se van a actualizar {{ grupo.total }} repuesto(s) para que todos usen el mismo nombre de {{ titulo|lower }}. ¿Continuar?')">
+            <i class="bi bi-arrow-repeat me-1"></i>Unificar ({{ grupo.total }})
+          </button>
+        </div>
+      </div>
+    </form>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

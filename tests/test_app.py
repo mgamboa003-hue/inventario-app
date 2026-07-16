@@ -1367,3 +1367,75 @@ def test_exportar_rotacion_no_revienta_con_fecha_aware_simulando_postgres(admin_
     r = admin_client.get("/exportar/rotacion")
     assert r.status_code == 200
     assert r.mimetype in ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream")
+
+
+def _crear_producto_con_categoria(admin_client, nombre, codigo, categoria):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": nombre, "codigo": codigo, "categoria": categoria,
+        "stock_minimo": "1", "stock_actual": "5",
+    })
+
+
+def test_unificar_catalogos_detecta_variantes_con_tilde_y_mayusculas(admin_client):
+    # Se usa un nombre unico (con sufijo aleatorio) para no chocar con datos
+    # de ejemplo ya sembrados en la base de pruebas.
+    _crear_producto_con_categoria(admin_client, "Rodillo A", "UNI-Q9137-001", "Accesorio Eléctrico Q9137")
+    _crear_producto_con_categoria(admin_client, "Rodillo B", "UNI-Q9137-002", "accesorio electrico q9137")
+    _crear_producto_con_categoria(admin_client, "Rodillo C", "UNI-Q9137-003", "Accesorio Eléctrico Q9137")
+
+    r = admin_client.get("/admin/unificar-catalogos")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    assert "Q9137" in html
+    assert "Unificar (3)" in html
+
+
+def test_unificar_catalogos_sin_duplicados_muestra_mensaje(admin_client):
+    _crear_producto_con_categoria(admin_client, "Rodillo Unico", "UNI-Q9138-100", "Categoria Unica Q9138 XYZ")
+    r = admin_client.get("/admin/unificar-catalogos")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    # esta categoria unica no debe aparecer agrupada con boton de unificar
+    assert "Q9138" not in html
+
+
+def test_unificar_catalogos_post_consolida_valores(admin_client):
+    _crear_producto_con_categoria(admin_client, "Rodillo D", "UNI-Q9139-004", "Tinta Offset Q9139")
+    _crear_producto_con_categoria(admin_client, "Rodillo E", "UNI-Q9139-005", "tinta offset q9139")
+
+    r = admin_client.post("/admin/unificar-catalogos", data={
+        "campo": "categoria",
+        "valor_final": "Tinta Offset Q9139",
+        "variantes_json": '["Tinta Offset Q9139", "tinta offset q9139"]',
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    assert "se unificaron" in r.get_data(as_text=True)
+
+    # tras unificar, ya no debe aparecer como grupo duplicado
+    r2 = admin_client.get("/admin/unificar-catalogos")
+    assert "Q9139" not in r2.get_data(as_text=True)
+
+    # y el inventario debe mostrar solo la forma final para esos productos
+    r3 = admin_client.get("/productos?q=Rodillo+E")
+    assert "Rodillo E" in r3.get_data(as_text=True)
+
+
+def test_unificar_catalogos_rechaza_campo_invalido(admin_client):
+    r = admin_client.post("/admin/unificar-catalogos", data={
+        "campo": "nombre_no_permitido",
+        "valor_final": "Algo",
+        "variantes_json": '["a", "b"]',
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    assert "Campo no valido" in r.get_data(as_text=True)
+
+
+def test_unificar_catalogos_requiere_admin(client):
+    r = client.get("/admin/unificar-catalogos", follow_redirects=True)
+    assert r.status_code == 200
+    assert "login" in r.request.path.lower() or "Iniciar" in r.get_data(as_text=True)
+
+
+def test_nav_muestra_link_unificar_para_admin(admin_client):
+    r = admin_client.get("/productos")
+    assert "Unificar nombres" in r.get_data(as_text=True)

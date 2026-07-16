@@ -1,6 +1,8 @@
 # app.py -- Inventario Wintec v3
 import io
+import json
 import os
+import unicodedata
 import zipfile
 import urllib.parse
 from collections import defaultdict
@@ -2223,6 +2225,111 @@ def admin_proveedores():
     items = cur.fetchall()
     conn.close()
     return render_template("admin_proveedores.html", items=items)
+
+
+def _normalizar_texto(s):
+    """Normaliza un texto para agrupar variantes que en el fondo son el mismo
+    nombre (con/sin tilde, mayusculas/minusculas, espacios de mas, etc.)."""
+    if not s:
+        return ""
+    s = str(s).strip().lower()
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = " ".join(s.split())
+    return s
+
+
+CAMPOS_UNIFICABLES = {
+    "categoria": "Categoría",
+    "equipo": "Equipo",
+    "proveedor": "Proveedor",
+}
+
+
+def _grupos_duplicados(cur, campo):
+    """Devuelve los grupos de valores de 'campo' en productos que son
+    variantes del mismo nombre (segun _normalizar_texto), cuando hay mas de
+    una variante distinta escrita para lo mismo."""
+    cur.execute(
+        f"SELECT {campo} AS valor, COUNT(*) AS n FROM productos "
+        f"WHERE {campo} IS NOT NULL AND {campo} <> '' GROUP BY {campo}"
+    )
+    filas = cur.fetchall()
+    grupos = {}
+    for fila in filas:
+        valor = fila["valor"]
+        n = fila["n"]
+        clave = _normalizar_texto(valor)
+        grupos.setdefault(clave, []).append({"valor": valor, "n": n})
+    resultado = []
+    for variantes in grupos.values():
+        if len(variantes) > 1:
+            variantes.sort(key=lambda v: v["n"], reverse=True)
+            resultado.append({
+                "variantes": variantes,
+                "sugerido": variantes[0]["valor"],
+                "total": sum(v["n"] for v in variantes),
+            })
+    resultado.sort(key=lambda g: g["total"], reverse=True)
+    return resultado
+
+
+@app.route("/admin/unificar-catalogos", methods=["GET", "POST"])
+@admin_required
+def admin_unificar_catalogos():
+    if request.method == "POST":
+        campo = request.form.get("campo", "")
+        if campo not in CAMPOS_UNIFICABLES:
+            flash("Campo no valido.", "danger")
+            return redirect(url_for("admin_unificar_catalogos"))
+
+        valor_final = (request.form.get("valor_final") or "").strip()
+        if not valor_final:
+            flash("Debes indicar el nombre final.", "danger")
+            return redirect(url_for("admin_unificar_catalogos"))
+
+        try:
+            variantes = json.loads(request.form.get("variantes_json", "[]"))
+        except Exception:
+            variantes = []
+        variantes = [v for v in variantes if isinstance(v, str) and v.strip()]
+        if not variantes:
+            flash("No se encontraron variantes para unificar.", "danger")
+            return redirect(url_for("admin_unificar_catalogos"))
+
+        ph = p()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        total_actualizados = 0
+        try:
+            for variante in variantes:
+                if variante == valor_final:
+                    continue
+                cur.execute(f"UPDATE productos SET {campo} = {ph} WHERE {campo} = {ph}", (valor_final, variante))
+                total_actualizados += max(cur.rowcount or 0, 0)
+            conn.commit()
+            registrar_auditoria(
+                "productos", None, "unificar_catalogo", session.get("user_id"), session.get("nombre"),
+                f"Unifico {CAMPOS_UNIFICABLES[campo]}: {variantes} -> '{valor_final}' ({total_actualizados} productos)",
+            )
+            flash(f'Listo: se unificaron {total_actualizados} repuesto(s) bajo "{valor_final}".', "success")
+        except Exception as e:
+            conn.rollback()
+            app.logger.error("Error al unificar catalogo: %s", e)
+            flash("No se pudo unificar. Intenta de nuevo.", "danger")
+        finally:
+            conn.close()
+
+        return redirect(url_for("admin_unificar_catalogos"))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    grupos_por_campo = {campo: _grupos_duplicados(cur, campo) for campo in CAMPOS_UNIFICABLES}
+    conn.close()
+    return render_template(
+        "admin_unificar_catalogos.html",
+        grupos_por_campo=grupos_por_campo, CAMPOS_UNIFICABLES=CAMPOS_UNIFICABLES,
+    )
 
 
 @app.route("/admin/<tipo>/nuevo", methods=["POST"])

@@ -101,6 +101,9 @@
     <a href="{{ url_for('admin_proveedores') }}" class="nav-link {% if 'proveedor' in (request.endpoint or '') %}active{% endif %}">
       <i class="bi bi-building"></i><span>Proveedores</span>
     </a>
+    <a href="{{ url_for('admin_unificar_catalogos') }}" class="nav-link {% if request.endpoint == 'admin_unificar_catalogos' %}active{% endif %}">
+      <i class="bi bi-arrow-repeat"></i><span>Unificar nombres</span>
+    </a>
     <a href="{{ url_for('admin_ubicaciones') }}" class="nav-link {% if request.endpoint == 'admin_ubicaciones' %}active{% endif %}">
       <i class="bi bi-geo"></i><span>Gestionar ubicaciones</span>
     </a>
