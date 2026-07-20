@@ -104,6 +104,9 @@ body { background: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; }
   position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 .topbar-title { font-weight: 700; font-size: 1.05rem; color: #1a2a4a; flex: 1; }
+.topbar-search { position: relative; width: 260px; flex: 0 0 auto; }
+.topbar-search i { position: absolute; left: .6rem; top: 50%; transform: translateY(-50%); color: #8a94a6; font-size: .85rem; pointer-events: none; }
+.topbar-search input { padding-left: 1.8rem; }
 .topbar-actions { display: flex; gap: .5rem; }
 .sidebar-toggle-btn { background: none; border: 1px solid #dee2e6; border-radius: .4rem; color: #333; }
 .sidebar-toggle-btn:hover { background: #f0f0f0; }
@@ -185,6 +188,11 @@ body { background: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; }
     line-height: 1.25;
     flex: 1 1 auto;
     min-width: 0;
+  }
+  .topbar-search {
+    order: 2;
+    flex-basis: 100%;
+    width: 100%;
   }
   .topbar-actions {
     order: 3;

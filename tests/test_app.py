@@ -1600,3 +1600,24 @@ def test_respuestas_incluyen_cabeceras_de_seguridad(client):
     assert r.headers.get("X-Frame-Options") == "SAMEORIGIN"
     assert "Content-Security-Policy" in r.headers
     assert "default-src 'self'" in r.headers["Content-Security-Policy"]
+
+
+def test_buscador_global_aparece_en_topbar_para_admin(admin_client):
+    r = admin_client.get("/movimientos")
+    body = r.get_data(as_text=True)
+    assert 'name="q"' in body
+    assert 'action="/productos"' in body
+
+
+def test_buscador_global_no_aparece_para_comprador(client):
+    client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    client.post("/admin/usuarios/nuevo", data={
+        "username": "comprador_q9300", "password": "clave123", "nombre": "Comprador Test",
+        "role": "comprador", "planta": "quilicura",
+    })
+    client.get("/logout")
+    client.post("/login", data={"username": "comprador_q9300", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+    r = client.get("/ordenes_compra", follow_redirects=True)
+    body = r.get_data(as_text=True)
+    assert 'name="q"' not in body
