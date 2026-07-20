@@ -19,6 +19,10 @@
           <input type="text" class="form-control form-control-sm" name="nombre">
         </div>
         <div class="mb-2">
+          <label class="form-label small fw-semibold">Correo (opcional)</label>
+          <input type="email" class="form-control form-control-sm" name="email" placeholder="para recuperar contraseña">
+        </div>
+        <div class="mb-2">
           <label class="form-label small fw-semibold">Contraseña</label>
           <input type="password" class="form-control form-control-sm" name="password" required minlength="6" autocomplete="new-password">
         </div>
@@ -124,6 +128,10 @@
                       <div class="mb-2">
                         <label class="form-label small fw-semibold">Nombre completo</label>
                         <input type="text" class="form-control form-control-sm" name="nombre" value="{{ u['nombre'] or '' }}">
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label small fw-semibold">Correo (para recuperar contraseña)</label>
+                        <input type="email" class="form-control form-control-sm" name="email" value="{{ u['email'] or '' }}">
                       </div>
                       <div class="mb-1">
                         <label class="form-label small fw-semibold">Rol</label>

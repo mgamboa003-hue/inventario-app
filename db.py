@@ -433,6 +433,7 @@ def _run_migrations(conn):
         ("usuarios",   "debe_cambiar_password", "INTEGER DEFAULT 0" if not USE_POSTGRES else "BOOLEAN DEFAULT FALSE"),
         ("usuarios",   "planta",          "TEXT"),
         ("usuarios",   "super_admin",     "INTEGER DEFAULT 0" if not USE_POSTGRES else "BOOLEAN DEFAULT FALSE"),
+        ("usuarios",   "email",           "TEXT"),
         ("ubicaciones","planta",          "TEXT"),
         ("productos",  "descripcion",     "TEXT"),
         ("productos",  "planta",          "TEXT"),

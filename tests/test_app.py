@@ -1705,3 +1705,164 @@ def test_dashboard_alertas_muestran_dias_de_stock_cuando_hay_consumo(admin_clien
     assert r.status_code == 200
     body = r.get_data(as_text=True)
     assert "días de stock" in body or "día de stock" in body
+
+
+def test_login_muestra_link_olvide_password(client):
+    r = client.get("/login")
+    body = r.get_data(as_text=True)
+    assert "Olvidaste tu contrase" in body
+    assert '/olvide-password' in body
+
+
+def test_admin_puede_guardar_email_de_usuario_nuevo_y_editado(admin_client):
+    admin_client.post("/admin/usuarios/nuevo", data={
+        "username": "user_email_q9600", "password": "clave123", "nombre": "Con Email",
+        "email": "con.email@wintec.cl", "role": "viewer", "planta": "quilicura",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, email FROM usuarios WHERE username = ?" if not db.USE_POSTGRES else
+                "SELECT id, email FROM usuarios WHERE username = %s", ("user_email_q9600",))
+    fila = cur.fetchone()
+    assert fila["email"] == "con.email@wintec.cl"
+
+    admin_client.post(f"/admin/usuarios/{fila['id']}/editar", data={
+        "nombre": "Con Email Editado", "email": "nuevo@wintec.cl", "role": "viewer",
+    })
+    cur.execute("SELECT email FROM usuarios WHERE id = ?" if not db.USE_POSTGRES else
+                "SELECT email FROM usuarios WHERE id = %s", (fila["id"],))
+    assert cur.fetchone()["email"] == "nuevo@wintec.cl"
+
+
+def test_olvide_password_usuario_inexistente_muestra_mensaje_generico(client):
+    r = client.post("/olvide-password", data={"username": "no_existe_q9601"}, follow_redirects=True)
+    assert r.status_code == 200
+    assert "se envio un enlace" in r.get_data(as_text=True).lower() or "se envió un enlace" in r.get_data(as_text=True).lower()
+
+
+def test_olvide_password_usuario_sin_email_no_revienta(admin_client):
+    admin_client.post("/admin/usuarios/nuevo", data={
+        "username": "sin_email_q9602", "password": "clave123", "nombre": "Sin Email", "role": "viewer", "planta": "quilicura",
+    })
+    admin_client.get("/logout")
+    r = admin_client.post("/olvide-password", data={"username": "sin_email_q9602"}, follow_redirects=True)
+    assert r.status_code == 200
+
+
+def test_olvide_password_envia_correo_cuando_hay_email_y_smtp(admin_client, monkeypatch):
+    import services
+    monkeypatch.setenv("SMTP_HOST", "smtp.test.local")
+    monkeypatch.setenv("SMTP_TO", "admin@wintec.cl")
+
+    admin_client.post("/admin/usuarios/nuevo", data={
+        "username": "con_email_q9603", "password": "clave123", "nombre": "Con Email Test",
+        "email": "destinatario@wintec.cl", "role": "viewer", "planta": "quilicura",
+    })
+
+    enviados = {}
+
+    class SMTPFalso:
+        def __init__(self, host, port, timeout=15):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def starttls(self):
+            pass
+        def login(self, user, pwd):
+            pass
+        def sendmail(self, remitente, destinatarios, contenido):
+            enviados["destinatarios"] = destinatarios
+            enviados["contenido"] = contenido
+
+    monkeypatch.setattr(services.smtplib, "SMTP", SMTPFalso)
+
+    admin_client.get("/logout")
+    r = admin_client.post("/olvide-password", data={"username": "con_email_q9603"}, follow_redirects=True)
+    assert r.status_code == 200
+    assert enviados.get("destinatarios") == ["destinatario@wintec.cl"]
+    assert "To: destinatario@wintec.cl" in enviados["contenido"]
+    assert len(enviados["contenido"]) > 100
+
+
+def test_restablecer_password_con_token_valido_permite_cambiar_clave(admin_client):
+    import services
+    admin_client.post("/admin/usuarios/nuevo", data={
+        "username": "reset_ok_q9604", "password": "claveVieja1", "nombre": "Reset OK",
+        "email": "reset.ok@wintec.cl", "role": "viewer", "planta": "quilicura",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, password FROM usuarios WHERE username = ?" if not db.USE_POSTGRES else
+                "SELECT id, password FROM usuarios WHERE username = %s", ("reset_ok_q9604",))
+    fila = cur.fetchone()
+    token = services.generar_token_reset_password(fila["id"], fila["password"])
+
+    admin_client.get("/logout")
+    r = admin_client.get(f"/restablecer-password/{token}")
+    assert r.status_code == 200
+
+    r2 = admin_client.post(f"/restablecer-password/{token}", data={
+        "nueva_password": "claveNueva123", "confirmar_password": "claveNueva123",
+    }, follow_redirects=True)
+    assert r2.status_code == 200
+    assert "actualizada" in r2.get_data(as_text=True).lower()
+
+    r3 = admin_client.post("/login", data={"username": "reset_ok_q9604", "password": "claveNueva123"}, follow_redirects=True)
+    assert "Cerrar sesión" in r3.get_data(as_text=True) or "cerrar-sesion" in r3.get_data(as_text=True).lower()
+
+
+def test_restablecer_password_token_no_reutilizable_tras_cambiar_clave(admin_client):
+    import services
+    admin_client.post("/admin/usuarios/nuevo", data={
+        "username": "reset_reuso_q9605", "password": "claveVieja1", "nombre": "Reset Reuso",
+        "email": "reset.reuso@wintec.cl", "role": "viewer", "planta": "quilicura",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, password FROM usuarios WHERE username = ?" if not db.USE_POSTGRES else
+                "SELECT id, password FROM usuarios WHERE username = %s", ("reset_reuso_q9605",))
+    fila = cur.fetchone()
+    token = services.generar_token_reset_password(fila["id"], fila["password"])
+
+    admin_client.get("/logout")
+    admin_client.post(f"/restablecer-password/{token}", data={
+        "nueva_password": "primeraClave1", "confirmar_password": "primeraClave1",
+    })
+
+    # el mismo token ya no deberia servir, porque la contrasena cambio
+    r = admin_client.get(f"/restablecer-password/{token}", follow_redirects=True)
+    assert "no es valido" in r.get_data(as_text=True).lower() or "no válido" in r.get_data(as_text=True).lower()
+
+
+def test_restablecer_password_token_invalido_redirige_con_error(client):
+    r = client.get("/restablecer-password/token-inventado-que-no-sirve", follow_redirects=True)
+    assert r.status_code == 200
+    body = r.get_data(as_text=True).lower()
+    assert "no es valido" in body or "no válido" in body
+
+
+def test_restablecer_password_rechaza_contrasenas_que_no_coinciden(admin_client):
+    import services
+    admin_client.post("/admin/usuarios/nuevo", data={
+        "username": "reset_nomatch_q9606", "password": "claveVieja1", "nombre": "Reset No Match",
+        "email": "reset.nomatch@wintec.cl", "role": "viewer", "planta": "quilicura",
+    })
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, password FROM usuarios WHERE username = ?" if not db.USE_POSTGRES else
+                "SELECT id, password FROM usuarios WHERE username = %s", ("reset_nomatch_q9606",))
+    fila = cur.fetchone()
+    token = services.generar_token_reset_password(fila["id"], fila["password"])
+
+    admin_client.get("/logout")
+    r = admin_client.post(f"/restablecer-password/{token}", data={
+        "nueva_password": "unaClave123", "confirmar_password": "otraClave456",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    assert "no coinciden" in r.get_data(as_text=True).lower()

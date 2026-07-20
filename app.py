@@ -30,6 +30,7 @@ from services import (
     dias_atraso_solicitud, enviar_notificacion_solicitud, dias_gracia_historial_solicitud,
     sesion_activa_minutos, formatear_duracion,
     calcular_dias_restantes_por_producto,
+    generar_token_reset_password, verificar_token_reset_password, enviar_correo_reset_password,
 )
 
 load_dotenv()
@@ -581,6 +582,68 @@ def logout():
     else:
         flash("Sesion cerrada correctamente.", "info")
     return redirect(url_for("login"))
+
+
+@app.route("/olvide-password", methods=["GET", "POST"])
+def olvide_password():
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        ph = p()
+        cur.execute(
+            f"SELECT id, nombre, email, password FROM usuarios WHERE username = {ph} AND activo = {ACTIVO_TRUE}",
+            (username,),
+        )
+        usuario = cur.fetchone()
+        conn.close()
+
+        # Mensaje generico siempre (exista o no el usuario, tenga o no correo)
+        # para no revelar nombres de usuario validos a quien no los conoce.
+        if usuario and usuario["email"] and email_configurado():
+            token = generar_token_reset_password(usuario["id"], usuario["password"])
+            link = url_for("restablecer_password", token=token, _external=True)
+            enviar_correo_reset_password(usuario["email"], usuario["nombre"], link)
+            registrar_auditoria("usuarios", usuario["id"], "solicitar_reset_password",
+                                 None, username, "Solicito restablecer su contrasena")
+        flash("Si el usuario existe y tiene un correo registrado, se envio un enlace para restablecer la contrasena.", "info")
+        return redirect(url_for("login"))
+    return render_template("olvide_password.html")
+
+
+@app.route("/restablecer-password/<token>", methods=["GET", "POST"])
+def restablecer_password(token):
+    uid = verificar_token_reset_password(token)
+    if not uid:
+        flash("El enlace no es valido o ya vencio. Solicita uno nuevo.", "danger")
+        return redirect(url_for("olvide_password"))
+
+    if request.method == "POST":
+        nueva = request.form.get("nueva_password") or ""
+        confirmar = request.form.get("confirmar_password") or ""
+        if len(nueva) < 6:
+            flash("La contrasena debe tener al menos 6 caracteres.", "danger")
+            return render_template("restablecer_password.html", token=token)
+        if nueva != confirmar:
+            flash("Las contrasenas no coinciden.", "danger")
+            return render_template("restablecer_password.html", token=token)
+
+        hashed = bcrypt.hashpw(nueva.encode(), bcrypt.gensalt()).decode()
+        ph = p()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE usuarios SET password = {ph}, debe_cambiar_password = {ph} WHERE id = {ph}",
+            (hashed, False, uid),
+        )
+        conn.commit()
+        conn.close()
+        registrar_auditoria("usuarios", uid, "reset_password_self", None, None,
+                             "El usuario restablecio su propia contrasena")
+        flash("Contrasena actualizada. Ya puedes iniciar sesion.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("restablecer_password.html", token=token)
 
 
 # DASHBOARD
@@ -2078,7 +2141,7 @@ def cambiar_estado_solicitud(sid):
 def admin_usuarios():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, username, nombre, role, activo, created_at, debe_cambiar_password, planta, super_admin FROM usuarios ORDER BY id")
+    cur.execute("SELECT id, username, nombre, email, role, activo, created_at, debe_cambiar_password, planta, super_admin FROM usuarios ORDER BY id")
     usuarios = cur.fetchall()
     conn.close()
     return render_template("admin_usuarios.html", usuarios=usuarios)
@@ -2090,6 +2153,7 @@ def crear_usuario():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
     nombre = (request.form.get("nombre") or "").strip()
+    email = (request.form.get("email") or "").strip() or None
     role = request.form.get("role", "viewer")
     planta = (request.form.get("planta") or "").strip().lower()
 
@@ -2113,8 +2177,8 @@ def crear_usuario():
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            f"INSERT INTO usuarios (username, password, nombre, role, debe_cambiar_password, planta) VALUES ({ph},{ph},{ph},{ph},{ph},{ph})",
-            (username, hashed, nombre, role, True, planta)
+            f"INSERT INTO usuarios (username, password, nombre, email, role, debe_cambiar_password, planta) VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph})",
+            (username, hashed, nombre, email, role, True, planta)
         )
         conn.commit()
         cur.execute(f"SELECT id FROM usuarios WHERE username = {ph}", (username,))
@@ -2134,6 +2198,7 @@ def crear_usuario():
 @super_admin_required
 def editar_usuario(uid):
     nombre = (request.form.get("nombre") or "").strip()
+    email = (request.form.get("email") or "").strip() or None
     role = request.form.get("role", "viewer")
     if role not in ("admin", "viewer", "solicitante", "comprador"):
         flash("Rol invalido.", "danger")
@@ -2168,8 +2233,8 @@ def editar_usuario(uid):
         super_admin_nuevo = False
 
     cur.execute(
-        f"UPDATE usuarios SET nombre = {ph}, role = {ph}, planta = {ph}, super_admin = {ph} WHERE id = {ph}",
-        (nombre, role, planta, super_admin_nuevo, uid),
+        f"UPDATE usuarios SET nombre = {ph}, email = {ph}, role = {ph}, planta = {ph}, super_admin = {ph} WHERE id = {ph}",
+        (nombre, email, role, planta, super_admin_nuevo, uid),
     )
     conn.commit()
     conn.close()

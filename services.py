@@ -643,3 +643,83 @@ def calcular_dias_restantes_por_producto(producto_ids, dias_historial=None):
             dias_restantes = None
         resultado[pid] = {"dias_restantes": dias_restantes, "consumo_diario": round(consumo_diario, 2)}
     return resultado
+
+
+# RECUPERACION DE CONTRASENA (self-service, por correo)
+def _serializer_reset_password():
+    from itsdangerous import URLSafeTimedSerializer
+    secret = os.environ.get("SECRET_KEY", "dev-secret-fallback-wintec")
+    return URLSafeTimedSerializer(secret, salt="reset-password")
+
+
+def generar_token_reset_password(usuario_id, password_hash_actual):
+    """El token incluye un fragmento del hash de la contrasena actual, asi
+    que en cuanto el usuario cambia su contrasena (con este mismo token o
+    por cualquier otro medio) el token queda invalido automaticamente sin
+    necesidad de guardar nada extra en la base de datos."""
+    frag = hashlib.sha256((password_hash_actual or "").encode()).hexdigest()[:16]
+    return _serializer_reset_password().dumps({"uid": usuario_id, "frag": frag})
+
+
+def verificar_token_reset_password(token, max_edad_segundos=1800):
+    """Devuelve el id del usuario si el token es valido, vigente (30 min por
+    defecto) y la contrasena no ha cambiado desde que se genero. Si no,
+    devuelve None."""
+    from itsdangerous import BadSignature, SignatureExpired
+    try:
+        datos = _serializer_reset_password().loads(token, max_age=max_edad_segundos)
+    except (BadSignature, SignatureExpired):
+        return None
+
+    uid = datos.get("uid")
+    frag = datos.get("frag")
+    if not uid:
+        return None
+
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        ph = p()
+        cur.execute(f"SELECT id, password FROM usuarios WHERE id = {ph}", (uid,))
+        row = cur.fetchone()
+        if not row:
+            return None
+        frag_actual = hashlib.sha256((row["password"] or "").encode()).hexdigest()[:16]
+        if frag_actual != frag:
+            return None
+        return uid
+    finally:
+        conn.close()
+
+
+def enviar_correo_reset_password(email, nombre, link):
+    if not email_configurado():
+        return False, "SMTP no configurado (faltan SMTP_HOST / SMTP_TO en variables de entorno)."
+
+    host = os.environ.get("SMTP_HOST")
+    port = int(os.environ.get("SMTP_PORT", 587))
+    user = os.environ.get("SMTP_USER", "")
+    pwd = os.environ.get("SMTP_PASS", "")
+    remitente = os.environ.get("SMTP_FROM", user or "inventario@wintec.local")
+
+    html = f"""
+    <p>Hola {nombre or ''},</p>
+    <p>Recibimos una solicitud para restablecer tu contraseña en Inventario Wintec.</p>
+    <p><a href="{link}">Haz clic aquí para elegir una nueva contraseña</a></p>
+    <p>Este enlace vence en 30 minutos. Si tú no pediste esto, puedes ignorar este correo.</p>
+    """
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Restablecer tu contraseña -- Inventario Wintec"
+    msg["From"] = remitente
+    msg["To"] = email
+    msg.attach(MIMEText(html, "html"))
+
+    try:
+        with smtplib.SMTP(host, port, timeout=15) as server:
+            server.starttls()
+            if user:
+                server.login(user, pwd)
+            server.sendmail(remitente, [email], msg.as_string())
+        return True, "Correo enviado."
+    except Exception as e:
+        return False, f"Error enviando correo: {e}"
