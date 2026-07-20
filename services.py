@@ -491,3 +491,91 @@ def formatear_duracion(segundos):
     if minutos > 0:
         return f"{minutos}m"
     return f"{segs}s"
+
+
+# RESPALDO AUTOMATICO DE LA BASE DE DATOS (a S3/R2, privado)
+BACKUPS_A_MANTENER = int(os.environ.get("BACKUPS_A_MANTENER", 14))
+PREFIJO_BACKUPS_REMOTOS = "backups-db"
+
+
+def respaldo_automatico():
+    """Genera un dump completo de la base (ver db.generar_dump_sql) y lo sube
+    a S3/R2 como archivo PRIVADO (nunca con ACL publica: contiene contrasenas
+    hasheadas y tokens). Si S3/R2 no esta configurado, no hace nada util --
+    guardar el dump en disco local del contenedor no sirve como respaldo real
+    porque Railway (y similares) usan un filesystem efimero que se borra en
+    cada deploy.
+    Devuelve (ok: bool, mensaje: str).
+    """
+    from db import generar_dump_sql
+    import gzip
+
+    if not s3_configurado():
+        return False, ("S3/R2 no esta configurado, asi que no se puede generar un respaldo remoto real. "
+                        "Configura S3_BUCKET/S3_ACCESS_KEY para habilitar los respaldos automaticos.")
+
+    try:
+        dump = generar_dump_sql()
+        comprimido = gzip.compress(dump)
+        timestamp = ahora().strftime("%Y%m%d_%H%M%S")
+        filename = f"inventario_{timestamp}.sql.gz"
+        key = f"{PREFIJO_BACKUPS_REMOTOS}/{filename}"
+
+        client = _s3_client()
+        bucket = os.environ.get("S3_BUCKET")
+        client.put_object(Bucket=bucket, Key=key, Body=comprimido, ContentType="application/gzip")
+
+        _limpiar_backups_remotos_antiguos(client, bucket)
+        return True, f"Respaldo remoto creado: {filename} ({len(comprimido) // 1024} KB)"
+    except Exception as e:
+        return False, f"Error generando el respaldo remoto: {e}"
+
+
+def listar_backups_remotos():
+    """Lista los respaldos guardados en S3/R2, mas recientes primero.
+    Devuelve una lista de dicts con key, nombre, tamano y fecha."""
+    if not s3_configurado():
+        return []
+    try:
+        client = _s3_client()
+        bucket = os.environ.get("S3_BUCKET")
+        resp = client.list_objects_v2(Bucket=bucket, Prefix=f"{PREFIJO_BACKUPS_REMOTOS}/")
+        items = resp.get("Contents", [])
+        items.sort(key=lambda o: o["LastModified"], reverse=True)
+        resultado = []
+        for obj in items:
+            resultado.append({
+                "key": obj["Key"],
+                "nombre": obj["Key"].split("/")[-1],
+                "tamano_kb": max(1, obj["Size"] // 1024),
+                "fecha": obj["LastModified"],
+            })
+        return resultado
+    except Exception:
+        return []
+
+
+def _limpiar_backups_remotos_antiguos(client, bucket):
+    """Elimina respaldos remotos mas antiguos, dejando solo los ultimos
+    BACKUPS_A_MANTENER."""
+    try:
+        resp = client.list_objects_v2(Bucket=bucket, Prefix=f"{PREFIJO_BACKUPS_REMOTOS}/")
+        items = resp.get("Contents", [])
+        items.sort(key=lambda o: o["LastModified"], reverse=True)
+        for obj in items[BACKUPS_A_MANTENER:]:
+            client.delete_object(Bucket=bucket, Key=obj["Key"])
+    except Exception:
+        pass
+
+
+def url_descarga_backup_remoto(key, minutos_validez=10):
+    """Genera un link temporal y privado para descargar un respaldo desde
+    S3/R2 (el bucket de fotos es publico, pero los respaldos no deben serlo)."""
+    try:
+        client = _s3_client()
+        bucket = os.environ.get("S3_BUCKET")
+        return client.generate_presigned_url(
+            "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=minutos_validez * 60,
+        )
+    except Exception:
+        return None

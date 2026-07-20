@@ -16,13 +16,14 @@ from flask import (Flask, Response, flash, jsonify, redirect, render_template,
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.utils import secure_filename
 
-from db import get_db_connection, init_db, p, USE_POSTGRES, ahora, fecha_a_naive
+from db import get_db_connection, init_db, p, USE_POSTGRES, ahora, fecha_a_naive, reclamar_tarea_diaria
 from services import (
     registrar_auditoria,
     usuario_bloqueado, registrar_intento_fallido, resetear_intentos,
     generar_api_token, verificar_api_token, revocar_api_token,
     email_configurado, enviar_alertas_stock_bajo,
     s3_configurado, subir_imagen_bytes,
+    respaldo_automatico, listar_backups_remotos, url_descarga_backup_remoto,
     generar_ordenes_compra_sugeridas,
     asegurar_codigo_producto, generar_qr_base64,
     generar_orden_desde_cotizacion,
@@ -2562,9 +2563,11 @@ def admin_sistema():
     backups = []
     if os.path.isdir(backups_dir):
         backups = sorted(os.listdir(backups_dir), reverse=True)[:20]
+    backups_remotos = listar_backups_remotos()
     return render_template(
         "admin_sistema.html",
         backups=backups,
+        backups_remotos=backups_remotos,
         email_ok=email_configurado(),
         s3_ok=s3_configurado(),
         force_https=FORCE_HTTPS,
@@ -2575,6 +2578,16 @@ def admin_sistema():
 @app.route("/admin/backup", methods=["POST"])
 @super_admin_required
 def ejecutar_backup():
+    if s3_configurado():
+        # Respaldo remoto real (sirve incluso en Railway, donde el disco local
+        # se borra en cada deploy). No depende de pg_dump.
+        ok, msg = respaldo_automatico()
+        registrar_auditoria("sistema", None, "backup", session.get("user_id"), session.get("nombre"), msg)
+        flash(msg, "success" if ok else "warning")
+        return redirect(url_for("admin_sistema"))
+
+    # Sin S3/R2 configurado: respaldo local (solo util en desarrollo/local,
+    # no sobrevive un redeploy en Railway).
     import backup_db
     try:
         ruta = backup_db.backup_postgres() if USE_POSTGRES else backup_db.backup_sqlite()
@@ -2582,7 +2595,7 @@ def ejecutar_backup():
         if ruta:
             registrar_auditoria("sistema", None, "backup", session.get("user_id"), session.get("nombre"),
                                  os.path.basename(ruta))
-            flash(f"Backup creado: {os.path.basename(ruta)}", "success")
+            flash(f"Backup local creado: {os.path.basename(ruta)}. Configura S3/R2 para respaldos que sobrevivan un redeploy.", "warning")
         else:
             flash("No se pudo crear el backup. Revisa la consola del servidor.", "warning")
     except Exception as e:
@@ -2600,6 +2613,21 @@ def descargar_backup(filename):
         flash("Archivo de backup no encontrado.", "warning")
         return redirect(url_for("admin_sistema"))
     return send_file(filepath, as_attachment=True)
+
+
+@app.route("/admin/backup-remoto/<path:key>/descargar")
+@super_admin_required
+def descargar_backup_remoto(key):
+    # Los respaldos en S3/R2 son privados (contienen contrasenas hasheadas y
+    # tokens), asi que se entregan via un link firmado y temporal.
+    if not key.startswith("backups-db/"):
+        flash("Respaldo no valido.", "warning")
+        return redirect(url_for("admin_sistema"))
+    url = url_descarga_backup_remoto(key)
+    if not url:
+        flash("No se pudo generar el link de descarga.", "warning")
+        return redirect(url_for("admin_sistema"))
+    return redirect(url)
 
 
 @app.route("/admin/alertas/enviar", methods=["POST"])
@@ -2768,6 +2796,57 @@ def inject_globals():
     logo_path = _os.path.join(BASE_DIR, "static", "logo_wintec.png")
     logo_exists = _os.path.exists(logo_path)
     return dict(logo_path=logo_exists, logo_exists=logo_exists)
+
+
+# TAREAS PROGRAMADAS (respaldo diario de la BD + alertas de stock bajo)
+# Corren dentro del mismo proceso de la app (sin infraestructura extra de
+# Railway). Como gunicorn puede levantar varios workers, cada uno agenda su
+# propio scheduler, pero reclamar_tarea_diaria() usa la base de datos como
+# lock para que la tarea del dia se ejecute una sola vez sin importar cuantos
+# workers/instancias esten corriendo.
+def _tarea_respaldo_diario():
+    with app.app_context():
+        if not reclamar_tarea_diaria("respaldo_db"):
+            return
+        ok, msg = respaldo_automatico()
+        registrar_auditoria("sistema", None, "backup_automatico", None, "scheduler", msg)
+        if not ok:
+            app.logger.warning("Respaldo automatico no se pudo completar: %s", msg)
+
+
+def _tarea_alertas_stock_diaria():
+    with app.app_context():
+        if not email_configurado():
+            return
+        if not reclamar_tarea_diaria("alertas_stock"):
+            return
+        ok, msg = enviar_alertas_stock_bajo()
+        registrar_auditoria("alertas", None, "enviar_email_automatico", None, "scheduler", msg)
+
+
+def iniciar_tareas_programadas():
+    import sys
+    if app.config.get("TESTING") or "pytest" in sys.modules:
+        # conftest.py marca TESTING=True recien despues de importar el
+        # modulo, asi que tambien nos protegemos revisando si pytest esta
+        # corriendo, para no levantar un scheduler de fondo durante los tests.
+        return
+    if DEBUG and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        # con el reloader de Flask en modo debug este es el proceso "vigia";
+        # no debe agendar nada (evita duplicar el scheduler en desarrollo).
+        return
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+    except ImportError:
+        app.logger.warning("APScheduler no esta instalado; no correran los respaldos ni alertas automaticas.")
+        return
+    scheduler = BackgroundScheduler(timezone="America/Santiago")
+    scheduler.add_job(_tarea_respaldo_diario, "cron", hour=3, minute=0, id="respaldo_diario", replace_existing=True)
+    scheduler.add_job(_tarea_alertas_stock_diaria, "cron", hour=8, minute=0, id="alertas_stock_diaria", replace_existing=True)
+    scheduler.start()
+
+
+iniciar_tareas_programadas()
 
 
 if __name__ == "__main__":

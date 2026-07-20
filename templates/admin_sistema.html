@@ -78,19 +78,43 @@
   <div class="col-lg-6">
     <div class="table-card p-4">
       <h6 class="fw-bold mb-2"><i class="bi bi-cloud-download me-2 text-primary"></i>Respaldos</h6>
-      <p class="text-muted small">
-        Crea un respaldo manual ahora. Para respaldos diarios automáticos,
-        ejecuta <code>registrar_backup_programado.bat</code> una vez (como administrador).
-      </p>
+      {% if s3_ok %}
+      <div class="alert alert-success small py-2 mb-2">
+        <i class="bi bi-check-circle me-1"></i>Respaldo automático diario activo (todos los días a las 3:00 AM, se guarda en S3/R2 y sobrevive a los redeploys).
+      </div>
+      {% else %}
+      <div class="alert alert-warning small py-2 mb-2">
+        <i class="bi bi-exclamation-triangle me-1"></i>No hay respaldo automático real. Sin S3/R2 configurado, cualquier respaldo se guarda en el disco del servidor y se pierde en cada redeploy.
+      </div>
+      {% endif %}
+      <p class="text-muted small">Crea un respaldo ahora mismo, sin esperar al de las 3 AM.</p>
       <form method="post" action="{{ url_for('ejecutar_backup') }}" class="mb-3">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-outline-success btn-sm">
           <i class="bi bi-archive me-1"></i>Crear respaldo ahora
         </button>
       </form>
+
+      {% if backups_remotos %}
+      <div class="small fw-semibold mb-1">Respaldos en la nube (S3/R2):</div>
+      <ul class="list-unstyled small mb-3" style="max-height:220px;overflow-y:auto">
+        {% for b in backups_remotos %}
+        <li class="d-flex justify-content-between align-items-center border-bottom py-1">
+          <span>
+            <span class="font-monospace">{{ b.nombre }}</span>
+            <span class="text-muted"> — {{ b.tamano_kb }} KB</span>
+          </span>
+          <a href="{{ url_for('descargar_backup_remoto', key=b.key) }}" class="btn btn-sm btn-link py-0"><i class="bi bi-download"></i></a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% elif s3_ok %}
+      <div class="text-muted small mb-3">Todavía no hay respaldos en la nube (el primero se genera hoy a las 3 AM, o al tocar "Crear respaldo ahora").</div>
+      {% endif %}
+
       {% if backups %}
-      <div class="small fw-semibold mb-1">Últimos respaldos:</div>
-      <ul class="list-unstyled small mb-0" style="max-height:220px;overflow-y:auto">
+      <div class="small fw-semibold mb-1">Respaldos locales (solo en este servidor):</div>
+      <ul class="list-unstyled small mb-0" style="max-height:180px;overflow-y:auto">
         {% for b in backups %}
         <li class="d-flex justify-content-between align-items-center border-bottom py-1">
           <span class="font-monospace">{{ b }}</span>
@@ -98,8 +122,6 @@
         </li>
         {% endfor %}
       </ul>
-      {% else %}
-      <div class="text-muted small">Todavía no hay respaldos.</div>
       {% endif %}
     </div>
   </div>

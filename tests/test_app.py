@@ -1458,3 +1458,106 @@ def test_unificar_catalogos_requiere_super_admin_no_admin_regular(admin_client):
     # tampoco debe verse el link en la navegacion para un admin regular
     r2 = admin_client.get("/productos")
     assert "Unificar nombres" not in r2.get_data(as_text=True)
+
+
+def test_generar_dump_sql_incluye_datos_sembrados(admin_client):
+    import db
+    dump = db.generar_dump_sql().decode("utf-8")
+    assert "INSERT INTO usuarios" in dump
+    assert "INSERT INTO productos" in dump
+    assert "admin" in dump
+
+
+def test_reclamar_tarea_diaria_solo_permite_una_vez_por_dia(admin_client):
+    import db
+    primera = db.reclamar_tarea_diaria("tarea_test_q9200")
+    segunda = db.reclamar_tarea_diaria("tarea_test_q9200")
+    assert primera is True
+    assert segunda is False
+
+
+def test_respaldo_automatico_sin_s3_devuelve_mensaje_claro(admin_client, monkeypatch):
+    import services
+    monkeypatch.delenv("S3_BUCKET", raising=False)
+    monkeypatch.delenv("S3_ACCESS_KEY", raising=False)
+    ok, msg = services.respaldo_automatico()
+    assert ok is False
+    assert "S3" in msg
+
+
+def test_admin_sistema_advierte_si_no_hay_respaldo_automatico_real(admin_client, monkeypatch):
+    monkeypatch.delenv("S3_BUCKET", raising=False)
+    monkeypatch.delenv("S3_ACCESS_KEY", raising=False)
+    r = admin_client.get("/admin/sistema")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "No hay respaldo autom" in body
+
+
+def test_ejecutar_backup_no_revienta_sin_s3_configurado(admin_client, monkeypatch):
+    monkeypatch.delenv("S3_BUCKET", raising=False)
+    monkeypatch.delenv("S3_ACCESS_KEY", raising=False)
+    r = admin_client.post("/admin/backup", follow_redirects=True)
+    assert r.status_code == 200
+
+
+def test_descargar_backup_remoto_rechaza_key_invalida(admin_client):
+    r = admin_client.get("/admin/backup-remoto/otra-carpeta/archivo/descargar", follow_redirects=True)
+    assert r.status_code == 200
+    assert "no valido" in r.get_data(as_text=True).lower() or "no es válido" in r.get_data(as_text=True).lower() or "Respaldo no valido" in r.get_data(as_text=True)
+
+
+def test_respaldo_automatico_sube_a_s3_simulado(admin_client, monkeypatch):
+    import services
+    import gzip
+
+    monkeypatch.setenv("S3_BUCKET", "bucket-test")
+    monkeypatch.setenv("S3_ACCESS_KEY", "clave-test")
+
+    subidos = {}
+
+    class ClienteFalso:
+        def put_object(self, Bucket, Key, Body, ContentType):
+            subidos["bucket"] = Bucket
+            subidos["key"] = Key
+            subidos["body"] = Body
+            subidos["content_type"] = ContentType
+
+        def list_objects_v2(self, Bucket, Prefix):
+            return {"Contents": []}
+
+    monkeypatch.setattr(services, "_s3_client", lambda: ClienteFalso())
+
+    ok, msg = services.respaldo_automatico()
+    assert ok is True
+    assert subidos["bucket"] == "bucket-test"
+    assert subidos["key"].startswith("backups-db/")
+    assert subidos["content_type"] == "application/gzip"
+
+    # el contenido subido debe ser el dump SQL comprimido con gzip
+    descomprimido = gzip.decompress(subidos["body"]).decode("utf-8")
+    assert "INSERT INTO usuarios" in descomprimido
+
+
+def test_listar_backups_remotos_ordena_por_fecha_descendente(admin_client, monkeypatch):
+    import services
+    from datetime import datetime
+
+    monkeypatch.setenv("S3_BUCKET", "bucket-test")
+    monkeypatch.setenv("S3_ACCESS_KEY", "clave-test")
+
+    class ClienteFalso:
+        def list_objects_v2(self, Bucket, Prefix):
+            return {"Contents": [
+                {"Key": "backups-db/inventario_20260101_000000.sql.gz", "Size": 2048,
+                 "LastModified": datetime(2026, 1, 1)},
+                {"Key": "backups-db/inventario_20260201_000000.sql.gz", "Size": 4096,
+                 "LastModified": datetime(2026, 2, 1)},
+            ]}
+
+    monkeypatch.setattr(services, "_s3_client", lambda: ClienteFalso())
+
+    resultado = services.listar_backups_remotos()
+    assert len(resultado) == 2
+    assert resultado[0]["nombre"] == "inventario_20260201_000000.sql.gz"
+    assert resultado[0]["tamano_kb"] == 4

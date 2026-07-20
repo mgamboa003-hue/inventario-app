@@ -252,6 +252,10 @@ _DDL_SQLITE = [
         fin               TEXT,
         duracion_segundos INTEGER
     )""",
+    """CREATE TABLE IF NOT EXISTS sistema_meta (
+        clave TEXT PRIMARY KEY,
+        valor TEXT
+    )""",
 ]
 
 _DDL_POSTGRES = [
@@ -408,6 +412,10 @@ _DDL_POSTGRES = [
         ultima_actividad  TIMESTAMPTZ,
         fin               TIMESTAMPTZ,
         duracion_segundos INTEGER
+    )""",
+    """CREATE TABLE IF NOT EXISTS sistema_meta (
+        clave TEXT PRIMARY KEY,
+        valor TEXT
     )""",
 ]
 
@@ -610,3 +618,98 @@ def _seed_data(cur):
             (m.get("producto_id"), m.get("tipo"), m.get("cantidad"),
              m.get("fecha"), m.get("usuario"), m.get("motivo"))
         )
+
+
+def reclamar_tarea_diaria(clave):
+    """Intenta 'reclamar' la ejecucion de una tarea programada (backup, alertas,
+    etc.) para el dia de hoy. Devuelve True solo para el primer llamado que
+    logra insertar la marca del dia -- el resto (otros workers de gunicorn, u
+    otra instancia) recibe False y no debe ejecutar la tarea de nuevo.
+    Usa la propia base de datos como lock, asi funciona sin importar cuantos
+    procesos/instancias corran la app."""
+    clave_dia = f"{clave}_{ahora().strftime('%Y-%m-%d')}"
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        ph = p()
+        try:
+            if USE_POSTGRES:
+                cur.execute(
+                    f"INSERT INTO sistema_meta (clave, valor) VALUES ({ph}, {ph}) ON CONFLICT DO NOTHING",
+                    (clave_dia, ahora_str()),
+                )
+            else:
+                cur.execute(
+                    f"INSERT OR IGNORE INTO sistema_meta (clave, valor) VALUES ({ph}, {ph})",
+                    (clave_dia, ahora_str()),
+                )
+            conn.commit()
+            return (cur.rowcount or 0) > 0
+        except Exception:
+            conn.rollback()
+            return False
+    finally:
+        conn.close()
+
+
+TABLAS_RESPALDO = [
+    "usuarios", "equipos", "categorias", "proveedores", "ubicaciones",
+    "productos", "movimientos", "auditoria", "api_tokens",
+    "ordenes_compra", "ordenes_compra_items", "cotizaciones", "cotizacion_items",
+    "solicitudes", "sesiones",
+]
+
+
+def _valor_a_sql(v):
+    """Convierte un valor Python a su representacion literal en SQL, de forma
+    portable entre SQLite y Postgres (sin depender de cur.mogrify, que solo
+    existe en psycopg2)."""
+    if v is None:
+        return "NULL"
+    if isinstance(v, bool):
+        return "TRUE" if v else "FALSE"
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, float):
+        return repr(v)
+    if isinstance(v, datetime):
+        return "'" + v.strftime("%Y-%m-%d %H:%M:%S") + "'"
+    texto = str(v).replace("'", "''")
+    return f"'{texto}'"
+
+
+def generar_dump_sql():
+    """Genera un respaldo completo de todas las tablas como sentencias
+    INSERT en texto plano. No depende de pg_dump (que no siempre esta
+    disponible en el contenedor de la app), asi que sirve tanto para
+    Postgres como para SQLite. Para restaurar: crear una base nueva
+    (init_db se encarga de las tablas) y luego correr este archivo .sql
+    contra ella."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        partes = [
+            f"-- Respaldo Inventario Wintec generado el {ahora_str()}",
+            f"-- Motor de origen: {'PostgreSQL' if USE_POSTGRES else 'SQLite'}",
+            "",
+        ]
+        for tabla in TABLAS_RESPALDO:
+            try:
+                cur.execute(f"SELECT * FROM {tabla}")
+            except Exception:
+                continue
+            filas = cur.fetchall()
+            if not filas:
+                continue
+            columnas = list(filas[0].keys()) if hasattr(filas[0], "keys") else None
+            partes.append(f"-- {tabla} ({len(filas)} filas)")
+            for fila in filas:
+                d = dict(fila)
+                cols = columnas or list(d.keys())
+                valores = ", ".join(_valor_a_sql(d[c]) for c in cols)
+                cols_sql = ", ".join(cols)
+                partes.append(f"INSERT INTO {tabla} ({cols_sql}) VALUES ({valores});")
+            partes.append("")
+        return "\n".join(partes).encode("utf-8")
+    finally:
+        conn.close()
