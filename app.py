@@ -29,6 +29,7 @@ from services import (
     generar_orden_desde_cotizacion,
     dias_atraso_solicitud, enviar_notificacion_solicitud, dias_gracia_historial_solicitud,
     sesion_activa_minutos, formatear_duracion,
+    calcular_dias_restantes_por_producto,
 )
 
 load_dotenv()
@@ -659,8 +660,12 @@ def index():
         sql_alertas += f" AND planta = {ph}"; params_alertas.append(planta_activa)
     sql_alertas += " ORDER BY (stock_minimo - stock_actual) DESC LIMIT 8"
     cur.execute(sql_alertas, params_alertas)
-    alertas = cur.fetchall()
+    alertas = [dict(a) for a in cur.fetchall()]
     conn.close()
+
+    proyeccion = calcular_dias_restantes_por_producto([a["id"] for a in alertas])
+    for a in alertas:
+        a["dias_restantes"] = proyeccion.get(a["id"], {}).get("dias_restantes")
 
     return render_template(
         "index.html",
@@ -963,7 +968,12 @@ def detalle_producto(pid):
     """, (pid,))
     movimientos = cur.fetchall()
     conn.close()
-    return render_template("producto_detalle.html", producto=producto, movimientos=movimientos)
+
+    proyeccion = calcular_dias_restantes_por_producto([pid]).get(pid, {})
+    return render_template(
+        "producto_detalle.html", producto=producto, movimientos=movimientos,
+        dias_restantes=proyeccion.get("dias_restantes"), consumo_diario=proyeccion.get("consumo_diario"),
+    )
 
 
 @app.route("/productos/<int:pid>/eliminar", methods=["POST"])

@@ -101,6 +101,18 @@
         </div>
       </div>
     </div>
+
+    {% if dias_restantes is not none %}
+    <div class="alert {% if dias_restantes <= 7 %}alert-danger{% else %}alert-warning{% endif %} mt-3 mb-0 py-2 small">
+      <i class="bi bi-hourglass-split me-1"></i>
+      A este ritmo de consumo (~{{ consumo_diario }} por día en los últimos 60 días), el stock se agota en
+      <strong>~{{ dias_restantes }} día{{ 's' if dias_restantes != 1 }}</strong>.
+    </div>
+    {% elif producto['stock_actual'] > 0 %}
+    <div class="text-muted small mt-3 mb-0">
+      <i class="bi bi-info-circle me-1"></i>Sin salidas registradas en los últimos 60 días; no se puede proyectar cuándo se agotará.
+    </div>
+    {% endif %}
   </div>
 </div>
 

@@ -579,3 +579,67 @@ def url_descarga_backup_remoto(key, minutos_validez=10):
         )
     except Exception:
         return None
+
+
+# PROYECCION DE QUIEBRE DE STOCK (segun consumo real, no solo el umbral fijo)
+DIAS_HISTORIAL_CONSUMO = int(os.environ.get("DIAS_HISTORIAL_CONSUMO", 60))
+
+
+def calcular_dias_restantes_por_producto(producto_ids, dias_historial=None):
+    """Para cada producto de la lista, estima cuantos dias de stock quedan
+    segun el promedio de consumo real (salidas) de los ultimos N dias --
+    en vez de solo comparar contra el stock minimo fijo.
+    Devuelve un dict {producto_id: {"dias_restantes": int|None, "consumo_diario": float}}.
+    dias_restantes es None si no hay consumo registrado en el periodo (no se
+    puede proyectar) o si el producto no tiene salidas recientes."""
+    producto_ids = [pid for pid in producto_ids if pid]
+    if not producto_ids:
+        return {}
+    if dias_historial is None:
+        dias_historial = DIAS_HISTORIAL_CONSUMO
+
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        ph = p()
+        placeholders = ", ".join([ph] * len(producto_ids))
+
+        if USE_POSTGRES:
+            cur.execute(
+                f"""SELECT producto_id, SUM(cantidad) AS total_salidas
+                    FROM movimientos
+                    WHERE tipo = 'salida' AND producto_id IN ({placeholders})
+                      AND fecha >= NOW() - INTERVAL '{int(dias_historial)} days'
+                    GROUP BY producto_id""",
+                producto_ids,
+            )
+        else:
+            cur.execute(
+                f"""SELECT producto_id, SUM(cantidad) AS total_salidas
+                    FROM movimientos
+                    WHERE tipo = 'salida' AND producto_id IN ({placeholders})
+                      AND fecha >= datetime('now', '-{int(dias_historial)} days')
+                    GROUP BY producto_id""",
+                producto_ids,
+            )
+        consumo_por_producto = {r["producto_id"]: r["total_salidas"] for r in cur.fetchall()}
+
+        cur.execute(
+            f"SELECT id, stock_actual FROM productos WHERE id IN ({placeholders})",
+            producto_ids,
+        )
+        stock_por_producto = {r["id"]: r["stock_actual"] for r in cur.fetchall()}
+    finally:
+        conn.close()
+
+    resultado = {}
+    for pid in producto_ids:
+        total_salidas = consumo_por_producto.get(pid, 0) or 0
+        stock_actual = stock_por_producto.get(pid, 0) or 0
+        consumo_diario = total_salidas / dias_historial if total_salidas else 0
+        if consumo_diario > 0:
+            dias_restantes = int(stock_actual / consumo_diario)
+        else:
+            dias_restantes = None
+        resultado[pid] = {"dias_restantes": dias_restantes, "consumo_diario": round(consumo_diario, 2)}
+    return resultado

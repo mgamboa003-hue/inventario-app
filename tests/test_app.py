@@ -1638,3 +1638,70 @@ def test_auditoria_sin_filtros_muestra_boton_limpiar_oculto(admin_client):
     assert r.status_code == 200
     body = r.get_data(as_text=True)
     assert "últimos 300" in body.lower()
+
+
+def test_calcular_dias_restantes_con_consumo_reciente(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Producto Proyeccion Q9500", "stock_minimo": "5", "stock_actual": "30",
+    })
+    body = admin_client.get("/productos?q=Producto+Proyeccion+Q9500").get_data(as_text=True)
+    m = __import__("re").search(r"/productos/(\d+)/editar", body)
+    assert m
+    pid = int(m.group(1))
+
+    # 10 unidades de salida por dia (simulado en un solo movimiento de 10)
+    admin_client.post("/movimientos/nuevo/salida", data={"producto_id": pid, "cantidad": "10"})
+
+    import services
+    resultado = services.calcular_dias_restantes_por_producto([pid])
+    assert pid in resultado
+    assert resultado[pid]["consumo_diario"] > 0
+    assert resultado[pid]["dias_restantes"] is not None
+
+
+def test_calcular_dias_restantes_sin_consumo_devuelve_none(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Producto Sin Consumo Q9501", "stock_minimo": "5", "stock_actual": "10",
+    })
+    body = admin_client.get("/productos?q=Producto+Sin+Consumo+Q9501").get_data(as_text=True)
+    m = __import__("re").search(r"/productos/(\d+)/editar", body)
+    assert m
+    pid = int(m.group(1))
+
+    import services
+    resultado = services.calcular_dias_restantes_por_producto([pid])
+    assert resultado[pid]["dias_restantes"] is None
+
+
+def test_detalle_producto_muestra_proyeccion_de_quiebre(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Producto Proyeccion Detalle Q9502", "stock_minimo": "5", "stock_actual": "30",
+    })
+    body = admin_client.get("/productos?q=Producto+Proyeccion+Detalle+Q9502").get_data(as_text=True)
+    m = __import__("re").search(r"/productos/(\d+)/editar", body)
+    assert m
+    pid = int(m.group(1))
+    admin_client.post("/movimientos/nuevo/salida", data={"producto_id": pid, "cantidad": "10"})
+
+    r = admin_client.get(f"/productos/{pid}")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "se agota en" in body
+
+
+def test_dashboard_alertas_muestran_dias_de_stock_cuando_hay_consumo(admin_client):
+    # gap enorme (999) para garantizar que quede entre las 8 alertas mas
+    # urgentes del dashboard, sin importar los demas productos sembrados
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Producto Dashboard Proyeccion Q9503", "stock_minimo": "1000", "stock_actual": "500",
+    })
+    body = admin_client.get("/productos?q=Producto+Dashboard+Proyeccion+Q9503").get_data(as_text=True)
+    m = __import__("re").search(r"/productos/(\d+)/editar", body)
+    assert m
+    pid = int(m.group(1))
+    admin_client.post("/movimientos/nuevo/salida", data={"producto_id": pid, "cantidad": "2"})
+
+    r = admin_client.get("/")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "días de stock" in body or "día de stock" in body
