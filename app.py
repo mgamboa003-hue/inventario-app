@@ -649,6 +649,7 @@ def index():
 
 # PRODUCTOS
 PRODUCTOS_POR_PAGINA = 20
+MOVIMIENTOS_POR_PAGINA = 20
 
 
 @app.route("/productos")
@@ -979,6 +980,9 @@ def listar_movimientos():
     desde = request.args.get("desde", "")
     hasta = request.args.get("hasta", "")
     planta_activa = planta_filtro_activo()
+    pagina = request.args.get("pagina", 1, type=int) or 1
+    if pagina < 1:
+        pagina = 1
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -989,40 +993,54 @@ def listar_movimientos():
         cur.execute("SELECT id, nombre, codigo FROM productos ORDER BY nombre")
     productos = cur.fetchall()
 
-    sql = """
-        SELECT m.*, p.nombre AS nombre_producto, p.codigo AS codigo_producto
-        FROM movimientos m JOIN productos p ON p.id = m.producto_id WHERE 1=1
-    """
+    where_sql = " WHERE 1=1"
     params = []
     if tipo in ("entrada", "salida"):
-        sql += f" AND m.tipo = {ph}"; params.append(tipo)
+        where_sql += f" AND m.tipo = {ph}"; params.append(tipo)
     if producto_id:
-        sql += f" AND m.producto_id = {ph}"; params.append(producto_id)
+        where_sql += f" AND m.producto_id = {ph}"; params.append(producto_id)
     if desde:
         if USE_POSTGRES:
-            sql += f" AND m.fecha::date >= {ph}::date"
+            where_sql += f" AND m.fecha::date >= {ph}::date"
         else:
-            sql += f" AND date(m.fecha) >= date({ph})"
+            where_sql += f" AND date(m.fecha) >= date({ph})"
         params.append(desde)
     if hasta:
         if USE_POSTGRES:
-            sql += f" AND m.fecha::date <= {ph}::date"
+            where_sql += f" AND m.fecha::date <= {ph}::date"
         else:
-            sql += f" AND date(m.fecha) <= date({ph})"
+            where_sql += f" AND date(m.fecha) <= date({ph})"
         params.append(hasta)
     if planta_activa:
-        sql += f" AND p.planta = {ph}"; params.append(planta_activa)
-    sql += " ORDER BY m.fecha DESC, m.id DESC"
+        where_sql += f" AND p.planta = {ph}"; params.append(planta_activa)
 
-    cur.execute(sql, params)
+    from_sql = "FROM movimientos m JOIN productos p ON p.id = m.producto_id"
+
+    cur.execute(f"SELECT COUNT(*) AS n {from_sql}{where_sql}", params)
+    total_movimientos = cur.fetchone()["n"]
+    total_paginas = max(1, -(-total_movimientos // MOVIMIENTOS_POR_PAGINA))
+    if pagina > total_paginas:
+        pagina = total_paginas
+    offset = (pagina - 1) * MOVIMIENTOS_POR_PAGINA
+
+    cur.execute(
+        f"SELECT m.*, p.nombre AS nombre_producto, p.codigo AS codigo_producto {from_sql}{where_sql} "
+        f"ORDER BY m.fecha DESC, m.id DESC LIMIT {ph} OFFSET {ph}",
+        params + [MOVIMIENTOS_POR_PAGINA, offset],
+    )
     movimientos = cur.fetchall()
     conn.close()
+
+    base_params = request.args.to_dict()
+    base_params.pop("pagina", None)
 
     return render_template(
         "movimientos.html",
         movimientos=movimientos, productos=productos,
         tipo=tipo, producto_id=producto_id, desde=desde, hasta=hasta,
         planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS,
+        pagina=pagina, total_paginas=total_paginas, total_movimientos=total_movimientos,
+        base_params=base_params,
     )
 
 

@@ -1561,3 +1561,23 @@ def test_listar_backups_remotos_ordena_por_fecha_descendente(admin_client, monke
     assert len(resultado) == 2
     assert resultado[0]["nombre"] == "inventario_20260201_000000.sql.gz"
     assert resultado[0]["tamano_kb"] == 4
+
+
+def test_movimientos_muestra_20_por_pagina_y_boton_siguiente(admin_client):
+    # el seed ya trae 88 movimientos, mas que de sobra para varias paginas
+    r1 = admin_client.get("/movimientos")
+    body1 = r1.get_data(as_text=True)
+    assert "Página 1 de" in body1
+    assert "Ver 20 más" in body1
+
+    r2 = admin_client.get("/movimientos?pagina=2")
+    body2 = r2.get_data(as_text=True)
+    assert "Página 2 de" in body2
+    assert "Anterior" in body2
+
+
+def test_movimientos_paginacion_mantiene_filtro_de_tipo(admin_client):
+    body = admin_client.get("/movimientos?tipo=salida&pagina=2").get_data(as_text=True)
+    assert "Página 2 de" in body
+    # el link de "Anterior" debe seguir apuntando a tipo=salida, no perder el filtro
+    assert "tipo=salida" in body
