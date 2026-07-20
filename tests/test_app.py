@@ -1592,3 +1592,11 @@ def test_init_db_crea_indices_de_rendimiento(admin_client):
     assert "idx_movimientos_producto_id" in nombres
     assert "idx_movimientos_fecha" in nombres
     assert "idx_productos_categoria" in nombres
+
+
+def test_respuestas_incluyen_cabeceras_de_seguridad(client):
+    r = client.get("/login")
+    assert r.headers.get("X-Content-Type-Options") == "nosniff"
+    assert r.headers.get("X-Frame-Options") == "SAMEORIGIN"
+    assert "Content-Security-Policy" in r.headers
+    assert "default-src 'self'" in r.headers["Content-Security-Policy"]

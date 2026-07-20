@@ -282,6 +282,37 @@ def forzar_https():
         return redirect(url, code=301)
 
 
+# CABECERAS DE SEGURIDAD
+# CSP permisiva con las CDN que ya usa la app (Bootstrap, jQuery, Select2,
+# html5-qrcode) y con 'unsafe-inline' porque hay bastante JS/CSS inline en
+# las plantillas -- no es tan estricta como una CSP con nonces, pero igual
+# bloquea que se carguen scripts o formularios apuntando a dominios
+# externos no autorizados (el vector mas comun de XSS/robo de datos).
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "font-src 'self' https://cdn.jsdelivr.net data:; "
+    "img-src 'self' data: blob: https:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'self'; "
+    "base-uri 'self'; "
+    "form-action 'self'"
+)
+
+
+@app.after_request
+def agregar_cabeceras_seguridad(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(self)"
+    response.headers["Content-Security-Policy"] = _CSP
+    if FORCE_HTTPS:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 @app.before_request
 def cerrar_sesion_por_inactividad():
     """Respaldo por si el temporizador de inactividad del navegador no llega a
