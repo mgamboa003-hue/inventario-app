@@ -502,6 +502,37 @@ def _sincronizar_ubicaciones(conn):
             pass
 
 
+
+
+_INDICES = [
+    "CREATE INDEX IF NOT EXISTS idx_movimientos_producto_id ON movimientos(producto_id)",
+    "CREATE INDEX IF NOT EXISTS idx_movimientos_fecha ON movimientos(fecha)",
+    "CREATE INDEX IF NOT EXISTS idx_movimientos_tipo ON movimientos(tipo)",
+    "CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria)",
+    "CREATE INDEX IF NOT EXISTS idx_productos_proveedor ON productos(proveedor)",
+    "CREATE INDEX IF NOT EXISTS idx_productos_equipo ON productos(equipo)",
+    "CREATE INDEX IF NOT EXISTS idx_productos_planta ON productos(planta)",
+    "CREATE INDEX IF NOT EXISTS idx_productos_activo ON productos(activo)",
+    "CREATE INDEX IF NOT EXISTS idx_auditoria_fecha ON auditoria(fecha)",
+    "CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON solicitudes(estado)",
+    "CREATE INDEX IF NOT EXISTS idx_solicitudes_fecha ON solicitudes(fecha_solicitud)",
+    "CREATE INDEX IF NOT EXISTS idx_sesiones_usuario_id ON sesiones(usuario_id)",
+]
+
+
+def _crear_indices(conn):
+    cur = conn.cursor()
+    for stmt in _INDICES:
+        try:
+            cur.execute(stmt)
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+
+
 def init_db():
     """Inicializa tablas y carga seed si la BD esta vacia."""
     conn = get_db_connection()
@@ -513,6 +544,7 @@ def init_db():
         conn.commit()
 
         _run_migrations(conn)
+        _crear_indices(conn)
         _sincronizar_ubicaciones(conn)
 
         cur.execute("SELECT COUNT(*) AS n FROM usuarios")

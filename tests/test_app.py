@@ -1581,3 +1581,14 @@ def test_movimientos_paginacion_mantiene_filtro_de_tipo(admin_client):
     assert "Página 2 de" in body
     # el link de "Anterior" debe seguir apuntando a tipo=salida, no perder el filtro
     assert "tipo=salida" in body
+
+
+def test_init_db_crea_indices_de_rendimiento(admin_client):
+    import db
+    conn = db.get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%'")
+    nombres = {r["name"] for r in cur.fetchall()}
+    assert "idx_movimientos_producto_id" in nombres
+    assert "idx_movimientos_fecha" in nombres
+    assert "idx_productos_categoria" in nombres
