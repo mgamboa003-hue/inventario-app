@@ -1439,3 +1439,22 @@ def test_unificar_catalogos_requiere_admin(client):
 def test_nav_muestra_link_unificar_para_admin(admin_client):
     r = admin_client.get("/productos")
     assert "Unificar nombres" in r.get_data(as_text=True)
+
+
+def test_unificar_catalogos_requiere_super_admin_no_admin_regular(admin_client):
+    admin_client.post("/admin/usuarios/nuevo", data={
+        "username": "admin_regular_q9140", "password": "clave123", "nombre": "Admin Regular",
+        "role": "admin", "planta": "quilicura",
+    })
+    admin_client.get("/logout")
+    admin_client.post("/login", data={"username": "admin_regular_q9140", "password": "clave123"})
+    _completar_cambio_password_obligatorio(admin_client, "clave123")
+
+    r = admin_client.get("/admin/unificar-catalogos", follow_redirects=True)
+    assert r.status_code == 200
+    body = r.get_data(as_text=True).lower()
+    assert "administrador principal" in body or "no tienes permiso" in body
+
+    # tampoco debe verse el link en la navegacion para un admin regular
+    r2 = admin_client.get("/productos")
+    assert "Unificar nombres" not in r2.get_data(as_text=True)

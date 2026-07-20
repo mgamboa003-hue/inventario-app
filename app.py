@@ -2275,7 +2275,7 @@ def _grupos_duplicados(cur, campo):
 
 
 @app.route("/admin/unificar-catalogos", methods=["GET", "POST"])
-@admin_required
+@super_admin_required
 def admin_unificar_catalogos():
     if request.method == "POST":
         campo = request.form.get("campo", "")
