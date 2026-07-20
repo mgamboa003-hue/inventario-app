@@ -2503,12 +2503,52 @@ def eliminar_proveedor(pid):
 @app.route("/admin/auditoria")
 @super_admin_required
 def admin_auditoria():
+    usuario_filtro = request.args.get("usuario", "").strip()
+    tabla_filtro = request.args.get("tabla", "").strip()
+    accion_filtro = request.args.get("accion", "").strip()
+    desde = request.args.get("desde", "").strip()
+    hasta = request.args.get("hasta", "").strip()
+
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM auditoria ORDER BY id DESC LIMIT 300")
+    ph = p()
+
+    cur.execute("SELECT DISTINCT tabla FROM auditoria ORDER BY tabla")
+    tablas_disponibles = [r["tabla"] for r in cur.fetchall()]
+    cur.execute("SELECT DISTINCT accion FROM auditoria ORDER BY accion")
+    acciones_disponibles = [r["accion"] for r in cur.fetchall()]
+
+    where_sql = " WHERE 1=1"
+    params = []
+    if usuario_filtro:
+        where_sql += f" AND LOWER(usuario) LIKE LOWER({ph})"; params.append(f"%{usuario_filtro}%")
+    if tabla_filtro:
+        where_sql += f" AND tabla = {ph}"; params.append(tabla_filtro)
+    if accion_filtro:
+        where_sql += f" AND accion = {ph}"; params.append(accion_filtro)
+    if desde:
+        if USE_POSTGRES:
+            where_sql += f" AND fecha::date >= {ph}::date"
+        else:
+            where_sql += f" AND date(fecha) >= date({ph})"
+        params.append(desde)
+    if hasta:
+        if USE_POSTGRES:
+            where_sql += f" AND fecha::date <= {ph}::date"
+        else:
+            where_sql += f" AND date(fecha) <= date({ph})"
+        params.append(hasta)
+
+    cur.execute(f"SELECT * FROM auditoria{where_sql} ORDER BY id DESC LIMIT 300", params)
     logs = cur.fetchall()
     conn.close()
-    return render_template("admin_auditoria.html", logs=logs)
+    return render_template(
+        "admin_auditoria.html", logs=logs,
+        usuario_filtro=usuario_filtro, tabla_filtro=tabla_filtro, accion_filtro=accion_filtro,
+        desde=desde, hasta=hasta,
+        tablas_disponibles=tablas_disponibles, acciones_disponibles=acciones_disponibles,
+        hay_filtros=bool(usuario_filtro or tabla_filtro or accion_filtro or desde or hasta),
+    )
 
 
 # ADMIN -- CONTROL DE ACCESOS

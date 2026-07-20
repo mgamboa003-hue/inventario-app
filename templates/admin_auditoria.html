@@ -3,9 +3,52 @@
 {% block topbar_title %}Registro de auditoría{% endblock %}
 
 {% block content %}
+<div class="table-card mb-3">
+  <div class="p-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Usuario</label>
+        <input type="text" class="form-control form-control-sm" name="usuario" value="{{ usuario_filtro }}" placeholder="Nombre...">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Tabla</label>
+        <select name="tabla" class="form-select form-select-sm">
+          <option value="">Todas</option>
+          {% for t in tablas_disponibles %}
+          <option value="{{ t }}" {% if t == tabla_filtro %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Acción</label>
+        <select name="accion" class="form-select form-select-sm">
+          <option value="">Todas</option>
+          {% for a in acciones_disponibles %}
+          <option value="{{ a }}" {% if a == accion_filtro %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Desde</label>
+        <input type="date" class="form-control form-control-sm" name="desde" value="{{ desde }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Hasta</label>
+        <input type="date" class="form-control form-control-sm" name="hasta" value="{{ hasta }}">
+      </div>
+      <div class="col-md-2 d-flex gap-1">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+        {% if hay_filtros %}
+        <a href="{{ url_for('admin_auditoria') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="table-card">
   <div class="table-header">
-    <h6><i class="bi bi-shield-check me-2"></i>Últimos {{ logs|length }} eventos</h6>
+    <h6><i class="bi bi-shield-check me-2"></i>{{ logs|length }} evento{{ 's' if logs|length != 1 }}{% if not hay_filtros %} (últimos 300){% endif %}</h6>
   </div>
   {% if logs %}
   <div class="table-responsive">

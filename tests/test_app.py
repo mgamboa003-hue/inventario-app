@@ -1621,3 +1621,20 @@ def test_buscador_global_no_aparece_para_comprador(client):
     r = client.get("/ordenes_compra", follow_redirects=True)
     body = r.get_data(as_text=True)
     assert 'name="q"' not in body
+
+
+def test_auditoria_filtra_por_usuario_y_accion(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Producto Auditoria Q9400", "stock_minimo": "1", "stock_actual": "1",
+    })
+    r = admin_client.get("/admin/auditoria?usuario=administrador&accion=crear")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "productos" in body.lower()
+
+
+def test_auditoria_sin_filtros_muestra_boton_limpiar_oculto(admin_client):
+    r = admin_client.get("/admin/auditoria")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "últimos 300" in body.lower()
