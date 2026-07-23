@@ -1944,6 +1944,9 @@ def _siguiente_numero_cotizacion_helper(cur):
 
 
 # SOLICITUDES DEL EQUIPO
+SOLICITUDES_POR_PAGINA = 20
+
+
 @app.route("/solicitudes")
 @login_required
 def listar_solicitudes():
@@ -1952,34 +1955,54 @@ def listar_solicitudes():
     vista = request.args.get("vista", "activo").strip()
     if vista not in ("activo", "historial"):
         vista = "activo"
+    pagina = request.args.get("pagina", 1, type=int) or 1
+    if pagina < 1:
+        pagina = 1
 
     conn = get_db_connection()
     cur = conn.cursor()
     ph = p()
-    sql = "SELECT * FROM solicitudes WHERE 1=1"
+    where_sql = " WHERE 1=1"
     params = []
 
     if session.get("role") == "solicitante":
-        sql += f" AND solicitado_por_id = {ph}"
+        where_sql += f" AND solicitado_por_id = {ph}"
         params.append(session.get("user_id"))
 
     dias_gracia = dias_gracia_historial_solicitud()
     if vista == "historial":
-        sql += " AND estado IN ('comprado','rechazado','cancelado')"
+        # Los cancelados pasan aqui de inmediato; comprados y rechazados
+        # entran cuando se vencio (o nunca tuvo) el periodo de gracia en activas.
+        where_sql += " AND estado IN ('comprado','rechazado','cancelado')"
     else:
+        # Cancelado nunca se muestra en activas. Rechazado se mantiene
+        # visible en activas por el periodo de gracia (va al fondo del listado).
         limite = (ahora() - timedelta(days=dias_gracia)).strftime("%Y-%m-%d %H:%M:%S")
-        sql += " AND estado != 'comprado'"
-        sql += f" AND (estado NOT IN ('rechazado','cancelado') OR fecha_atendida IS NULL OR fecha_atendida >= {ph})"
+        where_sql += " AND estado != 'comprado' AND estado != 'cancelado'"
+        where_sql += f" AND (estado != 'rechazado' OR fecha_atendida IS NULL OR fecha_atendida >= {ph})"
         params.append(limite)
 
     if estado_filtro:
-        sql += f" AND estado = {ph}"
+        where_sql += f" AND estado = {ph}"
         params.append(estado_filtro)
 
-    orden_campo = "fecha_atendida" if vista == "historial" else "fecha_solicitud"
-    sql += f" ORDER BY {orden_campo} DESC, id DESC"
+    cur.execute(f"SELECT COUNT(*) AS n FROM solicitudes{where_sql}", params)
+    total_solicitudes = cur.fetchone()["n"]
+    total_paginas = max(1, -(-total_solicitudes // SOLICITUDES_POR_PAGINA))
+    if pagina > total_paginas:
+        pagina = total_paginas
+    offset = (pagina - 1) * SOLICITUDES_POR_PAGINA
 
-    cur.execute(sql, params)
+    if vista == "historial":
+        orden_sql = " ORDER BY fecha_atendida DESC, id DESC"
+    else:
+        # Pendientes/atrasadas primero; rechazadas (en gracia) al fondo.
+        orden_sql = " ORDER BY (estado = 'rechazado') ASC, fecha_solicitud DESC, id DESC"
+
+    cur.execute(
+        f"SELECT * FROM solicitudes{where_sql}{orden_sql} LIMIT {ph} OFFSET {ph}",
+        params + [SOLICITUDES_POR_PAGINA, offset],
+    )
     filas = cur.fetchall()
     conn.close()
 
@@ -1996,8 +2019,13 @@ def listar_solicitudes():
         s_dict["atrasada"] = atrasada
         solicitudes.append(s_dict)
 
+    base_params = request.args.to_dict()
+    base_params.pop("pagina", None)
+
     return render_template("solicitudes.html", solicitudes=solicitudes, estado_filtro=estado_filtro,
-                            umbral_dias=umbral, vista=vista, dias_gracia=dias_gracia)
+                            umbral_dias=umbral, vista=vista, dias_gracia=dias_gracia,
+                            pagina=pagina, total_paginas=total_paginas, total_solicitudes=total_solicitudes,
+                            base_params=base_params)
 
 
 @app.route("/solicitudes/nueva", methods=["GET", "POST"])

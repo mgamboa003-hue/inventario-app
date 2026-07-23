@@ -38,14 +38,14 @@
       </form>
     </div>
     {% if vista == 'activo' %}
-    <div class="form-text mt-2 mb-0">Las solicitudes "Comprado" pasan directo al historial. Las "Rechazado"/"Cancelado" se mantienen aquí {{ dias_gracia }} días y luego solo quedan en el historial.</div>
+    <div class="form-text mt-2 mb-0">Las solicitudes "Comprado" y "Cancelado" pasan directo al historial. Las "Rechazado" se mantienen aquí {{ dias_gracia }} días (al fondo de la lista) y luego solo quedan en el historial.</div>
     {% endif %}
   </div>
 </div>
 
 <div class="table-card">
   <div class="table-header">
-    <h6><i class="bi bi-clipboard-check me-2"></i>{{ solicitudes|length }} solicitud{{ 'es' if solicitudes|length != 1 }}</h6>
+    <h6><i class="bi bi-clipboard-check me-2"></i>{{ total_solicitudes }} solicitud{{ 'es' if total_solicitudes != 1 }}</h6>
   </div>
   {% if solicitudes %}
   <div class="table-responsive">
@@ -108,6 +108,27 @@
       </tbody>
     </table>
   </div>
+  {% if total_paginas > 1 %}
+  <div class="pagination-bar d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
+    <span class="text-muted small">Página {{ pagina }} de {{ total_paginas }} &middot; {{ total_solicitudes }} solicitudes en total</span>
+    <div class="d-flex gap-2">
+      {% if pagina > 1 %}
+      <a href="{{ url_for('listar_solicitudes', pagina=pagina-1, **base_params) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-chevron-left"></i> Anterior
+      </a>
+      {% else %}
+      <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i> Anterior</button>
+      {% endif %}
+      {% if pagina < total_paginas %}
+      <a href="{{ url_for('listar_solicitudes', pagina=pagina+1, **base_params) }}" class="btn btn-sm btn-primary">
+        Ver 20 más <i class="bi bi-chevron-right"></i>
+      </a>
+      {% else %}
+      <button class="btn btn-sm btn-primary" disabled>Ver 20 más <i class="bi bi-chevron-right"></i></button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
   {% else %}
   <div class="text-center py-5 text-muted">
     <i class="bi bi-clipboard-check fs-1 d-block mb-2"></i>

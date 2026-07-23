@@ -468,6 +468,48 @@ def test_solicitud_rechazada_se_queda_en_lista_activa_hasta_que_pase_la_gracia(a
     _os.environ["DIAS_GRACIA_SOLICITUD"] = "7"
 
 
+def test_solicitud_cancelada_desaparece_de_activas_de_inmediato(admin_client):
+    admin_client.post("/solicitudes/nueva", data={
+        "nombre_item": "Cinta aislante", "cantidad": "1", "urgencia": "normal",
+    })
+    r = admin_client.get("/solicitudes")
+    import re
+    html = r.get_data(as_text=True)
+    idx = html.find("Cinta aislante")
+    seg = html[max(0, idx-100):idx+800]
+    sid = re.search(r"/solicitudes/(\d+)", seg).group(1)
+
+    admin_client.post(f"/solicitudes/{sid}/estado", data={"estado": "cancelado"})
+
+    r_activo = admin_client.get("/solicitudes")
+    assert "Cinta aislante" not in r_activo.get_data(as_text=True)
+
+    r_historial = admin_client.get("/solicitudes?vista=historial")
+    assert "Cinta aislante" in r_historial.get_data(as_text=True)
+
+
+def test_solicitud_rechazada_va_al_fondo_de_la_lista_activa(admin_client):
+    admin_client.post("/solicitudes/nueva", data={
+        "nombre_item": "Destornillador plano", "cantidad": "1", "urgencia": "normal",
+    })
+    r = admin_client.get("/solicitudes")
+    import re
+    html = r.get_data(as_text=True)
+    idx = html.find("Destornillador plano")
+    seg = html[max(0, idx-100):idx+800]
+    sid = re.search(r"/solicitudes/(\d+)", seg).group(1)
+    admin_client.post(f"/solicitudes/{sid}/estado", data={"estado": "rechazado"})
+
+    # una solicitud pendiente creada despues debe listarse antes que la rechazada
+    admin_client.post("/solicitudes/nueva", data={
+        "nombre_item": "Cautín de soldar", "cantidad": "1", "urgencia": "normal",
+    })
+
+    r_activo = admin_client.get("/solicitudes")
+    body = r_activo.get_data(as_text=True)
+    assert body.index("Cautín de soldar") < body.index("Destornillador plano")
+
+
 def test_admin_marca_solicitud_como_comprada(admin_client):
     admin_client.post("/solicitudes/nueva", data={
         "nombre_item": "Guantes de seguridad", "cantidad": "5", "urgencia": "normal",
