@@ -11,7 +11,7 @@
 <div class="row justify-content-center">
   <div class="col-lg-7">
     <div class="table-card p-4">
-      <form method="post" enctype="multipart/form-data">
+      <form method="post" enctype="multipart/form-data" id="formNuevaSolicitud">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="producto_id" id="productoIdOculto" value="{{ producto_id_pref or '' }}">
 
@@ -56,7 +56,7 @@
         </div>
 
         <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-primary px-4"><i class="bi bi-send me-1"></i>Enviar solicitud</button>
+          <button type="submit" id="btnEnviarSolicitud" class="btn btn-primary px-4"><i class="bi bi-send me-1"></i>Enviar solicitud</button>
           <a href="{{ url_for('listar_solicitudes') }}" class="btn btn-outline-secondary">Cancelar</a>
         </div>
       </form>
@@ -81,5 +81,17 @@ fetch('/api/productos').then(r => r.json()).then(prods => {
     document.getElementById('productoIdOculto').value = id || '';
   });
 }).catch(() => {});
+
+// Evita solicitudes duplicadas por doble clic o conexión lenta (subida de foto en celular).
+document.getElementById('formNuevaSolicitud').addEventListener('submit', function(e) {
+  const btn = document.getElementById('btnEnviarSolicitud');
+  if (btn.dataset.enviando === '1') {
+    e.preventDefault();
+    return;
+  }
+  btn.dataset.enviando = '1';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+});
 </script>
 {% endblock %}

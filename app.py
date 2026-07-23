@@ -2024,6 +2024,24 @@ def nueva_solicitud():
         fecha_ahora = ahora().strftime("%Y-%m-%d %H:%M:%S")
         conn = get_db_connection()
         cur = conn.cursor()
+
+        # Evita registrar la misma solicitud dos/tres veces si el clic se repite
+        # (doble tap, conexión lenta al subir foto, etc.): si el mismo usuario ya
+        # pidió el mismo ítem con la misma cantidad hace pocos segundos, se reusa esa.
+        limite_dup = (ahora() - timedelta(seconds=20)).strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            f"""SELECT id FROM solicitudes
+                WHERE solicitado_por_id = {ph} AND LOWER(nombre_item) = LOWER({ph})
+                  AND cantidad = {ph} AND fecha_solicitud >= {ph}
+                ORDER BY id DESC LIMIT 1""",
+            (session.get("user_id"), nombre_item, cantidad, limite_dup),
+        )
+        fila_dup = cur.fetchone()
+        if fila_dup:
+            conn.close()
+            flash("Esa solicitud ya se había registrado.", "info")
+            return redirect(url_for("detalle_solicitud", sid=fila_dup["id"]))
+
         cur.execute(
             f"""INSERT INTO solicitudes (producto_id, nombre_item, descripcion, cantidad, urgencia,
                 foto_url, estado, solicitado_por, solicitado_por_id, fecha_solicitud)

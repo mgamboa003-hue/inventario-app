@@ -359,6 +359,30 @@ def test_solicitante_puede_crear_y_ver_su_propia_solicitud(client):
     assert "Llave Allen 5mm" in r.get_data(as_text=True)
 
 
+def test_doble_clic_no_duplica_la_solicitud(client):
+    admin = client
+    admin.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
+    admin.post("/admin/usuarios/nuevo", data={
+        "username": "mantenimiento2", "password": "clave123", "nombre": "Ana Mantenimiento", "role": "solicitante", "planta": "quilicura",
+    })
+    admin.get("/logout")
+
+    client.post("/login", data={"username": "mantenimiento2", "password": "clave123"})
+    _completar_cambio_password_obligatorio(client, "clave123")
+
+    datos = {"nombre_item": "Enchufe de exterior", "cantidad": "2", "urgencia": "normal", "descripcion": ""}
+    r1 = client.post("/solicitudes/nueva", data=datos, follow_redirects=True)
+    r2 = client.post("/solicitudes/nueva", data=datos, follow_redirects=True)
+    r3 = client.post("/solicitudes/nueva", data=datos, follow_redirects=True)
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+    assert r3.status_code == 200
+
+    r = client.get("/solicitudes")
+    body = r.get_data(as_text=True)
+    assert body.count("Enchufe de exterior") == 1
+
+
 def test_viewer_puede_ver_pero_no_crear_solicitudes(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
