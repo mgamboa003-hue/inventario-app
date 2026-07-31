@@ -240,9 +240,9 @@
   }
 
   {% if session.get('logged_in') %}
-  // Cierre de sesion automatico por inactividad (sin tocar nada por 5 minutos).
+  // Cierre de sesion automatico por inactividad (sin tocar nada por SESSION_IDLE_MINUTES).
   (function() {
-    const LIMITE_MS = {{ SESSION_IDLE_MINUTES|default(5) }} * 60 * 1000;
+    const LIMITE_MS = {{ SESSION_IDLE_MINUTES|default(15) }} * 60 * 1000;
     let temporizador = null;
     function reiniciarTemporizador() {
       if (temporizador) clearTimeout(temporizador);

@@ -1285,7 +1285,7 @@ def test_cierra_sesion_automaticamente_tras_inactividad(admin_client):
     import db
     from datetime import timedelta
     with admin_client.session_transaction() as sess:
-        sess["_ultima_peticion_ts"] = (db.ahora() - timedelta(minutes=6)).isoformat()
+        sess["_ultima_peticion_ts"] = (db.ahora() - timedelta(minutes=16)).isoformat()
     r = admin_client.get("/", follow_redirects=True)
     assert r.status_code == 200
     body = r.get_data(as_text=True)
@@ -1308,7 +1308,7 @@ def test_actividad_reciente_no_cierra_la_sesion(admin_client):
 
 def test_temporizador_de_inactividad_se_incluye_en_la_pagina(admin_client):
     body = admin_client.get("/").get_data(as_text=True)
-    assert "5 * 60 * 1000" in body
+    assert "15 * 60 * 1000" in body
     assert "motivo=inactividad" in body
 
 

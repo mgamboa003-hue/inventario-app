@@ -42,7 +42,7 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
 MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", 10))
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 
-SESSION_IDLE_MINUTES = int(os.environ.get("SESSION_IDLE_MINUTES", 5))
+SESSION_IDLE_MINUTES = int(os.environ.get("SESSION_IDLE_MINUTES", 15))
 
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "False").lower() == "true"
