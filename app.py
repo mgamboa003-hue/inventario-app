@@ -2978,8 +2978,15 @@ def manifest():
 @app.route("/sw.js")
 def service_worker():
     js = """
-const CACHE_NAME = 'wintec-inv-v1';
-const OFFLINE_URLS = ['/static/styles.css', '/static/logo_wintec.png'];
+const CACHE_NAME = 'wintec-inv-v2';
+const OFFLINE_URLS = [
+  '/static/styles.css',
+  '/static/logo_wintec.png',
+  '/static/vendor/bootstrap/bootstrap.min.css',
+  '/static/vendor/bootstrap/bootstrap.bundle.min.js',
+  '/static/vendor/bootstrap-icons/bootstrap-icons.min.css',
+  '/static/vendor/bootstrap-icons/fonts/bootstrap-icons.woff2',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_URLS)));
@@ -2987,7 +2994,11 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
