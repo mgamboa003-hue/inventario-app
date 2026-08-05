@@ -74,6 +74,23 @@
     </div>
   </div>
 
+  <!-- Fotos rotas -->
+  <div class="col-lg-6">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-2"><i class="bi bi-image-alt me-2 text-primary"></i>Fotos y documentos</h6>
+      <p class="text-muted small">
+        Revisa todas las fotos de repuestos/solicitudes y documentos de cotizaciones, y limpia las que ya no
+        existen de verdad (para que muestren "sin foto" en vez de un ícono roto). No borra nada que sí exista.
+      </p>
+      <form method="post" action="{{ url_for('verificar_fotos') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-search me-1"></i>Verificar y limpiar fotos rotas
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Backups -->
   <div class="col-lg-6">
     <div class="table-card p-4">

@@ -118,39 +118,162 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
+// Graficos del dashboard dibujados a mano en <canvas>, sin depender de
+// ninguna libreria externa (antes usaba Chart.js desde un CDN, que
+// algunos bloqueadores de anuncios frenan por el nombre del archivo).
 const dias = {{ dias | tojson }};
 const entradas = {{ entradas | tojson }};
 const salidas = {{ salidas | tojson }};
 const topLabels = {{ top_labels | tojson }};
 const topValues = {{ top_values | tojson }};
 
-// Líneas movimientos
-new Chart(document.getElementById('chartMovimientos'), {
-  type: 'line',
-  data: {
-    labels: dias,
-    datasets: [
-      { label: 'Entradas', data: entradas, borderColor: '#198754', backgroundColor: 'rgba(25,135,84,.12)', tension: .35, fill: true },
-      { label: 'Salidas',  data: salidas,  borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,.12)',  tension: .35, fill: true },
-    ]
-  },
-  options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
-});
+function prepararCanvas(canvas, alturaCss) {
+  const dpr = window.devicePixelRatio || 1;
+  const anchoCss = canvas.parentElement.clientWidth;
+  canvas.style.width = anchoCss + 'px';
+  canvas.style.height = alturaCss + 'px';
+  canvas.width = Math.max(1, Math.round(anchoCss * dpr));
+  canvas.height = Math.max(1, Math.round(alturaCss * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: anchoCss, h: alturaCss };
+}
 
-// Barras top salidas
-new Chart(document.getElementById('chartTop'), {
-  type: 'bar',
-  data: {
-    labels: topLabels,
-    datasets: [{ label: 'Salidas', data: topValues, backgroundColor: '#1B4F8A', borderRadius: 6 }]
-  },
-  options: {
-    indexAxis: 'y',
-    plugins: { legend: { display: false } },
-    scales: { x: { beginAtZero: true } }
+function dibujarSinDatos(ctx, w, h) {
+  ctx.fillStyle = '#6c757d';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Sin datos suficientes todavia', w / 2, h / 2);
+}
+
+function dibujarLineChart(canvas, labels, series) {
+  const alturaCss = 240;
+  const { ctx, w, h } = prepararCanvas(canvas, alturaCss);
+  ctx.clearRect(0, 0, w, h);
+
+  const hayDatos = labels.length > 0 && series.some(s => s.data.some(v => v > 0));
+  if (!hayDatos) { dibujarSinDatos(ctx, w, h); return; }
+
+  const padIzq = 34, padDer = 10, padArriba = 14, padAbajo = 44;
+  const areaW = w - padIzq - padDer;
+  const areaH = h - padArriba - padAbajo;
+  const maxValor = Math.max(1, ...series.flatMap(s => s.data));
+  const pasoY = Math.ceil(maxValor / 4) || 1;
+  const topeY = pasoY * 4;
+
+  // grilla horizontal + etiquetas eje Y
+  ctx.strokeStyle = '#e9ecef';
+  ctx.fillStyle = '#6c757d';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = padArriba + areaH - (areaH * i / 4);
+    ctx.beginPath();
+    ctx.moveTo(padIzq, y);
+    ctx.lineTo(w - padDer, y);
+    ctx.stroke();
+    ctx.fillText(String(Math.round(pasoY * i)), padIzq - 6, y + 3);
   }
+
+  // etiquetas eje X (dejamos espacio y mostramos algunas si hay muchas)
+  const n = labels.length;
+  const stepX = n > 1 ? areaW / (n - 1) : 0;
+  ctx.textAlign = 'center';
+  const cadaCuantas = n > 10 ? Math.ceil(n / 8) : 1;
+  labels.forEach((lbl, i) => {
+    if (i % cadaCuantas !== 0 && i !== n - 1) return;
+    const x = padIzq + stepX * i;
+    ctx.fillText(String(lbl).slice(5), x, h - padAbajo + 16);
+  });
+
+  // lineas + relleno
+  series.forEach(s => {
+    const puntos = s.data.map((v, i) => [padIzq + stepX * i, padArriba + areaH - (areaH * Math.min(v, topeY) / topeY)]);
+
+    ctx.beginPath();
+    ctx.moveTo(puntos[0][0], padArriba + areaH);
+    puntos.forEach(([x, y]) => ctx.lineTo(x, y));
+    ctx.lineTo(puntos[puntos.length - 1][0], padArriba + areaH);
+    ctx.closePath();
+    ctx.fillStyle = s.relleno;
+    ctx.fill();
+
+    ctx.beginPath();
+    puntos.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = s.color;
+    puntos.forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+
+  // leyenda
+  let lx = padIzq;
+  const ly = h - 12;
+  ctx.font = '12px sans-serif';
+  series.forEach(s => {
+    ctx.fillStyle = s.color;
+    ctx.fillRect(lx, ly - 8, 10, 10);
+    ctx.fillStyle = '#212529';
+    ctx.textAlign = 'left';
+    ctx.fillText(s.label, lx + 14, ly);
+    lx += ctx.measureText(s.label).width + 34;
+  });
+}
+
+function dibujarBarChartHorizontal(canvas, labels, values) {
+  const alturaCss = Math.max(140, labels.length * 32 + 20);
+  const { ctx, w, h } = prepararCanvas(canvas, alturaCss);
+  ctx.clearRect(0, 0, w, h);
+
+  if (!labels.length || !values.some(v => v > 0)) { dibujarSinDatos(ctx, w, h); return; }
+
+  const maxLabelW = Math.max(...labels.map(l => ctx.measureText(l).width), 40);
+  const padIzq = Math.min(150, Math.max(60, maxLabelW + 10));
+  const padDer = 34, padY = 8;
+  const areaW = w - padIzq - padDer;
+  const maxValor = Math.max(1, ...values);
+  const altoBarra = Math.min(22, (h - padY * 2) / labels.length - 8);
+
+  ctx.font = '11px sans-serif';
+  labels.forEach((lbl, i) => {
+    const y = padY + i * ((h - padY * 2) / labels.length) + ((h - padY * 2) / labels.length - altoBarra) / 2;
+    const val = values[i];
+    const barW = Math.max(2, areaW * (val / maxValor));
+
+    ctx.fillStyle = '#1B4F8A';
+    ctx.beginPath();
+    ctx.roundRect(padIzq, y, barW, altoBarra, 4);
+    ctx.fill();
+
+    ctx.fillStyle = '#212529';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(lbl).length > 22 ? lbl.slice(0, 20) + '…' : lbl, padIzq - 8, y + altoBarra / 2 + 4);
+
+    ctx.textAlign = 'left';
+    ctx.fillText(String(val), padIzq + barW + 6, y + altoBarra / 2 + 4);
+  });
+}
+
+function dibujarTodo() {
+  dibujarLineChart(document.getElementById('chartMovimientos'), dias, [
+    { label: 'Entradas', data: entradas, color: '#198754', relleno: 'rgba(25,135,84,.12)' },
+    { label: 'Salidas',  data: salidas,  color: '#dc3545', relleno: 'rgba(220,53,69,.12)' },
+  ]);
+  dibujarBarChartHorizontal(document.getElementById('chartTop'), topLabels, topValues);
+}
+
+dibujarTodo();
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(dibujarTodo, 150);
 });
 </script>
 {% endblock %}

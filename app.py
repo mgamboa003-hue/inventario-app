@@ -22,7 +22,7 @@ from services import (
     usuario_bloqueado, registrar_intento_fallido, resetear_intentos,
     generar_api_token, verificar_api_token, revocar_api_token,
     email_configurado, enviar_alertas_stock_bajo,
-    s3_configurado, subir_imagen_bytes, descargar_imagen_bytes,
+    s3_configurado, subir_imagen_bytes, descargar_imagen_bytes, verificar_y_limpiar_fotos_rotas,
     respaldo_automatico, listar_backups_remotos, url_descarga_backup_remoto,
     generar_ordenes_compra_sugeridas,
     asegurar_codigo_producto, generar_qr_base64,
@@ -2829,6 +2829,17 @@ def ejecutar_backup():
             flash("No se pudo crear el backup. Revisa la consola del servidor.", "warning")
     except Exception as e:
         flash(f"Error al respaldar: {e}", "danger")
+    return redirect(url_for("admin_sistema"))
+
+
+@app.route("/admin/verificar-fotos", methods=["POST"])
+@super_admin_required
+def verificar_fotos():
+    resumen = verificar_y_limpiar_fotos_rotas()
+    mensaje = (f"{resumen['revisadas']} fotos/documentos revisados: {resumen['ok']} ok, "
+               f"{resumen['limpiadas']} rotos limpiados (van a mostrar 'sin foto' hasta que se resuban).")
+    registrar_auditoria("sistema", None, "verificar_fotos", session.get("user_id"), session.get("nombre"), mensaje)
+    flash(mensaje, "success" if resumen["limpiadas"] == 0 else "warning")
     return redirect(url_for("admin_sistema"))
 
 

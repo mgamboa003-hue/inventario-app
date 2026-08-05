@@ -258,11 +258,19 @@ def subir_imagen_bytes(data_bytes, filename, content_type="image/webp", carpeta=
             bucket = os.environ.get("S3_BUCKET")
             client = _s3_client()
             key = f"{carpeta}/{filename}"
-            client.put_object(Bucket=bucket, Key=key, Body=data_bytes,
-                               ContentType=content_type, ACL="public-read")
+            # Sin ACL: ya no dependemos de que el objeto sea "publico" en S3/R2
+            # (eso vive ahora en /media/, que trae el archivo con nuestras
+            # credenciales). Muchos buckets S3/R2 nuevos tienen las ACLs
+            # deshabilitadas por defecto y RECHAZAN el put_object si se manda
+            # ACL="public-read" -- eso hacia fallar la subida silenciosamente
+            # (caia al try/except de abajo) y el archivo terminaba guardado
+            # solo en el disco local de Railway, que se borra en cada deploy.
+            client.put_object(Bucket=bucket, Key=key, Body=data_bytes, ContentType=content_type)
             return f"/media/{key}"
-        except Exception:
-            pass  # fallback a disco local si algo falla
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("Fallo subida a S3/R2, usando disco local: %s", e)
+            # fallback a disco local si algo falla
 
     upload_folder = os.path.join(BASE_DIR, "static", carpeta)
     os.makedirs(upload_folder, exist_ok=True)
@@ -297,6 +305,86 @@ def descargar_imagen_bytes(carpeta, filename):
         return data, content_type
     except Exception:
         return None
+
+
+COLUMNAS_CON_FOTOS = (
+    ("productos", "imagen_url"),
+    ("productos", "foto"),
+    ("solicitudes", "foto_url"),
+    ("cotizaciones", "documento_url"),
+)
+
+
+def verificar_y_limpiar_fotos_rotas():
+    """Revisa cada foto/documento guardado (via /media/ en S3/R2, o el disco
+    local de antes) y si el archivo ya no existe de verdad, borra esa
+    referencia en la base de datos -- asi la app muestra "sin foto" en vez
+    de un icono de imagen rota. Solo borra cuando esta CONFIRMADO que el
+    archivo no existe (404/NoSuchKey); si hay un error de conexion no toca
+    nada, para no limpiar de mas por un problema pasajero de red.
+
+    Uso principal: fotos subidas por error de disco local (que Railway
+    borra en cada deploy) o antes de tener S3/R2 configurado, ademas de
+    cualquier subida vieja que haya fallado en silencio (ver el fix del
+    ACL en subir_imagen_bytes). Devuelve un resumen para mostrar en pantalla.
+    """
+    resumen = {"revisadas": 0, "ok": 0, "limpiadas": 0, "sin_verificar": 0}
+    conn = get_db_connection()
+    cur = conn.cursor()
+    ph = p()
+    hay_s3 = s3_configurado()
+    cliente = _s3_client() if hay_s3 else None
+    bucket = os.environ.get("S3_BUCKET") if hay_s3 else None
+
+    for tabla, columna in COLUMNAS_CON_FOTOS:
+        try:
+            cur.execute(f"SELECT id, {columna} AS valor FROM {tabla} WHERE {columna} IS NOT NULL AND {columna} <> ''")
+            filas = cur.fetchall()
+        except Exception:
+            continue
+
+        for fila in filas:
+            valor = fila["valor"] if hasattr(fila, "keys") else fila[1]
+            fid = fila["id"] if hasattr(fila, "keys") else fila[0]
+            if not valor:
+                continue
+
+            existe = None  # None = no se pudo verificar (no se toca)
+
+            if valor.startswith("/media/") and cliente is not None and bucket:
+                key = valor[len("/media/"):]
+                if "/" in key:
+                    resumen["revisadas"] += 1
+                    try:
+                        cliente.head_object(Bucket=bucket, Key=key)
+                        existe = True
+                    except Exception as e:
+                        codigo = str(getattr(e, "response", {}).get("Error", {}).get("Code", ""))
+                        if codigo in ("404", "NoSuchKey", "NotFound"):
+                            existe = False
+            elif valor.startswith("/static/"):
+                resumen["revisadas"] += 1
+                ruta_local = os.path.join(BASE_DIR, valor.lstrip("/"))
+                existe = os.path.exists(ruta_local)
+            # URLs externas (http/https que no son /media/, ej. cargadas a mano) no se tocan.
+
+            if existe is True:
+                resumen["ok"] += 1
+            elif existe is False:
+                try:
+                    cur.execute(f"UPDATE {tabla} SET {columna} = NULL WHERE id = {ph}", (fid,))
+                    conn.commit()
+                    resumen["limpiadas"] += 1
+                except Exception:
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
+            elif valor.startswith("/media/") or valor.startswith("/static/"):
+                resumen["sin_verificar"] += 1
+
+    conn.close()
+    return resumen
 
 
 # ETIQUETAS QR PARA REPUESTOS
