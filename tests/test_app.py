@@ -1723,6 +1723,33 @@ def test_migracion_reescribe_urls_viejas_de_r2_a_media(admin_client, monkeypatch
     assert nuevo == "/media/uploads/vieja.webp"
 
 
+def test_migracion_reescribe_imagen_url_de_productos(admin_client, monkeypatch):
+    # productos.imagen_url es la columna que realmente usa el Inventario para
+    # mostrar la foto; quedo fuera de la migracion en un primer intento y por
+    # eso las fotos seguian apuntando al r2.dev limitado.
+    import db as dbmod
+
+    monkeypatch.setenv("S3_PUBLIC_URL", "https://pub-abc123.r2.dev")
+
+    conn = dbmod.get_db_connection()
+    cur = conn.cursor()
+    ph = dbmod.p()
+    cur.execute(
+        f"INSERT INTO productos (nombre, imagen_url, stock_actual, stock_minimo) VALUES ({ph},{ph},{ph},{ph})",
+        ("Producto con foto vieja", "https://pub-abc123.r2.dev/uploads/aceite.webp", 1, 1),
+    )
+    conn.commit()
+    cur.execute("SELECT last_insert_rowid() AS id" if not dbmod.USE_POSTGRES else "SELECT lastval() AS id")
+    pid = cur.fetchone()["id"]
+
+    dbmod._migrar_fotos_a_proxy_media(conn)
+
+    cur.execute(f"SELECT imagen_url FROM productos WHERE id = {ph}", (pid,))
+    nuevo = cur.fetchone()["imagen_url"]
+    conn.close()
+    assert nuevo == "/media/uploads/aceite.webp"
+
+
 def test_movimientos_muestra_20_por_pagina_y_boton_siguiente(admin_client):
     # el seed ya trae 88 movimientos, mas que de sobra para varias paginas
     r1 = admin_client.get("/movimientos")

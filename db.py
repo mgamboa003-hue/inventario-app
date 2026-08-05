@@ -502,7 +502,16 @@ def _migrar_fotos_a_proxy_media(conn):
 
     cur = conn.cursor()
     ph = p()
-    columnas = [("productos", "foto"), ("solicitudes", "foto_url"), ("cotizaciones", "documento_url")]
+    # OJO: la foto principal de un repuesto vive en productos.imagen_url
+    # (productos.foto es la columna vieja/heredada). Dejarla fuera de esta
+    # lista fue justo el bug que hacia que las fotos del Inventario siguieran
+    # apuntando a la URL r2.dev limitada y cargaran de forma intermitente.
+    columnas = [
+        ("productos", "imagen_url"),
+        ("productos", "foto"),
+        ("solicitudes", "foto_url"),
+        ("cotizaciones", "documento_url"),
+    ]
     for tabla, columna in columnas:
         for prefijo in prefijos:
             try:
