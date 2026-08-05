@@ -242,20 +242,25 @@ def subir_imagen_bytes(data_bytes, filename, content_type="image/webp", carpeta=
     Sube el archivo a S3/R2 si esta configurado, si no lo deja en disco local
     (dentro de static/<carpeta>). Sirve tanto para fotos de productos como para
     documentos de cotizaciones (PDF/imagenes), usando 'carpeta' para separarlos.
-    Devuelve la URL publica (relativa si es local, absoluta si es S3/R2).
+    Devuelve la URL publica (relativa si es local, o via nuestra propia ruta
+    /media/<carpeta>/<archivo> si es S3/R2 -- ver descargar_imagen_bytes()).
+
+    Nota: cuando es S3/R2 NO se devuelve la URL publica directa del proveedor
+    (ej. el subdominio gratuito *.r2.dev de Cloudflare), porque esa URL esta
+    pensada solo para pruebas y Cloudflare la limita fuertemente ("rate
+    limited, not recommended for production"), lo que causaba que las fotos
+    dejaran de cargar de forma intermitente. En vez de eso, el navegador pide
+    la foto a nuestra propia app (/media/...), que la trae de S3/R2 usando las
+    credenciales (sin ese limite) y se la entrega.
     """
     if s3_configurado():
         try:
             bucket = os.environ.get("S3_BUCKET")
-            public_base = os.environ.get("S3_PUBLIC_URL", "").rstrip("/")
             client = _s3_client()
             key = f"{carpeta}/{filename}"
             client.put_object(Bucket=bucket, Key=key, Body=data_bytes,
                                ContentType=content_type, ACL="public-read")
-            if public_base:
-                return f"{public_base}/{key}"
-            endpoint = os.environ.get("S3_ENDPOINT", "").rstrip("/")
-            return f"{endpoint}/{bucket}/{key}"
+            return f"/media/{key}"
         except Exception:
             pass  # fallback a disco local si algo falla
 
@@ -265,6 +270,33 @@ def subir_imagen_bytes(data_bytes, filename, content_type="image/webp", carpeta=
     with open(filepath, "wb") as f:
         f.write(data_bytes)
     return f"/static/{carpeta}/{filename}"
+
+
+CARPETAS_MEDIA_PUBLICAS = ("uploads", "documentos")
+
+
+def descargar_imagen_bytes(carpeta, filename):
+    """Trae un archivo publico (foto de producto/solicitud o documento de
+    cotizacion) desde S3/R2 usando las credenciales configuradas, para
+    servirlo a traves de nuestra propia app en vez de la URL publica directa
+    del proveedor (ver nota en subir_imagen_bytes). Solo permite las carpetas
+    en CARPETAS_MEDIA_PUBLICAS -- los respaldos de la base de datos viven en
+    otro prefijo del mismo bucket y NUNCA deben quedar accesibles por aqui.
+    Devuelve (bytes, content_type) o None si no existe / no aplica."""
+    if carpeta not in CARPETAS_MEDIA_PUBLICAS:
+        return None
+    if not s3_configurado():
+        return None
+    try:
+        bucket = os.environ.get("S3_BUCKET")
+        client = _s3_client()
+        key = f"{carpeta}/{filename}"
+        obj = client.get_object(Bucket=bucket, Key=key)
+        data = obj["Body"].read()
+        content_type = obj.get("ContentType") or "application/octet-stream"
+        return data, content_type
+    except Exception:
+        return None
 
 
 # ETIQUETAS QR PARA REPUESTOS

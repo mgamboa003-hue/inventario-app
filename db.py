@@ -478,6 +478,55 @@ def _run_migrations(conn):
             pass
 
 
+def _migrar_fotos_a_proxy_media(conn):
+    """Las fotos/documentos subidos a S3/R2 se guardaban con la URL publica
+    directa del proveedor (ej. el subdominio gratuito *.r2.dev de
+    Cloudflare). Esa URL esta pensada solo para pruebas y Cloudflare la
+    limita fuertemente ("rate limited, not recommended for production"),
+    lo que hacia que las fotos dejaran de cargar de forma intermitente.
+    Esta migracion reescribe lo ya guardado para que pase por nuestra
+    propia ruta /media/<carpeta>/<archivo> (ver app.py), que trae el
+    archivo con las credenciales configuradas sin ese limite. Es idempotente:
+    una vez reescritas las filas ya no vuelven a coincidir con el prefijo
+    viejo, asi que correr esto de nuevo no hace nada."""
+    prefijos = []
+    pub = os.environ.get("S3_PUBLIC_URL", "").rstrip("/")
+    if pub:
+        prefijos.append(pub)
+    endpoint = os.environ.get("S3_ENDPOINT", "").rstrip("/")
+    bucket = os.environ.get("S3_BUCKET", "")
+    if endpoint and bucket:
+        prefijos.append(f"{endpoint}/{bucket}")
+    if not prefijos:
+        return
+
+    cur = conn.cursor()
+    ph = p()
+    columnas = [("productos", "foto"), ("solicitudes", "foto_url"), ("cotizaciones", "documento_url")]
+    for tabla, columna in columnas:
+        for prefijo in prefijos:
+            try:
+                cur.execute(
+                    f"SELECT id, {columna} AS valor FROM {tabla} WHERE {columna} LIKE {ph}",
+                    (prefijo + "/%",),
+                )
+                filas = cur.fetchall()
+                for fila in filas:
+                    valor = fila["valor"] if hasattr(fila, "keys") else fila[1]
+                    fid = fila["id"] if hasattr(fila, "keys") else fila[0]
+                    if not valor or not valor.startswith(prefijo + "/"):
+                        continue
+                    resto = valor[len(prefijo) + 1:]
+                    nuevo = f"/media/{resto}"
+                    cur.execute(f"UPDATE {tabla} SET {columna} = {ph} WHERE id = {ph}", (nuevo, fid))
+                conn.commit()
+            except Exception:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+
+
 def _sincronizar_ubicaciones(conn):
     """Rellena el catalogo de ubicaciones con los valores de texto ya usados
     en productos.ubicacion, para que las ubicaciones existentes (Caja 1, etc.)
@@ -547,6 +596,7 @@ def init_db():
         _run_migrations(conn)
         _crear_indices(conn)
         _sincronizar_ubicaciones(conn)
+        _migrar_fotos_a_proxy_media(conn)
 
         cur.execute("SELECT COUNT(*) AS n FROM usuarios")
         row = cur.fetchone()

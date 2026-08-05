@@ -22,7 +22,7 @@ from services import (
     usuario_bloqueado, registrar_intento_fallido, resetear_intentos,
     generar_api_token, verificar_api_token, revocar_api_token,
     email_configurado, enviar_alertas_stock_bajo,
-    s3_configurado, subir_imagen_bytes,
+    s3_configurado, subir_imagen_bytes, descargar_imagen_bytes,
     respaldo_automatico, listar_backups_remotos, url_descarga_backup_remoto,
     generar_ordenes_compra_sugeridas,
     asegurar_codigo_producto, generar_qr_base64,
@@ -155,6 +155,25 @@ def guardar_documento_cotizacion(archivo):
     content_type = archivo.mimetype or "application/octet-stream"
     archivo.seek(0)
     return subir_imagen_bytes(archivo.read(), filename, content_type, carpeta="documentos")
+
+
+@app.route("/media/<carpeta>/<path:filename>")
+def media(carpeta, filename):
+    """Sirve fotos de productos/solicitudes y documentos de cotizaciones que
+    viven en S3/R2, trayendolas con nuestras credenciales en vez de exponer
+    la URL publica del proveedor (ver nota en services.subir_imagen_bytes).
+    Sin login: estas fotos se comparten por WhatsApp con gente que no tiene
+    cuenta en la app. Por eso descargar_imagen_bytes() solo permite las
+    carpetas publicas (uploads/documentos) y nunca los respaldos de la BD."""
+    if ".." in filename or filename.startswith("/"):
+        return ("", 404)
+    resultado = descargar_imagen_bytes(carpeta, filename)
+    if not resultado:
+        return ("", 404)
+    data, content_type = resultado
+    resp = Response(data, mimetype=content_type)
+    resp.headers["Cache-Control"] = "public, max-age=2592000, immutable"
+    return resp
 
 
 def safe_int(v, default=0):

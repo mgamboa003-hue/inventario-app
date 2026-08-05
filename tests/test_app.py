@@ -1629,6 +1629,100 @@ def test_listar_backups_remotos_ordena_por_fecha_descendente(admin_client, monke
     assert resultado[0]["tamano_kb"] == 4
 
 
+def test_subir_imagen_bytes_devuelve_url_propia_en_vez_de_r2_dev(admin_client, monkeypatch):
+    # Antes se devolvia la URL publica directa del proveedor (ej. r2.dev),
+    # que Cloudflare limita fuertemente y hacia que las fotos no cargaran.
+    # Ahora debe devolver nuestra propia ruta /media/<carpeta>/<archivo>.
+    import services
+
+    monkeypatch.setenv("S3_BUCKET", "bucket-test")
+    monkeypatch.setenv("S3_ACCESS_KEY", "clave-test")
+    monkeypatch.setenv("S3_PUBLIC_URL", "https://pub-abc123.r2.dev")
+
+    class ClienteFalso:
+        def put_object(self, Bucket, Key, Body, ContentType, ACL=None):
+            pass
+
+    monkeypatch.setattr(services, "_s3_client", lambda: ClienteFalso())
+
+    url = services.subir_imagen_bytes(b"contenido-falso", "foto.webp", "image/webp")
+    assert url == "/media/uploads/foto.webp"
+    assert "r2.dev" not in url
+
+
+def test_media_route_sirve_archivo_desde_s3(admin_client, monkeypatch):
+    import services
+
+    monkeypatch.setenv("S3_BUCKET", "bucket-test")
+    monkeypatch.setenv("S3_ACCESS_KEY", "clave-test")
+
+    class BodyFalso:
+        def read(self):
+            return b"bytes-de-la-foto"
+
+    class ClienteFalso:
+        def get_object(self, Bucket, Key):
+            assert Key == "uploads/foto.webp"
+            return {"Body": BodyFalso(), "ContentType": "image/webp"}
+
+    monkeypatch.setattr(services, "_s3_client", lambda: ClienteFalso())
+
+    r = admin_client.get("/media/uploads/foto.webp")
+    assert r.status_code == 200
+    assert r.data == b"bytes-de-la-foto"
+    assert r.content_type == "image/webp"
+    assert "max-age" in r.headers.get("Cache-Control", "")
+
+
+def test_media_route_bloquea_carpetas_no_publicas_como_backups(admin_client, monkeypatch):
+    import services
+
+    monkeypatch.setenv("S3_BUCKET", "bucket-test")
+    monkeypatch.setenv("S3_ACCESS_KEY", "clave-test")
+
+    class ClienteFalso:
+        def get_object(self, Bucket, Key):
+            raise AssertionError("no deberia intentar leer respaldos por /media/")
+
+    monkeypatch.setattr(services, "_s3_client", lambda: ClienteFalso())
+
+    r = admin_client.get("/media/backups-db/inventario_20260101_000000.sql.gz")
+    assert r.status_code == 404
+
+
+def test_media_route_404_sin_s3_configurado(admin_client, monkeypatch):
+    monkeypatch.delenv("S3_BUCKET", raising=False)
+    monkeypatch.delenv("S3_ACCESS_KEY", raising=False)
+    r = admin_client.get("/media/uploads/foto.webp")
+    assert r.status_code == 404
+
+
+def test_migracion_reescribe_urls_viejas_de_r2_a_media(admin_client, monkeypatch):
+    import db as dbmod
+
+    monkeypatch.setenv("S3_PUBLIC_URL", "https://pub-abc123.r2.dev")
+
+    conn = dbmod.get_db_connection()
+    cur = conn.cursor()
+    ph = dbmod.p()
+    cur.execute(
+        f"INSERT INTO solicitudes (nombre_item, foto_url, solicitado_por, solicitado_por_id, fecha_solicitud) "
+        f"VALUES ({ph},{ph},{ph},{ph},{ph})",
+        ("Item con foto vieja", "https://pub-abc123.r2.dev/uploads/vieja.webp", "Test", 1,
+         dbmod.ahora().strftime("%Y-%m-%d %H:%M:%S")),
+    )
+    conn.commit()
+    cur.execute("SELECT last_insert_rowid() AS id" if not dbmod.USE_POSTGRES else "SELECT lastval() AS id")
+    sid = cur.fetchone()["id"]
+
+    dbmod._migrar_fotos_a_proxy_media(conn)
+
+    cur.execute(f"SELECT foto_url FROM solicitudes WHERE id = {ph}", (sid,))
+    nuevo = cur.fetchone()["foto_url"]
+    conn.close()
+    assert nuevo == "/media/uploads/vieja.webp"
+
+
 def test_movimientos_muestra_20_por_pagina_y_boton_siguiente(admin_client):
     # el seed ya trae 88 movimientos, mas que de sobra para varias paginas
     r1 = admin_client.get("/movimientos")
