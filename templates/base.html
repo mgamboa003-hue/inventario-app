@@ -195,9 +195,20 @@
       overlay.classList.remove('show');
     });
   });
-  $(document).ready(function() {
-    $('.select2').select2({ theme: 'bootstrap-5', width: '100%' });
-  });
+  // select2 embellece algunos <select>. Depende de jQuery, que viene de un
+  // servidor externo y puede no cargar (bloqueadores de anuncios, red del
+  // usuario, etc.). Si falta, los <select> siguen funcionando igual, solo
+  // sin el buscador -- pero el error NO debe cortar el resto de este script
+  // (antes se llevaba por delante el zoom de las fotos, entre otras cosas).
+  try {
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+      window.jQuery(function($) {
+        $('.select2').select2({ theme: 'bootstrap-5', width: '100%' });
+      });
+    }
+  } catch (e) {
+    console.warn('select2 no disponible:', e);
+  }
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
