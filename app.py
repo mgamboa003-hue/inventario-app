@@ -304,16 +304,20 @@ def forzar_https():
 
 
 # CABECERAS DE SEGURIDAD
-# CSP permisiva con las CDN que ya usa la app (Bootstrap, jQuery, Select2,
-# html5-qrcode) y con 'unsafe-inline' porque hay bastante JS/CSS inline en
-# las plantillas -- no es tan estricta como una CSP con nonces, pero igual
+# Todas las librerias (Bootstrap, Bootstrap Icons, jQuery, Select2,
+# html5-qrcode) se sirven ahora desde static/vendor/ en vez de una CDN
+# externa: varios usuarios reportaron la app "sin diseno" o con funciones
+# rotas porque su red/bloqueador frenaba esas descargas. Al no depender de
+# dominios de terceros, la CSP puede quedar mas estricta ('self').
+# Se mantiene 'unsafe-inline' porque hay bastante JS/CSS inline en las
+# plantillas -- no es tan estricta como una CSP con nonces, pero igual
 # bloquea que se carguen scripts o formularios apuntando a dominios
 # externos no autorizados (el vector mas comun de XSS/robo de datos).
 _CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com; "
-    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-    "font-src 'self' https://cdn.jsdelivr.net data:; "
+    "script-src 'self' 'unsafe-inline'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "font-src 'self' data:; "
     "img-src 'self' data: blob: https:; "
     "connect-src 'self'; "
     "frame-ancestors 'self'; "
@@ -3008,7 +3012,7 @@ def manifest():
 @app.route("/sw.js")
 def service_worker():
     js = """
-const CACHE_NAME = 'wintec-inv-v2';
+const CACHE_NAME = 'wintec-inv-v3';
 const OFFLINE_URLS = [
   '/static/styles.css',
   '/static/logo_wintec.png',

@@ -229,6 +229,31 @@ def test_ver_ubicacion_muestra_productos(admin_client):
     assert "Repuesto Ubicado" in r.get_data(as_text=True)
 
 
+def test_ver_ubicacion_ofrece_imprimir_etiqueta_por_repuesto(admin_client):
+    admin_client.post("/productos/nuevo", data={
+        "nombre": "Repuesto Etiquetable", "stock_minimo": "1", "stock_actual": "1",
+        "ubicacion": "Estante ET-1",
+    })
+    r = admin_client.get("/ubicaciones")
+    import re
+    html = r.get_data(as_text=True)
+    idx = html.find("Estante ET-1")
+    assert idx != -1
+    seg = html[max(0, idx - 50):idx + 400]
+    uid = re.search(r"/ubicaciones/(\d+)", seg).group(1)
+
+    r = admin_client.get(f"/ubicaciones/{uid}")
+    body = r.get_data(as_text=True)
+    assert r.status_code == 200
+
+    # id del producto recien creado, para verificar el link individual
+    r_prod = admin_client.get("/productos?q=Repuesto Etiquetable")
+    pid = re.search(r"/productos/(\d+)/editar", r_prod.get_data(as_text=True)).group(1)
+
+    assert f"/productos/{pid}/etiqueta" in body          # etiqueta individual
+    assert "/productos/etiquetas?ids=" in body            # imprimir todos de la ubicacion
+
+
 def test_etiqueta_ubicacion_genera_qr_con_url(admin_client):
     admin_client.post("/productos/nuevo", data={
         "nombre": "Repuesto Con Ubicacion QR", "stock_minimo": "1", "stock_actual": "1",
