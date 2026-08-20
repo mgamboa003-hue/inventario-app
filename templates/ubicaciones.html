@@ -16,12 +16,12 @@
 
 {% block content %}
 {% if not planta_restringida %}
-<div class="table-card mb-3">
-  <div class="p-3">
+<div class="filter-bar mb-3">
+  <div>
     <form method="get" class="row g-2 align-items-end">
       <div class="col-6 col-lg-3">
-        <label class="form-label small fw-semibold">Planta</label>
-        <select name="planta" class="form-select form-select-sm" onchange="this.form.submit()">
+        <label class="form-label" for="selPlantaUbic">Planta</label>
+        <select name="planta" id="selPlantaUbic" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">Ambas plantas</option>
           {% for clave, nombre in PLANTAS.items() %}
           <option value="{{ clave }}" {% if clave == planta_activa %}selected{% endif %}>{{ nombre }}</option>
@@ -38,7 +38,7 @@
   </div>
   {% if ubicaciones %}
   <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
+    <table class="table table-hover mb-0 align-middle table-stack">
       <thead>
         <tr>
           <th>Ubicación</th>
@@ -49,15 +49,16 @@
       <tbody>
         {% for u in ubicaciones %}
         <tr>
-          <td class="fw-semibold">
+          <td data-cell="title" class="fw-semibold">
             <i class="bi bi-box2 me-2 text-muted"></i>{{ u.nombre }}
             {% if not planta_restringida and u.planta %}<span class="badge bg-dark bg-opacity-75 ms-1">{{ PLANTAS.get(u.planta, u.planta) }}</span>{% endif %}
           </td>
-          <td class="text-center">
-            <span class="badge {% if u.n_productos == 0 %}bg-secondary{% else %}bg-primary{% endif %}">{{ u.n_productos }}</span>
+          <td data-cell="status" class="text-center">
+            <span class="badge {% if u.n_productos == 0 %}bg-secondary{% else %}bg-primary{% endif %}"
+                  title="Repuestos guardados en esta ubicación">{{ u.n_productos }}</span>
           </td>
-          <td>
-            <div class="d-flex gap-1 justify-content-end">
+          <td data-cell="actions">
+            <div class="row-actions">
               <a href="{{ url_for('ver_ubicacion', uid=u.id) }}" class="btn btn-sm btn-outline-secondary" title="Ver contenido">
                 <i class="bi bi-eye"></i>
               </a>
@@ -74,10 +75,13 @@
     </table>
   </div>
   {% else %}
-  <div class="text-center py-5 text-muted">
-    <i class="bi bi-geo-alt fs-1 d-block mb-2"></i>
-    Todavía no hay ubicaciones. Se crean solas cuando escribes una "Ubicación en bodega" en un repuesto,
-    o puedes agregarlas a mano desde "Gestionar ubicaciones".
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-geo-alt"></i></div>
+    <h6>Todavía no hay ubicaciones</h6>
+    <p>Se crean solas cuando escribes una «Ubicación en bodega» en un repuesto.</p>
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('admin_ubicaciones') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Gestionar ubicaciones</a>
+    {% endif %}
   </div>
   {% endif %}
 </div>

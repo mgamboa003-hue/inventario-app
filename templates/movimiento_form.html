@@ -11,19 +11,23 @@
 <div class="row justify-content-center">
   <div class="col-lg-6">
     <div class="table-card p-4">
-      <div class="alert {% if tipo == 'entrada' %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center mb-4">
-        <i class="bi bi-{% if tipo == 'entrada' %}plus-circle{% else %}dash-circle{% endif %} fs-4 me-3"></i>
+      {# Qué va a pasar con el stock, dicho antes de tocar el formulario. #}
+      <div class="alert {% if tipo == 'entrada' %}alert-success{% else %}alert-danger{% endif %} mb-4">
         <div>
           <strong>{% if tipo == 'entrada' %}Ingreso de stock{% else %}Retiro de stock{% endif %}</strong><br>
-          <small>{% if tipo == 'entrada' %}Se sumará al stock actual del repuesto.{% else %}Se descontará del stock actual del repuesto.{% endif %}</small>
+          <span class="opacity-75">{% if tipo == 'entrada' %}La cantidad se sumará al stock actual del repuesto.{% else %}La cantidad se descontará del stock actual del repuesto.{% endif %}</span>
         </div>
       </div>
 
       <form method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+        <div class="form-section">
+          <div class="form-section-title"><i class="bi bi-box-seam"></i>Qué repuesto</div>
+        </div>
+
         <div class="mb-3">
-          <label class="form-label fw-semibold">Repuesto <span class="text-danger">*</span></label>
+          <label class="form-label" for="productoSelect">Repuesto <span class="req">*</span></label>
           <div class="d-flex gap-2">
             <select name="producto_id" id="productoSelect" class="form-select select2" required style="flex:1">
               <option value="">— Seleccionar repuesto —</option>
@@ -34,8 +38,9 @@
               </option>
               {% endfor %}
             </select>
-            <button type="button" class="btn btn-outline-primary" id="btnEscanear" title="Escanear código de barras / QR">
-              <i class="bi bi-upc-scan"></i>
+            <button type="button" class="btn btn-outline-primary flex-shrink-0" id="btnEscanear"
+                    title="Escanear código de barras o QR con la cámara" aria-label="Escanear código">
+              <i class="bi bi-upc-scan"></i><span class="d-none d-sm-inline ms-1">Escanear</span>
             </button>
           </div>
           <div id="stockInfo" class="form-text mt-1"></div>
@@ -43,23 +48,30 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">Cantidad <span class="text-danger">*</span></label>
-          <input type="number" class="form-control" name="cantidad" min="1" required>
+          <label class="form-label" for="campoCantidad">Cantidad <span class="req">*</span></label>
+          <input type="number" class="form-control" id="campoCantidad" name="cantidad" min="1" required
+                 inputmode="numeric" placeholder="0">
         </div>
 
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Nombre de quien retira / ingresa</label>
-          <input type="text" class="form-control" name="usuario" value="{{ session.get('nombre','') }}" placeholder="Tu nombre">
-        </div>
+        <div class="form-section">
+          <div class="form-section-title"><i class="bi bi-person"></i>Quién y por qué</div>
 
-        <div class="mb-4">
-          <label class="form-label fw-semibold">Motivo / Observaciones</label>
-          <textarea class="form-control" name="motivo" rows="2" placeholder="Descripción opcional del movimiento..."></textarea>
+          <div class="mb-3">
+            <label class="form-label" for="campoUsuario">Nombre de quien {{ 'ingresa' if tipo == 'entrada' else 'retira' }}</label>
+            <input type="text" class="form-control" id="campoUsuario" name="usuario" value="{{ session.get('nombre','') }}" placeholder="Tu nombre">
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label" for="campoMotivo">Motivo u observaciones</label>
+            <textarea class="form-control" id="campoMotivo" name="motivo" rows="2"
+                      placeholder="{{ 'Ej: compra a proveedor, devolución de taller...' if tipo == 'entrada' else 'Ej: cambio en selladora 2, mantención preventiva...' }}"></textarea>
+            <div class="form-text">Opcional, pero ayuda mucho al revisar el historial después.</div>
+          </div>
         </div>
 
         <div class="d-flex gap-2">
           <button type="submit" class="btn {% if tipo == 'entrada' %}btn-success{% else %}btn-danger{% endif %} px-4 fw-semibold">
-            <i class="bi bi-{% if tipo == 'entrada' %}plus{% else %}dash{% endif %}-circle me-1"></i>
+            <i class="bi bi-{% if tipo == 'entrada' %}box-arrow-in-down{% else %}box-arrow-up{% endif %} me-1"></i>
             Registrar {{ tipo }}
           </button>
           <a href="{{ url_for('listar_movimientos') }}" class="btn btn-outline-secondary">Cancelar</a>
@@ -150,11 +162,21 @@ modalEscanerEl.addEventListener('shown.bs.modal', function() {
 });
 
 modalEscanerEl.addEventListener('hidden.bs.modal', function() {
-  if (html5QrCode) {
-    html5QrCode.stop().catch(() => {}).finally(() => {
-      html5QrCode.clear();
-      html5QrCode = null;
-    });
+  if (!html5QrCode) return;
+  // Si la camara nunca llego a arrancar (permiso denegado, equipo sin
+  // camara), stop() lanza un error de forma sincronica y el .catch() no
+  // alcanza a atraparlo: hay que envolverlo en try/catch o el error sube
+  // a la consola cada vez que se cierra el modal.
+  var limpiar = function() {
+    try { html5QrCode.clear(); } catch (e) {}
+    html5QrCode = null;
+  };
+  try {
+    var r = html5QrCode.stop();
+    if (r && typeof r.then === 'function') r.then(limpiar, limpiar);
+    else limpiar();
+  } catch (e) {
+    limpiar();
   }
 });
 

@@ -2,10 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Inventario Wintec{% endblock %}</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#1B4F8A">
+  <meta name="theme-color" content="#0a1a2f">
+  <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo_wintec.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo_wintec.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
@@ -13,14 +14,32 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/select2/select2.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/select2/select2-bootstrap-5-theme.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script>
+    // Se aplica el tema guardado ANTES de pintar, para que la pantalla
+    // no destelle en blanco al abrir la app en modo oscuro.
+    (function () {
+      try {
+        var t = localStorage.getItem('wt-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.setAttribute('data-bs-theme', t);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.setAttribute('data-bs-theme', 'light');
+      }
+    })();
+  </script>
 </head>
 <body class="role-{{ session.get('role', 'invitado') }}">
 
 {% if session.get('logged_in') %}
-<!-- Sidebar -->
+{% set rol = session.get('role') %}
+{% set ep = request.endpoint or '' %}
+
+<!-- ══ Barra lateral ══ -->
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <a href="{{ url_for('index') }}" class="sidebar-brand">
+    <a href="{{ url_for('index') }}" class="sidebar-brand" aria-label="Ir al inicio">
       {% if logo_path %}
         <span class="sidebar-logo-chip">
           <img src="{{ url_for('static', filename='logo_wintec.png') }}" alt="Wintec" class="sidebar-logo">
@@ -30,50 +49,50 @@
         <span class="brand-text">WINTEC</span>
       {% endif %}
     </a>
-    <button class="sidebar-toggle d-lg-none" id="sidebarClose">
+    <button class="sidebar-toggle d-lg-none" id="sidebarClose" aria-label="Cerrar menú">
       <i class="bi bi-x-lg"></i>
     </button>
   </div>
 
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" aria-label="Navegación principal">
     <div class="nav-section-label">Principal</div>
-    {% if session.get('role') != 'comprador' %}
-    <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+    {% if rol != 'comprador' %}
+    <a href="{{ url_for('index') }}" class="nav-link {% if ep == 'index' %}active{% endif %}">
       <i class="bi bi-speedometer2"></i><span>Dashboard</span>
     </a>
-    <a href="{{ url_for('listar_productos') }}" class="nav-link {% if 'producto' in (request.endpoint or '') %}active{% endif %}">
+    <a href="{{ url_for('listar_productos') }}" class="nav-link {% if 'producto' in ep %}active{% endif %}">
       <i class="bi bi-box-seam"></i><span>Inventario</span>
     </a>
-    <a href="{{ url_for('listar_movimientos') }}" class="nav-link {% if 'movimiento' in (request.endpoint or '') %}active{% endif %}">
+    <a href="{{ url_for('listar_movimientos') }}" class="nav-link {% if 'movimiento' in ep %}active{% endif %}">
       <i class="bi bi-arrow-left-right"></i><span>Movimientos</span>
     </a>
     {% endif %}
-    {% if session.get('role') == 'admin' %}
-    <a href="{{ url_for('listar_ordenes_compra') }}" class="nav-link {% if 'orden' in (request.endpoint or '') %}active{% endif %}">
+    {% if rol == 'admin' %}
+    <a href="{{ url_for('listar_ordenes_compra') }}" class="nav-link {% if 'orden' in ep %}active{% endif %}">
       <i class="bi bi-cart-check"></i><span>Órdenes de compra</span>
     </a>
     {% endif %}
-    {% if session.get('role') != 'comprador' %}
-    <a href="{{ url_for('listar_ubicaciones') }}" class="nav-link {% if 'ubicacion' in (request.endpoint or '') %}active{% endif %}">
+    {% if rol != 'comprador' %}
+    <a href="{{ url_for('listar_ubicaciones') }}" class="nav-link {% if 'ubicacion' in ep %}active{% endif %}">
       <i class="bi bi-geo-alt"></i><span>Ubicaciones</span>
     </a>
     {% endif %}
-    {% if session.get('role') == 'admin' %}
-    <a href="{{ url_for('listar_cotizaciones') }}" class="nav-link {% if 'cotizacion' in (request.endpoint or '') %}active{% endif %}">
+    {% if rol == 'admin' %}
+    <a href="{{ url_for('listar_cotizaciones') }}" class="nav-link {% if 'cotizacion' in ep %}active{% endif %}">
       <i class="bi bi-file-earmark-text"></i><span>Cotizaciones</span>
     </a>
     {% endif %}
-    <a href="{{ url_for('listar_solicitudes') }}" class="nav-link {% if 'solicitud' in (request.endpoint or '') %}active{% endif %}">
+    <a href="{{ url_for('listar_solicitudes') }}" class="nav-link {% if 'solicitud' in ep %}active{% endif %}">
       <i class="bi bi-clipboard-check"></i><span>Solicitudes del equipo</span>
     </a>
 
-    {% if session.get('role') == 'admin' %}
-    <div class="nav-section-label mt-3">Exportar</div>
+    {% if rol == 'admin' %}
+    <div class="nav-section-label mt-3">Exportar a Excel</div>
     <a href="{{ url_for('exportar_stock_bajo') }}" class="nav-link">
-      <i class="bi bi-file-earmark-excel"></i><span>Stock Bajo</span>
+      <i class="bi bi-exclamation-triangle"></i><span>Stock bajo</span>
     </a>
     <a href="{{ url_for('exportar_pedidos') }}" class="nav-link">
-      <i class="bi bi-bag-check"></i><span>Pedidos por Proveedor</span>
+      <i class="bi bi-bag-check"></i><span>Pedidos por proveedor</span>
     </a>
     <a href="{{ url_for('exportar_valorizacion') }}" class="nav-link">
       <i class="bi bi-cash-stack"></i><span>Valorización</span>
@@ -86,41 +105,41 @@
     </a>
     {% endif %}
 
-    {% if session.get('role') == 'admin' %}
+    {% if rol == 'admin' %}
     <div class="nav-section-label mt-3">Administración</div>
     {% if session.get('super_admin') %}
-    <a href="{{ url_for('admin_usuarios') }}" class="nav-link {% if 'usuario' in (request.endpoint or '') %}active{% endif %}">
+    <a href="{{ url_for('admin_usuarios') }}" class="nav-link {% if 'usuario' in ep %}active{% endif %}">
       <i class="bi bi-people"></i><span>Usuarios</span>
     </a>
     {% endif %}
-    <a href="{{ url_for('admin_categorias') }}" class="nav-link {% if request.endpoint == 'admin_categorias' %}active{% endif %}">
+    <a href="{{ url_for('admin_categorias') }}" class="nav-link {% if ep == 'admin_categorias' %}active{% endif %}">
       <i class="bi bi-tags"></i><span>Categorías</span>
     </a>
-    <a href="{{ url_for('admin_equipos') }}" class="nav-link {% if request.endpoint == 'admin_equipos' %}active{% endif %}">
+    <a href="{{ url_for('admin_equipos') }}" class="nav-link {% if ep == 'admin_equipos' %}active{% endif %}">
       <i class="bi bi-gear"></i><span>Equipos</span>
     </a>
-    <a href="{{ url_for('admin_proveedores') }}" class="nav-link {% if 'proveedor' in (request.endpoint or '') %}active{% endif %}">
+    <a href="{{ url_for('admin_proveedores') }}" class="nav-link {% if 'proveedor' in ep %}active{% endif %}">
       <i class="bi bi-building"></i><span>Proveedores</span>
     </a>
     {% if session.get('super_admin') %}
-    <a href="{{ url_for('admin_unificar_catalogos') }}" class="nav-link {% if request.endpoint == 'admin_unificar_catalogos' %}active{% endif %}">
+    <a href="{{ url_for('admin_unificar_catalogos') }}" class="nav-link {% if ep == 'admin_unificar_catalogos' %}active{% endif %}">
       <i class="bi bi-arrow-repeat"></i><span>Unificar nombres</span>
     </a>
     {% endif %}
-    <a href="{{ url_for('admin_ubicaciones') }}" class="nav-link {% if request.endpoint == 'admin_ubicaciones' %}active{% endif %}">
+    <a href="{{ url_for('admin_ubicaciones') }}" class="nav-link {% if ep == 'admin_ubicaciones' %}active{% endif %}">
       <i class="bi bi-geo"></i><span>Gestionar ubicaciones</span>
     </a>
-    <a href="{{ url_for('admin_api_tokens') }}" class="nav-link {% if request.endpoint == 'admin_api_tokens' %}active{% endif %}">
+    <a href="{{ url_for('admin_api_tokens') }}" class="nav-link {% if ep == 'admin_api_tokens' %}active{% endif %}">
       <i class="bi bi-key"></i><span>Tokens de API</span>
     </a>
     {% if session.get('super_admin') %}
-    <a href="{{ url_for('admin_auditoria') }}" class="nav-link {% if request.endpoint == 'admin_auditoria' %}active{% endif %}">
+    <a href="{{ url_for('admin_auditoria') }}" class="nav-link {% if ep == 'admin_auditoria' %}active{% endif %}">
       <i class="bi bi-shield-check"></i><span>Auditoría</span>
     </a>
-    <a href="{{ url_for('admin_accesos') }}" class="nav-link {% if request.endpoint == 'admin_accesos' %}active{% endif %}">
+    <a href="{{ url_for('admin_accesos') }}" class="nav-link {% if ep == 'admin_accesos' %}active{% endif %}">
       <i class="bi bi-clock-history"></i><span>Control de accesos</span>
     </a>
-    <a href="{{ url_for('admin_sistema') }}" class="nav-link {% if request.endpoint == 'admin_sistema' %}active{% endif %}">
+    <a href="{{ url_for('admin_sistema') }}" class="nav-link {% if ep == 'admin_sistema' %}active{% endif %}">
       <i class="bi bi-hdd-network"></i><span>Sistema y respaldos</span>
     </a>
     {% endif %}
@@ -132,13 +151,13 @@
       <div class="user-avatar">{{ session.get('nombre','U')[0]|upper }}</div>
       <div>
         <div class="user-name">{{ session.get('nombre', session.get('username','')) }}</div>
-        <div class="user-role badge {% if session.get('role') == 'admin' %}bg-danger{% elif session.get('role') == 'solicitante' %}bg-info text-dark{% elif session.get('role') == 'comprador' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-          {% if session.get('role') == 'admin' and session.get('super_admin') %}Admin principal{% elif session.get('role') == 'admin' %}Admin{% elif session.get('role') == 'solicitante' %}Solicitante{% elif session.get('role') == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}
-        </div>
+        <span class="user-role badge {% if rol == 'admin' %}bg-danger{% elif rol == 'solicitante' %}bg-info{% elif rol == 'comprador' %}bg-warning{% else %}bg-secondary{% endif %}">
+          {% if rol == 'admin' and session.get('super_admin') %}Admin principal{% elif rol == 'admin' %}Admin{% elif rol == 'solicitante' %}Solicitante{% elif rol == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}
+        </span>
       </div>
     </div>
-    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light mt-2 w-100">
-      <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light w-100">
+      <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
     </a>
   </div>
 </div>
@@ -146,27 +165,34 @@
 
 <div class="main-content" id="mainContent">
   <header class="topbar">
-    <button class="btn btn-sm sidebar-toggle-btn" id="sidebarOpen">
-      <i class="bi bi-list fs-5"></i>
+    <button class="sidebar-toggle-btn d-lg-none" id="sidebarOpen" aria-label="Abrir menú">
+      <i class="bi bi-list"></i>
     </button>
     <div class="topbar-title">{% block topbar_title %}{% endblock %}</div>
-    {% if session.get('logged_in') and session.get('role') != 'comprador' %}
-    <form method="get" action="{{ url_for('listar_productos') }}" class="topbar-search">
+    {% if rol != 'comprador' %}
+    <form method="get" action="{{ url_for('listar_productos') }}" class="topbar-search" role="search">
       <i class="bi bi-search"></i>
       <input type="search" name="q" class="form-control form-control-sm" placeholder="Buscar repuesto por código o nombre..."
-             value="{{ request.args.get('q','') if request.endpoint == 'listar_productos' else '' }}">
+             aria-label="Buscar repuesto"
+             value="{{ request.args.get('q','') if ep == 'listar_productos' else '' }}">
     </form>
     {% endif %}
-    <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+    <div class="topbar-actions">
+      {% block topbar_actions %}{% endblock %}
+      <button type="button" class="theme-toggle" id="themeToggle"
+              aria-label="Cambiar entre modo claro y oscuro" title="Cambiar tema">
+        <i class="bi bi-moon-stars"></i><i class="bi bi-sun"></i>
+      </button>
+    </div>
   </header>
 
   <div class="page-content">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for cat, msg in messages %}
-          <div class="alert alert-{{ cat }} alert-dismissible fade show shadow-sm" role="alert">
-            {{ msg }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+            <span>{{ msg }}</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
           </div>
         {% endfor %}
       {% endif %}
@@ -174,6 +200,33 @@
     {% block content %}{% endblock %}
   </div>
 </div>
+
+<!-- ══ Navegación inferior (solo celular) ══
+     Los cuatro destinos que se usan de pie en planta. El menú
+     completo sigue disponible en el botón de arriba a la izquierda. -->
+<nav class="bottom-nav d-lg-none" aria-label="Accesos rápidos">
+  {% if rol != 'comprador' %}
+  <a href="{{ url_for('index') }}" class="{% if ep == 'index' %}active{% endif %}">
+    <i class="bi bi-speedometer2"></i><span>Inicio</span>
+  </a>
+  <a href="{{ url_for('listar_productos') }}" class="{% if 'producto' in ep %}active{% endif %}">
+    <i class="bi bi-box-seam"></i><span>Inventario</span>
+  </a>
+  <a href="{{ url_for('listar_movimientos') }}" class="{% if 'movimiento' in ep %}active{% endif %}">
+    <i class="bi bi-arrow-left-right"></i><span>Movim.</span>
+  </a>
+  {% else %}
+  <a href="{{ url_for('listar_ordenes_compra') }}" class="{% if 'orden' in ep %}active{% endif %}">
+    <i class="bi bi-cart-check"></i><span>Órdenes</span>
+  </a>
+  {% endif %}
+  <a href="{{ url_for('listar_solicitudes') }}" class="{% if 'solicitud' in ep %}active{% endif %}">
+    <i class="bi bi-clipboard-check"></i><span>Solicitudes</span>
+  </a>
+  <a href="#" id="bottomNavMenu"><i class="bi bi-list"></i><span>Menú</span></a>
+</nav>
+
+{% block fab %}{% endblock %}
 
 {% else %}
 {% block auth_content %}{% endblock %}
@@ -183,49 +236,115 @@
 <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
 <script src="{{ url_for('static', filename='vendor/select2/select2.min.js') }}"></script>
 <script>
+  // ── Menú lateral ──
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
-  document.getElementById('sidebarOpen')?.addEventListener('click', () => {
-    sidebar.classList.add('open');
-    overlay.classList.add('show');
+  function abrirSidebar() { sidebar?.classList.add('open'); overlay?.classList.add('show'); }
+  function cerrarSidebar() { sidebar?.classList.remove('open'); overlay?.classList.remove('show'); }
+  document.getElementById('sidebarOpen')?.addEventListener('click', abrirSidebar);
+  document.getElementById('bottomNavMenu')?.addEventListener('click', function (e) { e.preventDefault(); abrirSidebar(); });
+  ['sidebarClose', 'sidebarOverlay'].forEach(function (id) {
+    document.getElementById(id)?.addEventListener('click', cerrarSidebar);
   });
-  ['sidebarClose','sidebarOverlay'].forEach(id => {
-    document.getElementById(id)?.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('show');
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarSidebar(); });
+
+  // ── Modo claro / oscuro ──
+  document.getElementById('themeToggle')?.addEventListener('click', function () {
+    var actual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    var nuevo = actual === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', nuevo);
+    document.documentElement.setAttribute('data-bs-theme', nuevo);
+    try { localStorage.setItem('wt-theme', nuevo); } catch (e) {}
+    // Los gráficos del dashboard se dibujan en canvas: hay que repintarlos.
+    if (typeof window.redibujarGraficos === 'function') window.redibujarGraficos();
+  });
+
+  // ── Tablas apilables en celular ──
+  // A las tablas marcadas con .table-stack se les copia el título de
+  // cada columna en el atributo data-label de sus celdas. En celular
+  // el CSS lo usa como rótulo, para que ningún dato quede suelto sin
+  // saber qué es. Si una celda ya trae data-label, se respeta.
+  (function () {
+    document.querySelectorAll('table.table-stack').forEach(function (tabla) {
+      var ths = tabla.querySelectorAll('thead th');
+      if (!ths.length) return;
+      var titulos = Array.prototype.map.call(ths, function (th) {
+        return (th.textContent || '').trim();
+      });
+      tabla.querySelectorAll('tbody tr').forEach(function (tr) {
+        Array.prototype.forEach.call(tr.children, function (td, i) {
+          if (td.hasAttribute('data-label') || td.hasAttribute('data-cell')) return;
+          if (titulos[i]) td.setAttribute('data-label', titulos[i]);
+        });
+      });
+    });
+  })();
+
+  // ── Foto que no carga ──
+  // Si el archivo de una foto se perdió o todavía no se sube, mostrar el
+  // texto alternativo roto queda peor que no mostrar nada: se reemplaza
+  // por el mismo recuadro gris con ícono que usan los repuestos sin foto.
+  function reemplazarFotoRota(img) {
+    if (!img || img.tagName !== 'IMG') return;
+    if (!img.classList.contains('product-thumb') && !img.classList.contains('product-thumb-lg')) return;
+    // Nunca tocar una imagen con id (otro script la usa por nombre, como
+    // la vista previa al subir una foto) ni una que todavía no tiene src.
+    if (img.id) return;
+    if (!img.getAttribute('src')) return;
+    var caja = document.createElement('div');
+    caja.className = img.className;
+    caja.title = 'Sin foto disponible';
+    caja.innerHTML = '<i class="bi bi-image"></i>';
+    img.replaceWith(caja);
+  }
+  document.addEventListener('error', function (e) { reemplazarFotoRota(e.target); }, true);
+  // Las fotos que ya habían fallado antes de registrar el detector de
+  // arriba no disparan el evento: se revisan una vez al cargar.
+  window.addEventListener('load', function () {
+    document.querySelectorAll('img.product-thumb, img.product-thumb-lg').forEach(function (img) {
+      if (img.complete && img.naturalWidth === 0) reemplazarFotoRota(img);
     });
   });
-  // select2 embellece algunos <select>. Depende de jQuery, que viene de un
-  // servidor externo y puede no cargar (bloqueadores de anuncios, red del
-  // usuario, etc.). Si falta, los <select> siguen funcionando igual, solo
-  // sin el buscador -- pero el error NO debe cortar el resto de este script
-  // (antes se llevaba por delante el zoom de las fotos, entre otras cosas).
+
+  // ── Atajo: "/" enfoca el buscador (uso con teclado en oficina) ──
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
+      var b = document.querySelector('.topbar-search input');
+      if (b) { e.preventDefault(); b.focus(); }
+    }
+  });
+
+  // select2 embellece algunos <select>. Depende de jQuery, que puede no
+  // cargar (bloqueadores, red del usuario). Si falta, los <select> siguen
+  // funcionando igual, solo sin el buscador -- pero el error NO debe cortar
+  // el resto de este script.
   try {
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
-      window.jQuery(function($) {
+      window.jQuery(function ($) {
         $('.select2').select2({ theme: 'bootstrap-5', width: '100%' });
       });
     }
   } catch (e) {
     console.warn('select2 no disponible:', e);
   }
+
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
     });
   }
 
-  // Zoom flotante al pasar el mouse sobre una foto de repuesto (solo en
-  // dispositivos con mouse; en celular/tablet no hace nada).
+  // ── Zoom flotante al pasar el mouse sobre una foto de repuesto ──
   if (window.matchMedia('(hover: hover)').matches) {
     const zoomPreview = document.createElement('img');
     zoomPreview.className = 'img-zoom-preview';
+    zoomPreview.alt = '';
     document.body.appendChild(zoomPreview);
 
     const margen = 18;
     function posicionarPreview(x, y) {
-      const anchoPreview = zoomPreview.offsetWidth || 260;
-      const altoPreview = zoomPreview.offsetHeight || 260;
+      const anchoPreview = zoomPreview.offsetWidth || 280;
+      const altoPreview = zoomPreview.offsetHeight || 280;
       let left = x + margen;
       let top = y + margen;
       if (left + anchoPreview > window.innerWidth) left = x - anchoPreview - margen;
@@ -234,17 +353,17 @@
       zoomPreview.style.top = Math.max(4, top) + 'px';
     }
 
-    document.addEventListener('mouseover', (e) => {
+    document.addEventListener('mouseover', function (e) {
       const img = e.target.closest('img.product-thumb, img.product-thumb-lg');
       if (!img || !img.src) return;
       zoomPreview.src = img.src;
       zoomPreview.classList.add('show');
       posicionarPreview(e.clientX, e.clientY);
     });
-    document.addEventListener('mousemove', (e) => {
+    document.addEventListener('mousemove', function (e) {
       if (zoomPreview.classList.contains('show')) posicionarPreview(e.clientX, e.clientY);
     });
-    document.addEventListener('mouseout', (e) => {
+    document.addEventListener('mouseout', function (e) {
       const img = e.target.closest('img.product-thumb, img.product-thumb-lg');
       if (img) zoomPreview.classList.remove('show');
     });
@@ -252,16 +371,16 @@
 
   {% if session.get('logged_in') %}
   // Cierre de sesion automatico por inactividad (sin tocar nada por SESSION_IDLE_MINUTES).
-  (function() {
+  (function () {
     const LIMITE_MS = {{ SESSION_IDLE_MINUTES|default(15) }} * 60 * 1000;
     let temporizador = null;
     function reiniciarTemporizador() {
       if (temporizador) clearTimeout(temporizador);
-      temporizador = setTimeout(function() {
+      temporizador = setTimeout(function () {
         window.location.href = "{{ url_for('logout') }}?motivo=inactividad";
       }, LIMITE_MS);
     }
-    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function(evento) {
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function (evento) {
       document.addEventListener(evento, reiniciarTemporizador, { passive: true });
     });
     reiniciarTemporizador();

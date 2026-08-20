@@ -3,22 +3,28 @@
 {% block topbar_title %}Dashboard{% endblock %}
 {% block topbar_actions %}
   {% if session.get('role') == 'admin' %}
-  <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary btn-sm">
+  <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary btn-sm d-none d-md-inline-flex align-items-center">
     <i class="bi bi-plus-lg me-1"></i>Nuevo repuesto
   </a>
   {% endif %}
 {% endblock %}
 
+{% block fab %}
+  <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}" class="fab" aria-label="Registrar salida" title="Registrar salida">
+    <i class="bi bi-box-arrow-up"></i>
+  </a>
+{% endblock %}
+
 {% block content %}
 {% if planta_restringida %}
 <div class="mb-3">
-  <span class="badge bg-dark bg-opacity-75"><i class="bi bi-geo-alt me-1"></i>Planta {{ PLANTAS.get(planta_restringida, planta_restringida) }}</span>
+  <span class="badge bg-secondary"><i class="bi bi-geo-alt me-1"></i>Planta {{ PLANTAS.get(planta_restringida, planta_restringida) }}</span>
 </div>
 {% elif session.get('role') == 'admin' %}
 <div class="mb-3">
   <form method="get" class="d-inline-flex align-items-center gap-2">
-    <label class="form-label small fw-semibold mb-0">Planta</label>
-    <select name="planta" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+    <label class="form-label mb-0" for="selPlanta">Planta</label>
+    <select name="planta" id="selPlanta" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
       <option value="">Ambas plantas</option>
       {% for clave, nombre in PLANTAS.items() %}
       <option value="{{ clave }}" {% if clave == planta_activa %}selected{% endif %}>{{ nombre }}</option>
@@ -27,86 +33,65 @@
   </form>
 </div>
 {% endif %}
-<!-- Stats -->
-<div class="row g-3 mb-4">
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card blue d-flex align-items-center gap-3">
+
+<!-- ══ Estado del inventario de un vistazo ══ -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3">
+    <a href="{{ url_for('listar_productos') }}" class="stat-card blue d-flex align-items-center gap-3">
       <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
       <div><div class="stat-value">{{ total_productos }}</div><div class="stat-label">Total repuestos</div></div>
-    </div>
+    </a>
   </div>
-  <div class="col-sm-6 col-xl-3">
+  <div class="col-6 col-xl-3">
     <div class="stat-card green d-flex align-items-center gap-3">
       <div class="stat-icon"><i class="bi bi-layers"></i></div>
       <div><div class="stat-value">{{ total_stock }}</div><div class="stat-label">Unidades en stock</div></div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card red d-flex align-items-center gap-3">
+  <div class="col-6 col-xl-3">
+    <a href="{{ url_for('listar_productos') }}?stock_bajo=1" class="stat-card red d-flex align-items-center gap-3">
       <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
-      <div><div class="stat-value">{{ stock_bajo }}</div><div class="stat-label">Repuestos bajo mínimo</div></div>
-    </div>
+      <div><div class="stat-value">{{ stock_bajo }}</div><div class="stat-label">Bajo el mínimo</div></div>
+    </a>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="stat-card amber d-flex align-items-center gap-3">
+  <div class="col-6 col-xl-3">
+    <a href="{{ url_for('listar_movimientos') }}" class="stat-card amber d-flex align-items-center gap-3">
       <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
       <div>
         <div class="stat-value">{{ (entradas|sum + salidas|sum) if entradas else 0 }}</div>
         <div class="stat-label">Movimientos (14 días)</div>
       </div>
-    </div>
+    </a>
   </div>
 </div>
 
-<div class="row g-3 mb-4">
-  <!-- Gráfico movimientos -->
-  <div class="col-lg-8">
-    <div class="table-card h-100">
-      <div class="table-header">
-        <h6><i class="bi bi-graph-up me-2 text-primary"></i>Movimientos últimos 14 días</h6>
-      </div>
-      <div class="p-3">
-        <canvas id="chartMovimientos" height="90"></canvas>
-      </div>
-    </div>
-  </div>
-  <!-- Top salidas -->
-  <div class="col-lg-4">
-    <div class="table-card h-100">
-      <div class="table-header">
-        <h6><i class="bi bi-bar-chart me-2 text-warning"></i>Top salidas</h6>
-      </div>
-      <div class="p-3">
-        <canvas id="chartTop" height="200"></canvas>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Alertas stock bajo -->
+<!-- ══ Alertas primero: es lo que exige acción ══ -->
 {% if alertas %}
-<div class="table-card mb-4">
+<div class="table-card mb-3">
   <div class="table-header">
-    <h6><i class="bi bi-bell-fill me-2 text-danger"></i>Alertas de stock bajo</h6>
-    <a href="{{ url_for('listar_productos') }}?stock_bajo=1" class="btn btn-sm btn-outline-danger">Ver todos</a>
+    <h6><i class="bi bi-bell-fill me-2" style="color:var(--warn)"></i>Repuestos que hay que reponer</h6>
+    <a href="{{ url_for('listar_productos') }}?stock_bajo=1" class="btn btn-sm btn-outline-secondary">
+      Ver todos <i class="bi bi-chevron-right"></i>
+    </a>
   </div>
   <div class="p-3">
     {% for a in alertas %}
     <div class="alert-stock-item">
-      <div>
+      <div class="d-flex flex-wrap align-items-center gap-2" style="min-width:0">
         <strong>{{ a['nombre'] }}</strong>
-        {% if a['codigo'] %}<span class="text-muted ms-1">[{{ a['codigo'] }}]</span>{% endif %}
-        <span class="ms-2 badge bg-secondary">{{ a['equipo'] or a['categoria'] or '' }}</span>
+        {% if a['codigo'] %}<span class="badge bg-light font-monospace">{{ a['codigo'] }}</span>{% endif %}
+        {% if a['equipo'] or a['categoria'] %}<span class="badge bg-secondary">{{ a['equipo'] or a['categoria'] }}</span>{% endif %}
         {% if a['dias_restantes'] is not none %}
-        <span class="ms-2 badge {% if a['dias_restantes'] <= 7 %}bg-danger{% else %}bg-warning text-dark{% endif %}"
-              title="Estimado segun el consumo real de los ultimos {{ 60 }} dias">
+        <span class="badge {% if a['dias_restantes'] <= 7 %}bg-danger{% else %}bg-warning{% endif %}"
+              title="Estimado según el consumo real de los últimos 60 días">
           <i class="bi bi-hourglass-split me-1"></i>~{{ a['dias_restantes'] }} día{{ 's' if a['dias_restantes'] != 1 }} de stock
         </span>
         {% endif %}
       </div>
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge badge-stock-zero">{{ a['stock_actual'] }} / {{ a['stock_minimo'] }}</span>
-        <a href="{{ url_for('detalle_producto', pid=a['id']) }}" class="btn btn-sm btn-outline-secondary py-0 px-2">
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <span class="badge {% if a['stock_actual'] == 0 %}badge-stock-zero{% else %}badge-stock-low{% endif %}"
+              title="Stock actual sobre stock mínimo">{{ a['stock_actual'] }} / {{ a['stock_minimo'] }}</span>
+        <a href="{{ url_for('detalle_producto', pid=a['id']) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" aria-label="Ver detalle">
           <i class="bi bi-eye"></i>
         </a>
       </div>
@@ -115,6 +100,33 @@
   </div>
 </div>
 {% endif %}
+
+<div class="row g-3">
+  <!-- Flujo de entradas y salidas -->
+  <div class="col-lg-8">
+    <div class="table-card h-100">
+      <div class="table-header">
+        <h6><i class="bi bi-graph-up me-2"></i>Entradas y salidas · últimos 14 días</h6>
+      </div>
+      <div class="p-3">
+        <canvas id="chartMovimientos" height="90" role="img"
+                aria-label="Gráfico de entradas y salidas de los últimos 14 días"></canvas>
+      </div>
+    </div>
+  </div>
+  <!-- Qué se está consumiendo -->
+  <div class="col-lg-4">
+    <div class="table-card h-100">
+      <div class="table-header">
+        <h6><i class="bi bi-bar-chart me-2"></i>Lo que más sale</h6>
+      </div>
+      <div class="p-3">
+        <canvas id="chartTop" height="200" role="img"
+                aria-label="Gráfico de los repuestos con más salidas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -122,11 +134,18 @@
 // Graficos del dashboard dibujados a mano en <canvas>, sin depender de
 // ninguna libreria externa (antes usaba Chart.js desde un CDN, que
 // algunos bloqueadores de anuncios frenan por el nombre del archivo).
+// Los colores se leen del sistema de diseño, asi que siguen al tema
+// claro/oscuro sin duplicar la paleta aqui.
 const dias = {{ dias | tojson }};
 const entradas = {{ entradas | tojson }};
 const salidas = {{ salidas | tojson }};
 const topLabels = {{ top_labels | tojson }};
 const topValues = {{ top_values | tojson }};
+
+function tok(nombre, respaldo) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
+  return v || respaldo;
+}
 
 function prepararCanvas(canvas, alturaCss) {
   const dpr = window.devicePixelRatio || 1;
@@ -140,11 +159,11 @@ function prepararCanvas(canvas, alturaCss) {
   return { ctx, w: anchoCss, h: alturaCss };
 }
 
-function dibujarSinDatos(ctx, w, h) {
-  ctx.fillStyle = '#6c757d';
-  ctx.font = '13px sans-serif';
+function dibujarSinDatos(ctx, w, h, texto) {
+  ctx.fillStyle = tok('--text-faint', '#94a3b8');
+  ctx.font = '13px ' + tok('--font', 'sans-serif');
   ctx.textAlign = 'center';
-  ctx.fillText('Sin datos suficientes todavia', w / 2, h / 2);
+  ctx.fillText(texto || 'Sin datos suficientes todavía', w / 2, h / 2);
 }
 
 function dibujarLineChart(canvas, labels, series) {
@@ -153,9 +172,14 @@ function dibujarLineChart(canvas, labels, series) {
   ctx.clearRect(0, 0, w, h);
 
   const hayDatos = labels.length > 0 && series.some(s => s.data.some(v => v > 0));
-  if (!hayDatos) { dibujarSinDatos(ctx, w, h); return; }
+  if (!hayDatos) { dibujarSinDatos(ctx, w, h, 'Sin movimientos en los últimos 14 días'); return; }
 
-  const padIzq = 34, padDer = 10, padArriba = 14, padAbajo = 44;
+  const cGrid = tok('--border', '#e2e8f0');
+  const cTexto = tok('--text-muted', '#6b7c93');
+  const cTextoFuerte = tok('--text', '#16202e');
+  const fuente = tok('--font', 'sans-serif');
+
+  const padIzq = 36, padDer = 12, padArriba = 14, padAbajo = 46;
   const areaW = w - padIzq - padDer;
   const areaH = h - padArriba - padAbajo;
   const maxValor = Math.max(1, ...series.flatMap(s => s.data));
@@ -163,20 +187,21 @@ function dibujarLineChart(canvas, labels, series) {
   const topeY = pasoY * 4;
 
   // grilla horizontal + etiquetas eje Y
-  ctx.strokeStyle = '#e9ecef';
-  ctx.fillStyle = '#6c757d';
-  ctx.font = '11px sans-serif';
+  ctx.strokeStyle = cGrid;
+  ctx.lineWidth = 1;
+  ctx.fillStyle = cTexto;
+  ctx.font = '11px ' + fuente;
   ctx.textAlign = 'right';
   for (let i = 0; i <= 4; i++) {
-    const y = padArriba + areaH - (areaH * i / 4);
+    const y = Math.round(padArriba + areaH - (areaH * i / 4)) + .5;
     ctx.beginPath();
     ctx.moveTo(padIzq, y);
     ctx.lineTo(w - padDer, y);
     ctx.stroke();
-    ctx.fillText(String(Math.round(pasoY * i)), padIzq - 6, y + 3);
+    ctx.fillText(String(Math.round(pasoY * i)), padIzq - 8, y + 3.5);
   }
 
-  // etiquetas eje X (dejamos espacio y mostramos algunas si hay muchas)
+  // etiquetas eje X
   const n = labels.length;
   const stepX = n > 1 ? areaW / (n - 1) : 0;
   ctx.textAlign = 'center';
@@ -184,90 +209,120 @@ function dibujarLineChart(canvas, labels, series) {
   labels.forEach((lbl, i) => {
     if (i % cadaCuantas !== 0 && i !== n - 1) return;
     const x = padIzq + stepX * i;
-    ctx.fillText(String(lbl).slice(5), x, h - padAbajo + 16);
+    ctx.fillText(String(lbl).slice(5), x, h - padAbajo + 17);
   });
 
   // lineas + relleno
   series.forEach(s => {
     const puntos = s.data.map((v, i) => [padIzq + stepX * i, padArriba + areaH - (areaH * Math.min(v, topeY) / topeY)]);
 
+    const grad = ctx.createLinearGradient(0, padArriba, 0, padArriba + areaH);
+    grad.addColorStop(0, s.relleno);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+
     ctx.beginPath();
     ctx.moveTo(puntos[0][0], padArriba + areaH);
     puntos.forEach(([x, y]) => ctx.lineTo(x, y));
     ctx.lineTo(puntos[puntos.length - 1][0], padArriba + areaH);
     ctx.closePath();
-    ctx.fillStyle = s.relleno;
+    ctx.fillStyle = grad;
     ctx.fill();
 
     ctx.beginPath();
     puntos.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
     ctx.strokeStyle = s.color;
     ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
     ctx.stroke();
 
-    ctx.fillStyle = s.color;
     puntos.forEach(([x, y]) => {
       ctx.beginPath();
-      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.arc(x, y, 2.6, 0, Math.PI * 2);
+      ctx.fillStyle = tok('--surface', '#fff');
       ctx.fill();
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = s.color;
+      ctx.stroke();
     });
   });
 
   // leyenda
   let lx = padIzq;
   const ly = h - 12;
-  ctx.font = '12px sans-serif';
+  ctx.font = '12px ' + fuente;
   series.forEach(s => {
     ctx.fillStyle = s.color;
-    ctx.fillRect(lx, ly - 8, 10, 10);
-    ctx.fillStyle = '#212529';
+    ctx.beginPath();
+    ctx.roundRect(lx, ly - 9, 10, 10, 2);
+    ctx.fill();
+    ctx.fillStyle = cTextoFuerte;
     ctx.textAlign = 'left';
-    ctx.fillText(s.label, lx + 14, ly);
-    lx += ctx.measureText(s.label).width + 34;
+    ctx.fillText(s.label, lx + 15, ly);
+    lx += ctx.measureText(s.label).width + 36;
   });
 }
 
 function dibujarBarChartHorizontal(canvas, labels, values) {
-  const alturaCss = Math.max(140, labels.length * 32 + 20);
+  const alturaCss = Math.max(140, labels.length * 34 + 20);
   const { ctx, w, h } = prepararCanvas(canvas, alturaCss);
   ctx.clearRect(0, 0, w, h);
 
-  if (!labels.length || !values.some(v => v > 0)) { dibujarSinDatos(ctx, w, h); return; }
+  if (!labels.length || !values.some(v => v > 0)) { dibujarSinDatos(ctx, w, h, 'Todavía no hay salidas registradas'); return; }
 
+  const fuente = tok('--font', 'sans-serif');
+  const cBarra = tok('--accent', '#1B4F8A');
+  const cPista = tok('--surface-3', '#eef2f7');
+  const cTexto = tok('--text', '#16202e');
+  const cTextoSuave = tok('--text-muted', '#6b7c93');
+
+  ctx.font = '11px ' + fuente;
   const maxLabelW = Math.max(...labels.map(l => ctx.measureText(l).width), 40);
   const padIzq = Math.min(150, Math.max(60, maxLabelW + 10));
-  const padDer = 34, padY = 8;
+  const padDer = 36, padY = 8;
   const areaW = w - padIzq - padDer;
   const maxValor = Math.max(1, ...values);
-  const altoBarra = Math.min(22, (h - padY * 2) / labels.length - 8);
+  const filaH = (h - padY * 2) / labels.length;
+  const altoBarra = Math.min(20, filaH - 10);
 
-  ctx.font = '11px sans-serif';
   labels.forEach((lbl, i) => {
-    const y = padY + i * ((h - padY * 2) / labels.length) + ((h - padY * 2) / labels.length - altoBarra) / 2;
+    const y = padY + i * filaH + (filaH - altoBarra) / 2;
     const val = values[i];
-    const barW = Math.max(2, areaW * (val / maxValor));
+    const barW = Math.max(3, areaW * (val / maxValor));
 
-    ctx.fillStyle = '#1B4F8A';
+    // pista de fondo: da escala visual a cada barra
+    ctx.fillStyle = cPista;
+    ctx.beginPath();
+    ctx.roundRect(padIzq, y, areaW, altoBarra, 4);
+    ctx.fill();
+
+    ctx.fillStyle = cBarra;
     ctx.beginPath();
     ctx.roundRect(padIzq, y, barW, altoBarra, 4);
     ctx.fill();
 
-    ctx.fillStyle = '#212529';
+    ctx.fillStyle = cTexto;
     ctx.textAlign = 'right';
     ctx.fillText(String(lbl).length > 22 ? lbl.slice(0, 20) + '…' : lbl, padIzq - 8, y + altoBarra / 2 + 4);
 
+    ctx.fillStyle = cTextoSuave;
     ctx.textAlign = 'left';
-    ctx.fillText(String(val), padIzq + barW + 6, y + altoBarra / 2 + 4);
+    ctx.fillText(String(val), padIzq + areaW + 6, y + altoBarra / 2 + 4);
   });
 }
 
 function dibujarTodo() {
+  const esOscuro = document.documentElement.getAttribute('data-theme') === 'dark';
   dibujarLineChart(document.getElementById('chartMovimientos'), dias, [
-    { label: 'Entradas', data: entradas, color: '#198754', relleno: 'rgba(25,135,84,.12)' },
-    { label: 'Salidas',  data: salidas,  color: '#dc3545', relleno: 'rgba(220,53,69,.12)' },
+    { label: 'Entradas', data: entradas, color: tok('--ok', '#12784a'),
+      relleno: esOscuro ? 'rgba(74,222,128,.22)' : 'rgba(18,120,74,.16)' },
+    { label: 'Salidas', data: salidas, color: tok('--danger', '#b42318'),
+      relleno: esOscuro ? 'rgba(248,127,116,.22)' : 'rgba(180,35,24,.14)' },
   ]);
   dibujarBarChartHorizontal(document.getElementById('chartTop'), topLabels, topValues);
 }
+
+// base.html llama a esto al cambiar de tema para repintar los canvas.
+window.redibujarGraficos = dibujarTodo;
 
 dibujarTodo();
 let resizeTimeout;

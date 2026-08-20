@@ -2,61 +2,95 @@
 {% block title %}Movimientos — Wintec{% endblock %}
 {% block topbar_title %}Movimientos de stock{% endblock %}
 {% block topbar_actions %}
-  <a href="{{ url_for('nuevo_movimiento', tipo='entrada') }}" class="btn btn-success btn-sm">
-    <i class="bi bi-plus-circle me-1"></i>Entrada
+  <a href="{{ url_for('nuevo_movimiento', tipo='entrada') }}" class="btn btn-success btn-sm d-none d-md-inline-flex align-items-center">
+    <i class="bi bi-box-arrow-in-down me-1"></i>Entrada
   </a>
-  <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}" class="btn btn-danger btn-sm">
-    <i class="bi bi-dash-circle me-1"></i>Salida
+  <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}" class="btn btn-danger btn-sm d-none d-md-inline-flex align-items-center">
+    <i class="bi bi-box-arrow-up me-1"></i>Salida
+  </a>
+{% endblock %}
+
+{% block fab %}
+  {# En celular la acción real de planta es registrar una salida:
+     alguien saca un repuesto de bodega y lo tiene que anotar. #}
+  <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}" class="fab" aria-label="Registrar salida" title="Registrar salida">
+    <i class="bi bi-box-arrow-up"></i>
   </a>
 {% endblock %}
 
 {% block content %}
-<div class="table-card mb-3">
-  <div class="p-3">
-    <form method="get" class="row g-2 align-items-end">
-      {% if not planta_restringida %}
-      <div class="col-md-2">
-        <label class="form-label small fw-semibold">Planta</label>
-        <select name="planta" class="form-select form-select-sm" onchange="this.form.submit()">
-          <option value="">Ambas</option>
-          {% for clave, nombre in PLANTAS.items() %}
-          <option value="{{ clave }}" {% if clave == planta_activa %}selected{% endif %}>{{ nombre }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      {% endif %}
-      <div class="col-md-3">
-        <label class="form-label small fw-semibold">Tipo</label>
-        <select name="tipo" class="form-select form-select-sm">
-          <option value="">Todos</option>
-          <option value="entrada" {% if tipo == 'entrada' %}selected{% endif %}>Entradas</option>
-          <option value="salida"  {% if tipo == 'salida'  %}selected{% endif %}>Salidas</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small fw-semibold">Repuesto</label>
-        <select name="producto_id" class="form-select form-select-sm select2">
-          <option value="">Todos</option>
-          {% for p in productos %}
-          <option value="{{ p['id'] }}" {% if producto_id|string == p['id']|string %}selected{% endif %}>
-            {{ p['nombre'] }}{% if p['codigo'] %} [{{ p['codigo'] }}]{% endif %}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small fw-semibold">Desde</label>
-        <input type="date" class="form-control form-control-sm" name="desde" value="{{ desde }}">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small fw-semibold">Hasta</label>
-        <input type="date" class="form-control form-control-sm" name="hasta" value="{{ hasta }}">
-      </div>
-      <div class="col-md-2 d-flex gap-1">
-        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-funnel me-1"></i>Filtrar</button>
-        <a href="{{ url_for('listar_movimientos') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
-      </div>
-    </form>
+{# Acceso directo en celular, donde los botones de la barra superior
+   no caben. Dos acciones grandes, imposibles de errar. #}
+<div class="row g-2 mb-3 d-md-none">
+  <div class="col-6">
+    <a href="{{ url_for('nuevo_movimiento', tipo='entrada') }}" class="btn btn-success w-100 py-2">
+      <i class="bi bi-box-arrow-in-down me-1"></i>Entrada
+    </a>
+  </div>
+  <div class="col-6">
+    <a href="{{ url_for('nuevo_movimiento', tipo='salida') }}" class="btn btn-danger w-100 py-2">
+      <i class="bi bi-box-arrow-up me-1"></i>Salida
+    </a>
+  </div>
+</div>
+
+{% set n_filtros = (1 if tipo else 0) + (1 if producto_id else 0) + (1 if desde else 0)
+                   + (1 if hasta else 0) + (1 if (planta_activa and not planta_restringida) else 0) %}
+<div class="filter-bar mb-3">
+  <button class="filter-toggle d-lg-none" type="button" data-bs-toggle="collapse"
+          data-bs-target="#filtrosMovimientos" aria-expanded="{{ 'true' if n_filtros else 'false' }}"
+          aria-controls="filtrosMovimientos">
+    <i class="bi bi-funnel"></i>
+    <span>Filtrar movimientos</span>
+    {% if n_filtros %}<span class="filter-count">{{ n_filtros }}</span>{% endif %}
+    <i class="bi bi-chevron-down"></i>
+  </button>
+
+  <div class="collapse d-lg-block filter-body {% if n_filtros %}show{% endif %}" id="filtrosMovimientos">
+  <form method="get" class="row g-2 align-items-end">
+    {% if not planta_restringida %}
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="fPlanta">Planta</label>
+      <select name="planta" id="fPlanta" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">Ambas</option>
+        {% for clave, nombre in PLANTAS.items() %}
+        <option value="{{ clave }}" {% if clave == planta_activa %}selected{% endif %}>{{ nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="fTipo">Tipo</label>
+      <select name="tipo" id="fTipo" class="form-select form-select-sm">
+        <option value="">Todos</option>
+        <option value="entrada" {% if tipo == 'entrada' %}selected{% endif %}>Entradas</option>
+        <option value="salida"  {% if tipo == 'salida'  %}selected{% endif %}>Salidas</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label" for="fProd">Repuesto</label>
+      <select name="producto_id" id="fProd" class="form-select form-select-sm select2">
+        <option value="">Todos</option>
+        {% for p in productos %}
+        <option value="{{ p['id'] }}" {% if producto_id|string == p['id']|string %}selected{% endif %}>
+          {{ p['nombre'] }}{% if p['codigo'] %} [{{ p['codigo'] }}]{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="fDesde">Desde</label>
+      <input type="date" class="form-control form-control-sm" id="fDesde" name="desde" value="{{ desde }}">
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="fHasta">Hasta</label>
+      <input type="date" class="form-control form-control-sm" id="fHasta" name="hasta" value="{{ hasta }}">
+    </div>
+    <div class="col-12 col-md-2 d-flex gap-1">
+      <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+      <a href="{{ url_for('listar_movimientos') }}" class="btn btn-outline-secondary btn-sm" title="Limpiar filtros"><i class="bi bi-x-lg"></i></a>
+    </div>
+  </form>
   </div>
 </div>
 
@@ -66,7 +100,7 @@
   </div>
   {% if movimientos %}
   <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
+    <table class="table table-hover table-stack mb-0 align-middle">
       <thead>
         <tr>
           <th>Fecha</th><th>Tipo</th><th>Repuesto</th>
@@ -76,33 +110,33 @@
       <tbody>
         {% for m in movimientos %}
         <tr>
-          <td class="text-muted small text-nowrap">{{ m['fecha']|string|truncate(16, True, '') }}</td>
-          <td>
+          <td data-cell="meta" data-label="Fecha" class="text-muted small text-nowrap">{{ m['fecha']|string|truncate(16, True, '') }}</td>
+          <td data-cell="status">
             {% if m['tipo'] == 'entrada' %}
-              <span class="badge bg-success"><i class="bi bi-arrow-up-circle me-1"></i>Entrada</span>
+              <span class="badge badge-stock-ok"><i class="bi bi-box-arrow-in-down"></i>Entrada</span>
             {% else %}
-              <span class="badge bg-danger"><i class="bi bi-arrow-down-circle me-1"></i>Salida</span>
+              <span class="badge badge-stock-zero"><i class="bi bi-box-arrow-up"></i>Salida</span>
             {% endif %}
           </td>
-          <td>
-            <a href="{{ url_for('detalle_producto', pid=m['producto_id']) }}" class="text-decoration-none fw-semibold text-dark">
+          <td data-cell="title">
+            <a href="{{ url_for('detalle_producto', pid=m['producto_id']) }}" class="fw-semibold text-dark">
               {{ m['nombre_producto'] }}
             </a>
             {% if m['codigo_producto'] %}
             <span class="text-muted ms-1 font-monospace small">[{{ m['codigo_producto'] }}]</span>
             {% endif %}
           </td>
-          <td class="text-center fw-bold fs-5">{{ m['cantidad'] }}</td>
-          <td class="text-muted small">{{ m['usuario'] or '—' }}</td>
-          <td class="text-muted small">{{ m['motivo'] or '—' }}</td>
+          <td data-cell="code" data-label="Cantidad" class="text-center fw-bold fs-5">{{ m['cantidad'] }}</td>
+          <td data-cell="meta" data-label="Usuario" class="text-muted small">{{ m['usuario'] or '—' }}</td>
+          <td data-cell="meta" data-label="Motivo" class="text-muted small">{{ m['motivo'] or '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% if total_paginas > 1 %}
-  <div class="pagination-bar d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
-    <span class="text-muted small">Página {{ pagina }} de {{ total_paginas }} &middot; {{ total_movimientos }} movimientos en total</span>
+  <div class="pagination-bar d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="text-muted small">Página {{ pagina }} de {{ total_paginas }} · {{ total_movimientos }} movimientos en total</span>
     <div class="d-flex gap-2">
       {% if pagina > 1 %}
       <a href="{{ url_for('listar_movimientos', pagina=pagina-1, **base_params) }}" class="btn btn-sm btn-outline-secondary">
@@ -122,8 +156,14 @@
   </div>
   {% endif %}
   {% else %}
-  <div class="text-center py-5 text-muted">
-    <i class="bi bi-inbox fs-1 d-block mb-2"></i>No hay movimientos con los filtros actuales.
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-arrow-left-right"></i></div>
+    <h6>Sin movimientos en este rango</h6>
+    <p>Ajusta las fechas o el tipo, o registra el primer movimiento.</p>
+    <div class="d-flex gap-2 justify-content-center">
+      <a href="{{ url_for('nuevo_movimiento', tipo='entrada') }}" class="btn btn-sm btn-success"><i class="bi bi-box-arrow-in-down me-1"></i>Registrar entrada</a>
+      <a href="{{ url_for('listar_movimientos') }}" class="btn btn-sm btn-outline-secondary">Quitar filtros</a>
+    </div>
   </div>
   {% endif %}
 </div>

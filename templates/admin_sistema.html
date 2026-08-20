@@ -18,12 +18,19 @@
             </div>
           </div>
         </div>
+        {# Estando en la nube, HTTPS apagado no es "normal": deja la cookie de
+           sesion sin marca Secure y hace que los enlaces y QR que genera la
+           app salgan como http://. Se avisa en vez de darlo por bueno. #}
         <div class="col-md-3">
           <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-{{ 'check-circle-fill text-success' if force_https else 'dash-circle text-muted' }} fs-5"></i>
+            <i class="bi bi-{% if force_https %}check-circle-fill text-success{% elif use_postgres %}exclamation-triangle-fill text-warning{% else %}dash-circle text-muted{% endif %} fs-5"></i>
             <div>
               <div class="fw-semibold small">HTTPS forzado</div>
-              <div class="text-muted small">{{ 'Activo' if force_https else 'Inactivo (normal en local)' }}</div>
+              <div class="text-muted small">
+                {% if force_https %}Activo
+                {% elif use_postgres %}Inactivo — conviene activarlo
+                {% else %}Inactivo (normal en local){% endif %}
+              </div>
             </div>
           </div>
         </div>
@@ -46,12 +53,26 @@
           </div>
         </div>
       </div>
+      {% if use_postgres and not force_https %}
+      <div class="alert alert-warning small mt-3 mb-0">
+        <div>
+          <strong>La app está en la nube pero sin HTTPS forzado.</strong><br>
+          La cookie de sesión no se marca como <code>Secure</code>, no hay redirección de
+          <code>http</code> a <code>https</code>, y los enlaces que la app genera por su cuenta
+          —los QR de las ubicaciones y los correos de recuperación de contraseña— salen como
+          <code>http://</code>.<br>
+          Se corrige agregando <code>FORCE_HTTPS=true</code> a las variables de entorno del
+          servidor. No requiere cambios de código.
+        </div>
+      </div>
+      {% endif %}
       {% if not use_postgres or not email_ok or not s3_ok %}
       <div class="alert alert-info small mt-3 mb-0">
-        <i class="bi bi-lightbulb me-1"></i>
-        Estas opciones se activan agregando variables de entorno en el archivo <code>.env</code>
-        (o en las variables de Railway/Render): <code>DATABASE_URL</code>, <code>SMTP_HOST</code>/<code>SMTP_TO</code>,
-        <code>S3_BUCKET</code>/<code>S3_ACCESS_KEY</code>. No requieren cambios de código.
+        <div>
+          Estas opciones se activan agregando variables de entorno en el archivo <code>.env</code>
+          (o en las variables de Railway/Render): <code>DATABASE_URL</code>, <code>SMTP_HOST</code>/<code>SMTP_TO</code>,
+          <code>S3_BUCKET</code>/<code>S3_ACCESS_KEY</code>. No requieren cambios de código.
+        </div>
       </div>
       {% endif %}
     </div>

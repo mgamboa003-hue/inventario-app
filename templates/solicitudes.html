@@ -3,15 +3,23 @@
 {% block topbar_title %}{{ 'Solicitudes del equipo' if session.get('role') in ('admin', 'viewer') else 'Mis solicitudes' }}{% endblock %}
 {% block topbar_actions %}
   {% if session.get('role') in ('admin', 'solicitante') %}
-  <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary btn-sm">
+  <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary btn-sm d-none d-md-inline-flex align-items-center">
     <i class="bi bi-plus-lg me-1"></i>Pedir algo
   </a>
   {% endif %}
 {% endblock %}
 
+{% block fab %}
+  {% if session.get('role') in ('admin', 'solicitante') %}
+  <a href="{{ url_for('nueva_solicitud') }}" class="fab" aria-label="Pedir algo" title="Pedir algo">
+    <i class="bi bi-plus-lg"></i>
+  </a>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
-<div class="table-card mb-3">
-  <div class="p-3">
+<div class="filter-bar mb-3">
+  <div>
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
       <ul class="nav nav-pills">
         <li class="nav-item">
@@ -49,7 +57,7 @@
   </div>
   {% if solicitudes %}
   <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
+    <table class="table table-hover table-stack mb-0 align-middle">
       <thead>
         <tr>
           <th style="width:60px"></th>
@@ -65,27 +73,25 @@
       <tbody>
         {% for s in solicitudes %}
         <tr>
-          <td>
+          <td data-cell="media">
             {% if s.foto_url %}
-              <img src="{{ s.foto_url }}" class="product-thumb" alt="{{ s.nombre_item }}">
+              <img src="{{ s.foto_url }}" class="product-thumb" alt="{{ s.nombre_item }}" loading="lazy">
             {% else %}
-              <div class="product-thumb d-flex align-items-center justify-content-center bg-light text-muted">
-                <i class="bi bi-image fs-5"></i>
-              </div>
+              <div class="product-thumb"><i class="bi bi-image"></i></div>
             {% endif %}
           </td>
-          <td class="fw-semibold">{{ s.nombre_item }}</td>
-          <td class="text-center">{{ s.cantidad }}</td>
-          <td>
+          <td data-cell="title" class="fw-semibold">{{ s.nombre_item }}</td>
+          <td data-cell="code" data-label="Cantidad" class="text-center">{{ s.cantidad }}</td>
+          <td data-cell="tags">
             {% if s.urgencia == 'urgente' %}
               <span class="badge bg-danger">Urgente</span>
             {% else %}
               <span class="badge bg-light text-dark border">Normal</span>
             {% endif %}
           </td>
-          {% if session.get('role') in ('admin', 'viewer') %}<td class="text-muted">{{ s.solicitado_por or '—' }}</td>{% endif %}
-          <td class="text-muted small">{{ s.fecha_solicitud|string|truncate(16, True, '') }}</td>
-          <td>
+          {% if session.get('role') in ('admin', 'viewer') %}<td data-cell="meta" data-label="Pidió" class="text-muted">{{ s.solicitado_por or '—' }}</td>{% endif %}
+          <td data-cell="meta" data-label="Fecha" class="text-muted small">{{ s.fecha_solicitud|string|truncate(16, True, '') }}</td>
+          <td data-cell="status">
             {% if s.atrasada %}
               <span class="badge bg-danger">Atrasado ({{ umbral_dias }}+ días)</span>
             {% elif s.estado == 'pendiente' %}
@@ -100,8 +106,10 @@
               <span class="badge bg-dark">{{ s.estado|capitalize }}</span>
             {% endif %}
           </td>
-          <td class="text-end">
-            <a href="{{ url_for('detalle_solicitud', sid=s.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+          <td data-cell="actions">
+            <div class="row-actions">
+              <a href="{{ url_for('detalle_solicitud', sid=s.id) }}" class="btn btn-sm btn-outline-secondary" title="Ver detalle" aria-label="Ver detalle de la solicitud"><i class="bi bi-eye"></i></a>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -109,7 +117,7 @@
     </table>
   </div>
   {% if total_paginas > 1 %}
-  <div class="pagination-bar d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
+  <div class="pagination-bar d-flex justify-content-between align-items-center flex-wrap gap-2">
     <span class="text-muted small">Página {{ pagina }} de {{ total_paginas }} &middot; {{ total_solicitudes }} solicitudes en total</span>
     <div class="d-flex gap-2">
       {% if pagina > 1 %}
@@ -130,12 +138,17 @@
   </div>
   {% endif %}
   {% else %}
-  <div class="text-center py-5 text-muted">
-    <i class="bi bi-clipboard-check fs-1 d-block mb-2"></i>
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-clipboard-check"></i></div>
     {% if vista == 'historial' %}
-      No hay solicitudes en el historial todavía.
+      <h6>El historial está vacío</h6>
+      <p>Aquí van las solicitudes ya compradas, rechazadas o canceladas.</p>
     {% else %}
-      No hay solicitudes activas.
+      <h6>No hay solicitudes activas</h6>
+      <p>Cuando alguien del equipo pida un repuesto, aparecerá acá.</p>
+      {% if session.get('role') in ('admin', 'solicitante') %}
+      <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Pedir algo</a>
+      {% endif %}
     {% endif %}
   </div>
   {% endif %}

@@ -2,12 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Iniciar sesión — Inventario Wintec</title>
+  <meta name="theme-color" content="#0a1a2f">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo_wintec.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script>
+    // El acceso siempre se muestra en claro: la tarjeta ya va sobre un
+    // fondo oscuro y así se ve igual en cualquier equipo del taller.
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.setAttribute('data-bs-theme', 'light');
+  </script>
 </head>
 <body>
 <div class="login-page">
@@ -18,13 +25,13 @@
       {% else %}
         <div class="logo-placeholder">WINTEC</div>
       {% endif %}
-      <p class="text-muted mt-2 mb-0" style="font-size:.85rem">Sistema de Control de Inventario</p>
+      <p>Sistema de control de inventario</p>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for cat, msg in messages %}
-          <div class="alert alert-{{ cat }} py-2" role="alert">{{ msg }}</div>
+          <div class="alert alert-{{ cat }}" role="alert"><span>{{ msg }}</span></div>
         {% endfor %}
       {% endif %}
     {% endwith %}
@@ -34,39 +41,40 @@
       <input type="hidden" name="next" value="{{ next }}">
 
       <div class="mb-3">
-        <label class="form-label fw-semibold" for="username">Usuario</label>
+        <label class="form-label" for="username">Usuario</label>
         <div class="input-group">
           <span class="input-group-text"><i class="bi bi-person"></i></span>
           <input type="text" class="form-control" id="username" name="username"
-                 placeholder="usuario" autocomplete="username" required autofocus>
+                 placeholder="Tu nombre de usuario" autocomplete="username" required autofocus>
         </div>
       </div>
 
       <div class="mb-4">
-        <label class="form-label fw-semibold" for="password">Contraseña</label>
+        <label class="form-label" for="password">Contraseña</label>
         <div class="input-group">
           <span class="input-group-text"><i class="bi bi-lock"></i></span>
           <input type="password" class="form-control" id="password" name="password"
                  placeholder="••••••••" autocomplete="current-password" required>
-          <button class="btn btn-outline-secondary" type="button" id="togglePwd">
+          <button class="btn btn-outline-secondary" type="button" id="togglePwd"
+                  aria-label="Mostrar u ocultar la contraseña">
             <i class="bi bi-eye" id="eyeIcon"></i>
           </button>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" style="background:#1B4F8A;border-color:#1B4F8A">
+      <button type="submit" class="btn btn-primary w-100 fw-semibold">
         <i class="bi bi-box-arrow-in-right me-1"></i> Ingresar
       </button>
     </form>
 
-    <div class="text-center mt-3">
-      <a href="{{ url_for('olvide_password') }}" class="small text-muted">¿Olvidaste tu contraseña?</a>
+    <div class="login-foot">
+      <a href="{{ url_for('olvide_password') }}" class="text-muted">¿Olvidaste tu contraseña?</a>
     </div>
   </div>
 </div>
 <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
 <script>
-  document.getElementById('togglePwd')?.addEventListener('click', () => {
+  document.getElementById('togglePwd')?.addEventListener('click', function () {
     const inp = document.getElementById('password');
     const icon = document.getElementById('eyeIcon');
     if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }

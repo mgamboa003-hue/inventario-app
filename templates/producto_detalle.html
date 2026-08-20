@@ -25,10 +25,10 @@
   <div class="col-lg-4">
     <div class="table-card p-3 text-center">
       {% if img %}
-        <img src="{{ img }}" class="img-fluid rounded" style="max-height:320px;object-fit:contain;background:#f8f9fa;padding:.5rem;width:100%">
+        <img src="{{ img }}" alt="Foto de {{ producto['nombre'] }}" class="product-thumb-lg">
       {% else %}
-        <div class="d-flex align-items-center justify-content-center bg-light rounded" style="height:260px">
-          <i class="bi bi-image text-muted" style="font-size:4rem"></i>
+        <div class="product-thumb-lg d-flex align-items-center justify-content-center" style="height:260px">
+          <i class="bi bi-image text-muted" style="font-size:3rem"></i>
         </div>
       {% endif %}
     </div>
@@ -131,7 +131,7 @@
   </div>
   {% if movimientos %}
   <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
+    <table class="table table-hover mb-0 align-middle table-stack">
       <thead><tr>
         <th>Fecha</th><th>Tipo</th><th class="text-center">Cantidad</th>
         <th>Usuario</th><th>Motivo</th>
