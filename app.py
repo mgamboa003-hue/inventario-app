@@ -1359,17 +1359,71 @@ def exportar_stock_bajo():
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
+# Codigo del documento en el sistema de calidad de mantenimiento. Si cambia la
+# numeracion se ajusta aca y se refleja en todos los pedidos que se generen.
+CODIGO_DOC_PEDIDO = "P-C-01"
+
+
+def _foto_bytes(url):
+    """Bytes de la foto de un repuesto, venga de S3/R2 (/media/...) o del disco
+    local (/static/uploads/...). None si no hay foto o no se puede leer."""
+    if not url:
+        return None
+    try:
+        partes = url.strip("/").split("/")
+        if url.startswith("/media/") and len(partes) >= 3:
+            resultado = descargar_imagen_bytes(partes[1], "/".join(partes[2:]))
+            return resultado[0] if resultado else None
+        if url.startswith("/static/"):
+            ruta = os.path.join(BASE_DIR, *partes)
+            if os.path.exists(ruta):
+                with open(ruta, "rb") as fh:
+                    return fh.read()
+    except Exception:
+        return None
+    return None
+
+
+def _miniatura_xlsx(datos, lado=70, fondo_cuadrado=True):
+    """Miniatura PNG lista para incrustar en una planilla. Pasa por Pillow porque
+    openpyxl no sabe leer WebP, que es el formato en que la app guarda las fotos.
+    Con fondo_cuadrado la centra en un lienzo blanco del mismo alto que la fila,
+    asi todas las fotos quedan alineadas aunque vengan en distintas proporciones."""
+    from PIL import Image as PILImage
+    from openpyxl.drawing.image import Image as XLImage
+
+    img = PILImage.open(io.BytesIO(datos))
+    if img.mode in ("RGBA", "P", "LA"):
+        img = img.convert("RGBA")
+        fondo = PILImage.new("RGB", img.size, (255, 255, 255))
+        fondo.paste(img, mask=img.split()[-1])
+        img = fondo
+    elif img.mode != "RGB":
+        img = img.convert("RGB")
+    img.thumbnail((lado, lado), PILImage.LANCZOS)
+    if fondo_cuadrado:
+        lienzo = PILImage.new("RGB", (lado, lado), (255, 255, 255))
+        lienzo.paste(img, ((lado - img.width) // 2, (lado - img.height) // 2))
+        img = lienzo
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return XLImage(buf)
+
+
 @app.route("/exportar/pedidos")
 @login_required
 @admin_required
 def exportar_pedidos():
-    from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-
+    """Un archivo Excel por proveedor con los repuestos bajo el minimo, con
+    formato de documento Wintec: cuadro de identificacion arriba, foto de cada
+    repuesto y bloque de firmas al pie. Va todo junto en un ZIP."""
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(f"""
-        SELECT proveedor, codigo, nombre, ubicacion,
+        SELECT proveedor, codigo, nombre, ubicacion, equipo, categoria,
+               stock_actual, stock_minimo,
+               COALESCE(foto, imagen_url) AS foto_url,
                (stock_minimo - stock_actual) AS cantidad
         FROM productos WHERE stock_actual < stock_minimo AND activo = {ACTIVO_TRUE}
         AND (stock_minimo - stock_actual) > 0 ORDER BY proveedor, nombre
@@ -1381,33 +1435,175 @@ def exportar_pedidos():
     for f in filas:
         pedidos[f["proveedor"] or "Sin proveedor"].append(f)
 
-    thin = Side(style="thin")
-    brd = Border(left=thin, right=thin, top=thin, bottom=thin)
+    solicitante = session.get("nombre") or "-"
+    fecha = ahora()
     zip_buf = io.BytesIO()
 
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for proveedor, items in pedidos.items():
-            wb = Workbook(); ws = wb.active; ws.title = "Pedido"
-            ws.append(["Codigo", "Producto", "Ubicacion", "Cantidad"])
-            for c in ws[1]:
-                c.fill = PatternFill("solid", fgColor="1B4F8A")
-                c.font = Font(color="FFFFFF", bold=True)
-                c.alignment = Alignment(horizontal="center")
-                c.border = brd
-            for it in items:
-                ws.append([it["codigo"], it["nombre"], it["ubicacion"], it["cantidad"]])
-            for row in ws.iter_rows(min_row=2):
-                for c in row: c.border = brd
-                row[-1].alignment = Alignment(horizontal="center"); row[-1].font = Font(bold=True)
-            for col, w in zip(["A","B","C","D"], [15, 42, 20, 15]):
-                ws.column_dimensions[col].width = w
-            buf = io.BytesIO(); wb.save(buf); buf.seek(0)
+        for correlativo, (proveedor, items) in enumerate(sorted(pedidos.items()), start=1):
+            buf = _planilla_pedido(proveedor, items, solicitante, fecha, correlativo)
             nombre_prov = "".join(c for c in proveedor if c.isalnum() or c in " _-")[:30]
             zipf.writestr(f"Pedido_{nombre_prov}.xlsx", buf.read())
 
     zip_buf.seek(0)
-    return send_file(zip_buf, download_name=f"Pedidos_{ahora().strftime('%Y-%m-%d')}.zip",
+    return send_file(zip_buf, download_name=f"Pedidos_{fecha.strftime('%Y-%m-%d')}.zip",
                      as_attachment=True, mimetype="application/zip")
+
+
+def _planilla_pedido(proveedor, items, solicitante, fecha, correlativo):
+    """Arma la planilla de un proveedor y la devuelve como buffer listo para guardar."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+
+    AZUL = "1B4F8A"
+    GRIS = "F1F3F6"
+    thin = Side(style="thin", color="9AA5B1")
+    medio = Side(style="medium", color=AZUL)
+    brd = Border(left=thin, right=thin, top=thin, bottom=thin)
+    centro = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    izq = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Pedido"
+    ws.sheet_view.showGridLines = False
+
+    # Foto, Codigo, Producto, Equipo, Ubicacion, Stock, Min, Pedir
+    for i, ancho in enumerate([9, 16, 38, 24, 14, 10, 8, 11], start=1):
+        ws.column_dimensions[get_column_letter(i)].width = ancho
+
+    # --- cuadro de identificacion del documento (formato Wintec) ---
+    ws.merge_cells("A1:B4")
+    ws.merge_cells("C1:E2")
+    ws["C1"] = "SOLICITUD DE PEDIDO A PROVEEDOR"
+    ws["C1"].font = Font(bold=True, size=14, color=AZUL)
+    ws["C1"].alignment = centro
+    ws.merge_cells("C3:E4")
+    ws["C3"] = "Emisor: Departamento de Mantenimiento — Wintec S.A."
+    ws["C3"].font = Font(size=9)
+    ws["C3"].alignment = centro
+
+    ws["F1"] = "CÓDIGO"
+    ws["F2"] = "N° PEDIDO"
+    ws["F3"] = "FECHA"
+    ws["F4"] = "HOJA"
+    ws.merge_cells("G1:H1"); ws["G1"] = CODIGO_DOC_PEDIDO
+    ws.merge_cells("G2:H2"); ws["G2"] = f"{fecha.strftime('%Y%m')}-{correlativo:03d}"
+    ws.merge_cells("G3:H3"); ws["G3"] = formatear_fecha_cl(fecha)[:11]
+    ws.merge_cells("G4:H4"); ws["G4"] = "1 de 1"
+    for celda in ("F1", "F2", "F3", "F4"):
+        ws[celda].font = Font(bold=True, size=9)
+        ws[celda].alignment = centro
+        ws[celda].fill = PatternFill("solid", fgColor=GRIS)
+    for celda in ("G1", "G2", "G3", "G4"):
+        ws[celda].font = Font(size=9)
+        ws[celda].alignment = centro
+    for fila_celdas in ws["A1:H4"]:
+        for c in fila_celdas:
+            c.border = brd
+    for r in range(1, 5):
+        ws.row_dimensions[r].height = 19
+
+    graficos = []   # openpyxl necesita que los buffers sigan vivos hasta el save
+    try:
+        ruta_logo = os.path.join(BASE_DIR, "static", "logo_wintec.png")
+        if os.path.exists(ruta_logo):
+            with open(ruta_logo, "rb") as fh:
+                logo = _miniatura_xlsx(fh.read(), lado=150, fondo_cuadrado=False)
+            ws.add_image(logo, "A1")
+            graficos.append(logo)
+    except Exception:
+        pass
+
+    # --- a quien se le pide y quien pide ---
+    ws.merge_cells("A6:C6"); ws["A6"] = f"PROVEEDOR:  {proveedor}"
+    ws.merge_cells("D6:F6"); ws["D6"] = f"SOLICITA:  {solicitante}"
+    ws.merge_cells("G6:H6"); ws["G6"] = f"ÍTEMS:  {len(items)}"
+    for celda in ("A6", "D6", "G6"):
+        ws[celda].font = Font(bold=True, size=10)
+        ws[celda].alignment = izq
+        ws[celda].fill = PatternFill("solid", fgColor=GRIS)
+    for c in ws["A6:H6"][0]:
+        c.border = Border(top=medio, bottom=medio, left=thin, right=thin)
+    ws.row_dimensions[6].height = 22
+
+    # --- tabla ---
+    ENCABEZADO = 8
+    cabeceras = ["FOTO", "CÓDIGO", "PRODUCTO", "EQUIPO / CATEGORÍA",
+                 "UBICACIÓN", "STOCK", "MÍN.", "PEDIR"]
+    for col, texto in enumerate(cabeceras, start=1):
+        c = ws.cell(row=ENCABEZADO, column=col, value=texto)
+        c.fill = PatternFill("solid", fgColor=AZUL)
+        c.font = Font(color="FFFFFF", bold=True, size=10)
+        c.alignment = centro
+        c.border = brd
+    ws.row_dimensions[ENCABEZADO].height = 26
+
+    fila = ENCABEZADO
+    for it in items:
+        fila += 1
+        # varios repuestos traen "-" o "--" como equipo; eso no aporta nada al proveedor
+        partes = [(x or "").strip() for x in (it["equipo"], it["categoria"])]
+        equipo = " / ".join(x for x in partes if x and x.strip("-")) or "—"
+        ws.cell(row=fila, column=2, value=it["codigo"]).alignment = centro
+        ws.cell(row=fila, column=3, value=it["nombre"]).alignment = izq
+        ws.cell(row=fila, column=4, value=equipo).alignment = izq
+        ws.cell(row=fila, column=5, value=it["ubicacion"] or "—").alignment = centro
+        ws.cell(row=fila, column=6, value=it["stock_actual"]).alignment = centro
+        ws.cell(row=fila, column=7, value=it["stock_minimo"]).alignment = centro
+        pedir = ws.cell(row=fila, column=8, value=it["cantidad"])
+        pedir.alignment = centro
+        pedir.font = Font(bold=True, size=12)
+
+        ws.row_dimensions[fila].height = 46
+        datos = _foto_bytes(it["foto_url"])
+        if datos:
+            try:
+                img = _miniatura_xlsx(datos, lado=48)
+                ws.add_image(img, f"A{fila}")
+                graficos.append(img)
+            except Exception:
+                pass   # una foto ilegible no puede botar el pedido completo
+
+        for c in ws[f"A{fila}:H{fila}"][0]:
+            c.border = brd
+        if (fila - ENCABEZADO) % 2 == 0:
+            for c in ws[f"B{fila}:H{fila}"][0]:
+                c.fill = PatternFill("solid", fgColor=GRIS)
+
+    # --- firmas ---
+    firma = fila + 2
+    for col_ini, col_fin, etiqueta in (("B", "C", "SOLICITA"), ("E", "F", "RECIBE CONFORME")):
+        ws.merge_cells(f"{col_ini}{firma}:{col_fin}{firma}")
+        ws[f"{col_ini}{firma}"].border = Border(bottom=Side(style="thin", color="333333"))
+        ws.merge_cells(f"{col_ini}{firma + 1}:{col_fin}{firma + 1}")
+        etq = ws[f"{col_ini}{firma + 1}"]
+        etq.value = etiqueta
+        etq.font = Font(size=9, color="555555")
+        etq.alignment = centro
+    ws.row_dimensions[firma].height = 30
+
+    # --- listo para imprimir ---
+    ws.print_area = f"A1:H{firma + 1}"
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_title_rows = f"{ENCABEZADO}:{ENCABEZADO}"
+    ws.freeze_panes = f"A{ENCABEZADO + 1}"
+    ws.oddFooter.left.text = f"{CODIGO_DOC_PEDIDO} — Inventario Wintec"
+    ws.oddFooter.right.text = "Página &P de &N"
+    ws.page_margins.left = 0.4
+    ws.page_margins.right = 0.4
+    ws.page_margins.top = 0.4
+    ws.page_margins.bottom = 0.4
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
 
 
 @app.route("/exportar/valorizacion")

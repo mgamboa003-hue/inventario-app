@@ -42,3 +42,6 @@ static/uploads/*
 
 # Respaldos puntuales antes de editar
 *.bak_*
+
+# Carpeta que crea el escritorio de Claude al entregar archivos
+Claude outputs/
