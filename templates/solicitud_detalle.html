@@ -21,7 +21,7 @@
       {% endif %}
       <div class="mb-2"><span class="text-muted small">Ítem solicitado</span><div class="fw-bold fs-5">{{ solicitud['nombre_item'] }}</div></div>
       <div class="row">
-        <div class="col-6 mb-2"><span class="text-muted small">Cantidad</span><div>{{ solicitud['cantidad'] }}</div></div>
+        <div class="col-6 mb-2"><span class="text-muted small">Cantidad</span><div>{{ texto_cantidad(solicitud['cantidad'], unidad_de(solicitud)) }}</div></div>
         <div class="col-6 mb-2">
           <span class="text-muted small">Urgencia</span>
           <div>{% if solicitud['urgencia'] == 'urgente' %}<span class="badge bg-danger">Urgente</span>{% else %}Normal{% endif %}</div>

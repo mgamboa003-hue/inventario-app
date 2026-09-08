@@ -176,6 +176,68 @@ def media(carpeta, filename):
     return resp
 
 
+# Unidades de medida que se pueden pedir en una solicitud. La clave es lo que se
+# guarda en la base; el par es (singular, plural) para escribirlo bien segun la
+# cantidad ("1 rollo" / "3 rollos"). Para agregar una unidad nueva basta con
+# sumarla aca: el desplegable del formulario se arma a partir de este diccionario.
+UNIDADES_SOLICITUD = {
+    "unidad":     ("unidad", "unidades"),
+    "par":        ("par", "pares"),
+    "juego":      ("juego", "juegos"),
+    "caja":       ("caja", "cajas"),
+    "rollo":      ("rollo", "rollos"),
+    "tira":       ("tira", "tiras"),
+    "plancha":    ("plancha", "planchas"),
+    "metro":      ("metro", "metros"),
+    "centimetro": ("centímetro", "centímetros"),
+    "kilo":       ("kilo", "kilos"),
+    "gramo":      ("gramo", "gramos"),
+    "litro":      ("litro", "litros"),
+    "mililitro":  ("mililitro", "mililitros"),
+    "saco":       ("saco", "sacos"),
+    "bidon":      ("bidón", "bidones"),
+    "tarro":      ("tarro", "tarros"),
+}
+UNIDAD_POR_DEFECTO = "unidad"
+
+
+def unidad_de(fila):
+    """Unidad de una solicitud, tolerante con filas viejas que no tienen la columna."""
+    try:
+        valor = fila["unidad"]
+    except (KeyError, IndexError, TypeError):
+        valor = None
+    return valor if valor in UNIDADES_SOLICITUD else UNIDAD_POR_DEFECTO
+
+
+def texto_cantidad(cantidad, unidad=None):
+    """Cantidad con su unidad bien escrita: "1 rollo", "3 rollos", "5 kilos"."""
+    singular, plural = UNIDADES_SOLICITUD.get(unidad or UNIDAD_POR_DEFECTO,
+                                              UNIDADES_SOLICITUD[UNIDAD_POR_DEFECTO])
+    try:
+        es_uno = int(cantidad) == 1
+    except (TypeError, ValueError):
+        es_uno = False
+    return f"{cantidad} {singular if es_uno else plural}"
+
+
+app.jinja_env.globals["unidad_de"] = unidad_de
+app.jinja_env.globals["texto_cantidad"] = texto_cantidad
+
+
+def formatear_fecha_cl(valor):
+    """Fecha en formato chileno (dd-mm-aaaa HH:MM) para mensajes y pantallas."""
+    if not valor:
+        return ""
+    try:
+        dt = valor if hasattr(valor, "strftime") else datetime.strptime(str(valor)[:16], "%Y-%m-%d %H:%M")
+        meses = ("ene", "feb", "mar", "abr", "may", "jun",
+                 "jul", "ago", "sep", "oct", "nov", "dic")
+        return f"{dt.day:02d}-{meses[dt.month - 1]}-{dt.year} {dt:%H:%M}"
+    except (ValueError, TypeError):
+        return str(valor)[:16]
+
+
 def safe_int(v, default=0):
     try:
         return max(0, min(int(v), 9_999_999))
@@ -2064,6 +2126,9 @@ def nueva_solicitud():
 
         descripcion = (request.form.get("descripcion") or "").strip()
         cantidad = safe_int(request.form.get("cantidad"), 1) or 1
+        unidad = request.form.get("unidad", UNIDAD_POR_DEFECTO)
+        if unidad not in UNIDADES_SOLICITUD:
+            unidad = UNIDAD_POR_DEFECTO
         urgencia = request.form.get("urgencia", "normal")
         if urgencia not in ("normal", "urgente"):
             urgencia = "normal"
@@ -2094,10 +2159,10 @@ def nueva_solicitud():
             return redirect(url_for("detalle_solicitud", sid=fila_dup["id"]))
 
         cur.execute(
-            f"""INSERT INTO solicitudes (producto_id, nombre_item, descripcion, cantidad, urgencia,
+            f"""INSERT INTO solicitudes (producto_id, nombre_item, descripcion, cantidad, unidad, urgencia,
                 foto_url, estado, solicitado_por, solicitado_por_id, fecha_solicitud)
-                VALUES ({ph},{ph},{ph},{ph},{ph},{ph},'pendiente',{ph},{ph},{ph})""",
-            (producto_id, nombre_item, descripcion, cantidad, urgencia,
+                VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},'pendiente',{ph},{ph},{ph})""",
+            (producto_id, nombre_item, descripcion, cantidad, unidad, urgencia,
              foto_url, session.get("nombre"), session.get("user_id"), fecha_ahora),
         )
         conn.commit()
@@ -2106,11 +2171,11 @@ def nueva_solicitud():
         conn.close()
 
         registrar_auditoria("solicitudes", sol_id, "crear", session.get("user_id"), session.get("nombre"),
-                             f"Solicitó {cantidad}x '{nombre_item}' (urgencia: {urgencia})")
+                             f"Solicitó {texto_cantidad(cantidad, unidad)} de '{nombre_item}' (urgencia: {urgencia})")
 
         ok, _msg = enviar_notificacion_solicitud({
             "solicitado_por": session.get("nombre"), "nombre_item": nombre_item,
-            "cantidad": cantidad, "urgencia": urgencia, "descripcion": descripcion,
+            "cantidad": texto_cantidad(cantidad, unidad), "urgencia": urgencia, "descripcion": descripcion,
         })
 
         flash("Solicitud registrada." + (" Se avisó por correo al comprador." if ok else ""), "success")
@@ -2123,11 +2188,42 @@ def nueva_solicitud():
     foto_url_pref = request.args.get("foto_url_pref", "")
     return render_template(
         "solicitud_form.html",
+        unidades=UNIDADES_SOLICITUD,
+        unidad_pref=request.args.get("unidad", UNIDAD_POR_DEFECTO),
         producto_id_pref=producto_id_pref,
         nombre_item_pref=nombre_item_pref,
         cantidad_pref=cantidad_pref,
         descripcion_pref=descripcion_pref,
         foto_url_pref=foto_url_pref,
+    )
+
+
+@app.route("/s/<int:sid>")
+def solicitud_publica(sid):
+    """Ficha publica y liviana de una solicitud: es el enlace que se comparte
+    por WhatsApp. Entrega las etiquetas Open Graph (titulo, resumen y foto) con
+    las que WhatsApp arma la tarjeta de vista previa, y muestra exactamente los
+    mismos datos que ya viajan en el texto del mensaje -- nada mas. Sin login,
+    igual que /media/, porque el pedido se comparte con gente sin cuenta."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(f"SELECT * FROM solicitudes WHERE id = {p()}", (sid,))
+    solicitud = cur.fetchone()
+    conn.close()
+    if not solicitud:
+        return ("Solicitud no encontrada.", 404)
+
+    foto_absoluta = solicitud["foto_url"] or ""
+    if foto_absoluta.startswith("/"):
+        foto_absoluta = request.url_root.rstrip("/") + foto_absoluta
+
+    return render_template(
+        "solicitud_publica.html",
+        solicitud=solicitud,
+        sid=sid,
+        foto_absoluta=foto_absoluta,
+        es_urgente=(solicitud["urgencia"] == "urgente"),
+        fecha_texto=formatear_fecha_cl(solicitud["fecha_solicitud"]),
     )
 
 
@@ -2152,28 +2248,36 @@ def detalle_solicitud(sid):
         flash("Esa solicitud no es tuya.", "warning")
         return redirect(url_for("listar_solicitudes"))
 
-    urgencia_texto = "Urgente" if solicitud["urgencia"] == "urgente" else "Normal"
-    fecha_texto = str(solicitud["fecha_solicitud"])[:16] if solicitud["fecha_solicitud"] else ""
-    separador = "-" * 40
+    # Mensaje para WhatsApp. Sin lineas de guiones (en pantalla de celular se
+    # parten en dos) y con un solo enlace al final: WhatsApp arma la tarjeta de
+    # vista previa con el PRIMER link del mensaje, y ese link debe ser la ficha
+    # publica de la solicitud, no el archivo de la foto.
+    fecha_texto = formatear_fecha_cl(solicitud["fecha_solicitud"])
+    es_urgente = solicitud["urgencia"] == "urgente"
+    # Nada de emojis aca. Al pasar el texto por wa.me hacia WhatsApp de escritorio
+    # se pierde todo lo que el sistema trata como emoji (probado con \U0001F534 y
+    # con \u26A0: los dos llegan como rombo con signo de pregunta). Las formas
+    # geometricas simples como \u25B2 y \u25B8 si sobreviven, y ademas se ven
+    # sobrias, que es lo que corresponde en un aviso de trabajo.
+    prioridad = "\u25B2 *PRIORIDAD URGENTE*" if es_urgente else "Prioridad normal"
+
     lineas = [
-        "*NUEVA SOLICITUD - INVENTARIO WINTEC*",
-        separador,
+        f"*SOLICITUD #{sid} · INVENTARIO WINTEC*",
+        prioridad,
+        "",
         f"*Ítem:* {solicitud['nombre_item']}",
-        f"*Cantidad:* {solicitud['cantidad']}",
-        f"*Urgencia:* {urgencia_texto}",
+        f"*Cantidad:* {texto_cantidad(solicitud['cantidad'], unidad_de(solicitud))}",
     ]
     if solicitud["descripcion"]:
         lineas.append(f"*Detalle:* {solicitud['descripcion']}")
-    if solicitud["foto_url"]:
-        foto_absoluta = solicitud["foto_url"]
-        if foto_absoluta.startswith("/"):
-            foto_absoluta = request.url_root.rstrip("/") + foto_absoluta
-        lineas.append(f"*Foto:* {foto_absoluta}")
-    lineas.append(separador)
-    lineas.append(f"*Pide:* {solicitud['solicitado_por'] or '-'}")
-    lineas.append(f"*Fecha:* {fecha_texto}")
-    lineas.append(separador)
-    lineas.append(f"*Ver en la app:* {url_for('detalle_solicitud', sid=sid, _external=True)}")
+    lineas += [
+        "",
+        f"*Solicita:* {solicitud['solicitado_por'] or '-'}",
+        f"*Fecha:* {fecha_texto}",
+        "",
+        "Ver solicitud y foto ▸",
+        url_for("solicitud_publica", sid=sid, _external=True),
+    ]
     texto_whatsapp = "\n".join(lineas)
     whatsapp_url = "https://wa.me/?text=" + urllib.parse.quote(texto_whatsapp)
 

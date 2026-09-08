@@ -39,3 +39,6 @@ static/uploads/*
 # Archivos temporales del entorno de sincronizacion (no son del proyecto)
 .fuse_hidden*
 .claude/
+
+# Respaldos puntuales antes de editar
+*.bak_*

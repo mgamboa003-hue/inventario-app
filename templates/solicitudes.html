@@ -81,7 +81,7 @@
             {% endif %}
           </td>
           <td data-cell="title" class="fw-semibold">{{ s.nombre_item }}</td>
-          <td data-cell="code" data-label="Cantidad" class="text-center">{{ s.cantidad }}</td>
+          <td data-cell="code" data-label="Cantidad" class="text-center">{{ texto_cantidad(s.cantidad, unidad_de(s)) }}</td>
           <td data-cell="tags">
             {% if s.urgencia == 'urgente' %}
               <span class="badge bg-danger">Urgente</span>

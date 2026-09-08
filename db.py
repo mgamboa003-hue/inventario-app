@@ -232,6 +232,7 @@ _DDL_SQLITE = [
         nombre_item      TEXT NOT NULL,
         descripcion      TEXT,
         cantidad         INTEGER DEFAULT 1,
+        unidad           TEXT DEFAULT 'unidad',
         urgencia         TEXT DEFAULT 'normal',
         foto_url         TEXT,
         estado           TEXT DEFAULT 'pendiente',
@@ -393,6 +394,7 @@ _DDL_POSTGRES = [
         nombre_item      TEXT NOT NULL,
         descripcion      TEXT,
         cantidad         INTEGER DEFAULT 1,
+        unidad           TEXT DEFAULT 'unidad',
         urgencia         TEXT DEFAULT 'normal',
         foto_url         TEXT,
         estado           TEXT DEFAULT 'pendiente',
@@ -441,6 +443,7 @@ def _run_migrations(conn):
         ("productos",  "created_at",      "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),
         ("productos",  "activo",          "INTEGER DEFAULT 1" if not USE_POSTGRES else "BOOLEAN DEFAULT TRUE"),
         ("movimientos","usuario_id",      "INTEGER"),
+        ("solicitudes","unidad",          "TEXT DEFAULT 'unidad'"),
     ]
     for table, col, coldef in migrations:
         try:

@@ -1,0 +1,129 @@
+{# Ficha publica de una solicitud. Es el destino del enlace que se comparte por
+   WhatsApp: las etiquetas og: son las que arman la tarjeta de vista previa. #}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Solicitud #{{ sid }} — Inventario Wintec</title>
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Inventario Wintec">
+  <meta property="og:title" content="Solicitud #{{ sid }} · {{ solicitud['nombre_item'] }}">
+  <meta property="og:description" content="{{ texto_cantidad(solicitud['cantidad'], unidad_de(solicitud)) }} · {{ 'URGENTE' if es_urgente else 'Prioridad normal' }} · Pide {{ solicitud['solicitado_por'] or '—' }} · {{ fecha_texto }}">
+  <meta property="og:url" content="{{ url_for('solicitud_publica', sid=sid, _external=True) }}">
+  {% if foto_absoluta %}
+  <meta property="og:image" content="{{ foto_absoluta }}">
+  <meta name="twitter:card" content="summary_large_image">
+  {% else %}
+  <meta property="og:image" content="{{ url_for('static', filename='logo_wintec.png', _external=True) }}">
+  <meta name="twitter:card" content="summary">
+  {% endif %}
+
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo_wintec.png') }}">
+  <meta name="theme-color" content="#0a1a2f">
+  <style>
+    :root{
+      --azul:#0a1a2f; --papel:#f4f5f7; --tarjeta:#ffffff;
+      --tinta:#1b2430; --tinta-2:#5c6672; --linea:#e1e5ea;
+      --rojo:#c8102e; --verde:#1f7a4d;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--papel); color:var(--tinta);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+      line-height:1.5; -webkit-text-size-adjust:100%;
+    }
+    .marco{max-width:520px;margin:0 auto;padding:18px 16px 40px}
+    .cabecera{
+      display:flex;align-items:center;gap:10px;
+      padding:12px 14px;background:var(--azul);color:#fff;border-radius:10px 10px 0 0;
+    }
+    .cabecera img{height:26px;width:auto;display:block}
+    .cabecera .titulo{font-weight:600;font-size:15px;line-height:1.2}
+    .cabecera .folio{font-size:12px;opacity:.75}
+    .tarjeta{
+      background:var(--tarjeta);border:1px solid var(--linea);border-top:none;
+      border-radius:0 0 10px 10px;padding:16px 16px 20px;
+    }
+    .foto{width:100%;height:auto;border-radius:8px;margin-bottom:16px;display:block}
+    .item{font-size:20px;font-weight:600;line-height:1.25;margin:0 0 4px}
+    .prioridad{
+      display:inline-block;font-size:12px;font-weight:600;letter-spacing:.04em;
+      text-transform:uppercase;padding:3px 9px;border-radius:99px;margin-bottom:14px;
+    }
+    .prioridad.urgente{background:#fdeaed;color:var(--rojo)}
+    .prioridad.normal{background:#eaf3ee;color:var(--verde)}
+    dl{margin:0;border-top:1px solid var(--linea)}
+    .fila{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--linea)}
+    .fila dt{color:var(--tinta-2);font-size:13.5px;flex:0 0 auto}
+    .fila dd{margin:0;text-align:right;font-size:14.5px;font-weight:500}
+    .detalle{padding:10px 0 2px}
+    .detalle dt{color:var(--tinta-2);font-size:13.5px;margin-bottom:2px}
+    .detalle dd{margin:0;font-size:14.5px}
+    .estado{font-weight:600}
+    .estado.pendiente{color:#a86400}
+    .estado.comprado{color:var(--verde)}
+    .estado.rechazado,.estado.cancelado{color:var(--rojo)}
+    .btn{
+      display:block;margin-top:18px;padding:11px 14px;text-align:center;
+      background:var(--azul);color:#fff;text-decoration:none;border-radius:8px;
+      font-weight:600;font-size:15px;
+    }
+    .btn:focus-visible{outline:3px solid #7aa7d9;outline-offset:2px}
+    .pie{margin-top:14px;text-align:center;font-size:12px;color:var(--tinta-2)}
+    @media (prefers-color-scheme: dark){
+      :root{--papel:#11161d;--tarjeta:#19202a;--tinta:#e8ecf1;--tinta-2:#98a3b0;--linea:#28313d}
+      .prioridad.urgente{background:#3a1a20;color:#ff8496}
+      .prioridad.normal{background:#16301f;color:#67c497}
+      .estado.pendiente{color:#e0a83f}
+    }
+  </style>
+</head>
+<body>
+  <div class="marco">
+    <div class="cabecera">
+      <img src="{{ url_for('static', filename='logo_wintec.png') }}" alt="Wintec">
+      <div>
+        <div class="titulo">Inventario Wintec</div>
+        <div class="folio">Solicitud #{{ sid }}</div>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      {% if foto_absoluta %}
+      <img class="foto" src="{{ foto_absoluta }}" alt="Foto de {{ solicitud['nombre_item'] }}">
+      {% endif %}
+
+      <h1 class="item">{{ solicitud['nombre_item'] }}</h1>
+      {% if es_urgente %}
+      <span class="prioridad urgente">Prioridad urgente</span>
+      {% else %}
+      <span class="prioridad normal">Prioridad normal</span>
+      {% endif %}
+
+      <dl>
+        <div class="fila"><dt>Cantidad</dt><dd>{{ texto_cantidad(solicitud['cantidad'], unidad_de(solicitud)) }}</dd></div>
+        <div class="fila"><dt>Solicita</dt><dd>{{ solicitud['solicitado_por'] or '—' }}</dd></div>
+        <div class="fila"><dt>Fecha</dt><dd>{{ fecha_texto }}</dd></div>
+        <div class="fila">
+          <dt>Estado</dt>
+          <dd class="estado {{ solicitud['estado'] }}">
+            {{ {'pendiente':'Pendiente','comprado':'Comprado','rechazado':'Rechazado','cancelado':'Cancelado'}.get(solicitud['estado'], solicitud['estado']) }}
+          </dd>
+        </div>
+        {% if solicitud['descripcion'] %}
+        <div class="detalle">
+          <dt>Detalle</dt>
+          <dd>{{ solicitud['descripcion'] }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+
+      <a class="btn" href="{{ url_for('detalle_solicitud', sid=sid) }}">Abrir en la aplicación</a>
+      <p class="pie">Wintec S.A. · Mantenimiento</p>
+    </div>
+  </div>
+</body>
+</html>

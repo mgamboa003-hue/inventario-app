@@ -24,11 +24,19 @@
         </div>
 
         <div class="row g-3 mb-3">
-          <div class="col-md-4">
+          <div class="col-6 col-md-3">
             <label class="form-label fw-semibold">Cantidad</label>
             <input type="number" class="form-control" name="cantidad" min="1" value="{{ cantidad_pref or 1 }}">
           </div>
-          <div class="col-md-8">
+          <div class="col-6 col-md-4">
+            <label class="form-label fw-semibold">Unidad</label>
+            <select name="unidad" class="form-select">
+              {% for clave, nombres in unidades.items() %}
+              <option value="{{ clave }}" {% if clave == unidad_pref %}selected{% endif %}>{{ nombres[1]|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-5">
             <label class="form-label fw-semibold">Urgencia</label>
             <select name="urgencia" class="form-select">
               <option value="normal">Normal</option>
