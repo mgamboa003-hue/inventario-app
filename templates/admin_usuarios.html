@@ -114,6 +114,20 @@
                 </div>
               </td>
             </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Los modales van FUERA de la tabla a proposito. Dentro de <tbody>, entre una
+   fila y otra, son HTML invalido: el navegador los reubica y quedan atrapados
+   dentro de .table-card, que tiene overflow:hidden. El resultado era que al
+   abrirlos la pantalla se oscurecia, no se podia escribir ni cerrar el modal, y
+   habia que recargar con F5. #}
+{% for u in usuarios %}
             <!-- Modal editar nombre/rol -->
             <div class="modal fade" id="modalEditar{{ u['id'] }}" tabindex="-1">
               <div class="modal-dialog modal-sm">
@@ -185,13 +199,7 @@
                 </div>
               </div>
             </div>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
+{% endfor %}
 
 <script>
 function togglePlantaField() {
