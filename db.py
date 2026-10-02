@@ -607,6 +607,9 @@ def init_db():
 
         _run_migrations(conn)
         _crear_indices(conn)
+        # Tablas del modulo de turnos de fin de semana (ver turnos_logica.py)
+        from turnos_logica import crear_tablas_turnos
+        crear_tablas_turnos(conn)
         _sincronizar_ubicaciones(conn)
         _migrar_fotos_a_proxy_media(conn)
 
@@ -752,6 +755,9 @@ TABLAS_RESPALDO = [
     "productos", "movimientos", "auditoria", "api_tokens",
     "ordenes_compra", "ordenes_compra_items", "cotizaciones", "cotizacion_items",
     "solicitudes", "sesiones",
+    # modulo de turnos
+    "turnos_tecnicos", "turnos_dias", "turnos_asignaciones",
+    "turnos_ausencias", "turnos_cambios", "notificaciones",
 ]
 
 

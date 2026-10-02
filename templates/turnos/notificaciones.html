@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Avisos — Wintec{% endblock %}
+{% block topbar_title %}Avisos{% endblock %}
+{% block topbar_actions %}
+  {% if avisos|selectattr('leida', 'equalto', 0)|list %}
+  <form method="post" action="{{ url_for('turnos.leer_todas') }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-check2-all me-1"></i><span class="d-none d-sm-inline">Marcar todo leído</span></button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="table-card">
+  {% if avisos %}
+  <ul class="tw-notifs">
+    {% for n in avisos %}
+    <li class="{% if not n.leida %}is-unread{% endif %}">
+      <a href="{{ url_for('turnos.abrir_notificacion', nid=n.id) }}">
+        <span class="tw-notif-dot" aria-hidden="true"></span>
+        <span class="tw-notif-text">{{ n.mensaje }}</span>
+        <span class="tw-notif-time">{{ n.created_at[8:10] }}/{{ n.created_at[5:7] }} {{ n.created_at[11:16] }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-bell-slash"></i></div>
+    <h6>Sin avisos</h6>
+    <p>Aquí verás los cambios de turno y avisos que te lleguen.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

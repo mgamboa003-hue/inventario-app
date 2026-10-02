@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Cambios de turno — Wintec{% endblock %}
+{% block topbar_title %}Cambios de turno{% endblock %}
+
+{% block content %}
+<h2 class="tw-h2 mb-2">Pendientes {% if pendientes %}<span class="badge bg-warning text-dark ms-1">{{ pendientes|length }}</span>{% endif %}</h2>
+{% if pendientes %}
+<div class="tw-requests">
+  {% for c in pendientes %}
+  <form class="tw-request" method="post" action="{{ url_for('turnos.resolver_cambio', cid=c.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="tw-request-head">
+      <span class="tw-avatar lg">{{ (nombres.get(c.usuario_id) or '?')[0]|upper }}</span>
+      <div>
+        <div class="tw-request-who">{{ nombres.get(c.usuario_id) }} no puede ir</div>
+        <div class="tw-request-when"><i class="bi bi-calendar-event me-1"></i>{{ c.fecha|fecha_larga }}</div>
+      </div>
+      <span class="tw-muted small ms-auto">Pedido {{ c.created_at[8:10] }}/{{ c.created_at[5:7] }} {{ c.created_at[11:16] }}</span>
+    </div>
+    <blockquote class="tw-request-reason">“{{ c.motivo }}”</blockquote>
+    {% if not c.vigente %}
+    <div class="alert alert-warning py-2 small mb-2">Esta persona ya no está asignada a ese día (se cambió a mano). Puedes rechazar la solicitud para cerrarla.</div>
+    {% endif %}
+    {% if c.companeros %}
+    <div class="tw-muted small mb-2">Ese día también va: {{ c.companeros|join(', ') }}</div>
+    {% endif %}
+    <div class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label small">Quién lo reemplaza</label>
+        <select name="reemplazo" class="form-select form-select-sm">
+          {% for uid in c.sugeridos %}
+          <option value="{{ uid }}" {% if loop.first %}selected{% endif %}>{{ nombres.get(uid) }}{% if loop.first %} — recomendado (lleva menos turnos){% endif %}</option>
+          {% endfor %}
+          <option value="auto">Que el sistema elija al aprobar</option>
+          <option value="ninguno">Nadie (ese día va una persona menos)</option>
+        </select>
+        {% if not c.sugeridos %}<div class="form-text text-warning">No hay otros técnicos disponibles ese día.</div>{% endif %}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small">Respuesta (opcional)</label>
+        <input type="text" name="respuesta" class="form-control form-control-sm" maxlength="300" placeholder="Ej: OK, te cubre Juan">
+      </div>
+    </div>
+    <div class="tw-request-actions">
+      <button type="submit" name="accion" value="rechazar" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg me-1"></i>Rechazar</button>
+      <button type="submit" name="accion" value="aprobar" class="btn btn-primary btn-sm"><i class="bi bi-check2 me-1"></i>Aprobar cambio</button>
+    </div>
+  </form>
+  {% endfor %}
+</div>
+{% else %}
+<div class="table-card mb-3">
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+    <h6>No hay solicitudes pendientes</h6>
+    <p>Cuando un técnico marque “No puedo ir” en el calendario, aparecerá aquí y te llegará un aviso.</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="table-card mt-4">
+  <div class="table-header"><h6><i class="bi bi-clock-history me-2"></i>Historial de cambios</h6></div>
+  {% if historial %}
+  <div class="table-responsive">
+    <table class="table table-hover table-stack mb-0 align-middle">
+      <thead><tr><th>Día</th><th>Técnico</th><th>Motivo</th><th>Estado</th><th>Reemplazo</th><th>Resuelto por</th></tr></thead>
+      <tbody>
+        {% for c in historial %}
+        <tr>
+          <td data-cell="title">{{ c.fecha|fecha_corta }}</td>
+          <td>{{ nombres.get(c.usuario_id) }}</td>
+          <td>{{ c.motivo }}{% if c.respuesta %}<div class="tw-muted small">Resp.: {{ c.respuesta }}</div>{% endif %}</td>
+          <td data-cell="status"><span class="tw-req-badge {{ c.estado }}">{{ c.estado|capitalize }}</span></td>
+          <td>{{ nombres.get(c.reemplazo_id) or '—' }}</td>
+          <td>{{ c.resuelto_por or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="tw-muted p-3 mb-0">Aún no hay cambios resueltos.</p>
+  {% endif %}
+</div>
+{% endblock %}

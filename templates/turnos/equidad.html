@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Reparto de turnos — Wintec{% endblock %}
+{% block topbar_title %}Reparto de turnos{% endblock %}
+
+{% block content %}
+<div class="tw-help mb-3">
+  <i class="bi bi-bar-chart"></i>
+  <div>Días ya trabajados por cada uno (hasta ayer). El sistema siempre le da el siguiente turno a quien lleva menos,
+    así que la diferencia entre el que más y el que menos lleva debería mantenerse en 0 o 1.
+    {% if filas %}<br>Diferencia actual entre técnicos activos: <strong>{{ diferencia }} día{{ 's' if diferencia != 1 }}</strong>.{% endif %}</div>
+</div>
+
+<div class="table-card">
+  <div class="table-header"><h6><i class="bi bi-people me-2"></i>Turnos por técnico</h6></div>
+  {% if filas %}
+  <div class="table-responsive">
+    <table class="table table-hover table-stack mb-0 align-middle tw-fair">
+      <thead>
+        <tr><th>Técnico</th><th style="width:30%">Días trabajados</th><th class="text-center">Sábados</th><th class="text-center">Domingos</th>
+            <th class="text-center">Otros</th><th class="text-center" title="Sábado y domingo seguidos">Dobles</th><th class="text-center">Programados</th><th>Próximo</th></tr>
+      </thead>
+      <tbody>
+        {% for f in filas %}
+        <tr {% if not f.activo %}class="table-secondary"{% endif %}>
+          <td data-cell="title">{{ f.nombre }}{% if f.tipo == 'ocasional' %} <span class="tw-tag">Ocasional</span>{% endif %}{% if not f.activo %} <span class="tw-tag">Inactivo</span>{% endif %}</td>
+          <td data-cell="tags">
+            <div class="tw-bar" role="img" aria-label="{{ f.dias }} días">
+              <span style="width: {{ f.pct }}%"></span>
+            </div>
+            <span class="tw-bar-num">{{ f.dias }}{% if f.ajuste_dias %} <small class="tw-muted" title="Ajuste al ingresar a la rotación">({{ '%+d'|format(f.ajuste_dias) }})</small>{% endif %}</span>
+          </td>
+          <td class="text-center">{{ f.sabados }}</td>
+          <td class="text-center">{{ f.domingos }}</td>
+          <td class="text-center">{{ f.otros }}</td>
+          <td class="text-center">{{ f.dobles }}</td>
+          <td class="text-center">{{ f.programados }}</td>
+          <td>{{ f.proximo|fecha_corta if f.proximo else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="tw-muted p-3 mb-0">Todavía no hay técnicos en la rotación.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Planificación de turnos — Wintec{% endblock %}
+{% block topbar_title %}Planificación de turnos{% endblock %}
+{% block topbar_actions %}
+  <form method="post" action="{{ url_for('turnos.recalcular_ahora') }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-outline-secondary btn-sm" title="Vuelve a repartir los días provisorios">
+      <i class="bi bi-arrow-repeat me-1"></i><span class="d-none d-sm-inline">Recalcular</span>
+    </button>
+  </form>
+{% endblock %}
+
+{% macro celda(f, dia) %}
+  {% set pasado = f < hoy %}
+  {% set clave = f.isoformat() %}
+  <td class="tw-plan-cell {% if dia %}is-on {{ dia.estado }}{% endif %} {% if pasado %}is-past{% endif %}" data-cell="tags">
+    <div class="tw-plan-top">
+      <label class="tw-switch">
+        <input type="checkbox" name="trabaja_{{ clave }}" value="1" {% if dia %}checked{% endif %} {% if pasado %}disabled{% endif %}
+               data-toggle-day="{{ clave }}">
+        <span class="tw-switch-label">{{ ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][f.weekday()] }} {{ f.strftime('%d/%m') }}</span>
+      </label>
+      <label class="tw-qty" title="Personas ese día">
+        <i class="bi bi-people"></i>
+        <input type="number" min="1" max="20" name="personas_{{ clave }}" class="form-control form-control-sm"
+               value="{{ dia.personas if dia else defecto }}" {% if pasado %}disabled{% endif %}
+               aria-label="Personas el {{ f|fecha_larga|lower }}">
+      </label>
+    </div>
+    {% if dia %}
+    <div class="tw-plan-people">
+      {% for a in dia.asignados %}
+        <span class="tw-chip {% if a.origen != 'auto' %}is-fixed{% endif %} {% if a in dia.conflictos %}is-conflict{% endif %}"
+              title="{% if a.origen == 'manual' %}Puesto a mano{% elif a.origen == 'reemplazo' %}Reemplazo{% else %}Automático{% endif %}{% if a in dia.conflictos %} · tiene ausencia ese día{% endif %}">
+          {{ a.nombre.split(' ')[0] }}{% if a.origen == 'manual' %} <i class="bi bi-pin-angle"></i>{% elif a.origen == 'reemplazo' %} <i class="bi bi-arrow-left-right"></i>{% endif %}{% if a.usuario_id in dia.pendientes %} <i class="bi bi-hourglass-split" title="Pidió cambio"></i>{% endif %}
+        </span>
+      {% endfor %}
+      {% if dia.faltan %}<span class="tw-chip is-missing">Faltan {{ dia.faltan }}</span>{% endif %}
+    </div>
+    <div class="tw-plan-foot">
+      <span class="tw-state {{ dia.estado }}">{% if pasado %}Realizado{% elif dia.estado == 'confirmado' %}Confirmado{% else %}Provisorio{% endif %}</span>
+      {% if not pasado %}
+      <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="modal" data-bs-target="#editar-{{ dia.id }}">Editar</button>
+      {% endif %}
+    </div>
+    {% elif not pasado %}
+    <div class="tw-plan-off">No se trabaja</div>
+    {% endif %}
+  </td>
+{% endmacro %}
+
+{% block content %}
+<div class="tw-help mb-3">
+  <i class="bi bi-lightbulb"></i>
+  <div>
+    Marca los días que se trabajan y cuántas personas van. Al guardar, el sistema reparte solo,
+    eligiendo a quienes llevan menos días (y rotando quién hace sábado y domingo).
+    Lo que está hasta el <strong>{{ limite_confirmado|fecha_larga|lower }}</strong> queda <strong>confirmado</strong> y no se mueve solo;
+    lo posterior es <strong>provisorio</strong>. Con <em>Editar</em> puedes poner a alguien a mano (queda fijado <i class="bi bi-pin-angle"></i>).
+  </div>
+</div>
+
+{% if not activos %}
+<div class="alert alert-warning">
+  Todavía no hay técnicos activos en la rotación. <a href="{{ url_for('turnos.tecnicos') }}">Agrégalos aquí</a>.
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('turnos.guardar_planificacion') }}" id="formPlan">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="desde" value="{{ sabado0.isoformat() }}">
+  <div class="table-card">
+    <div class="table-header">
+      <h6><i class="bi bi-calendar-week me-2"></i>Próximos {{ filas|length }} fines de semana</h6>
+      <div class="d-flex gap-1">
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('turnos.planificacion', desde=anterior.isoformat()) }}" aria-label="Anteriores"><i class="bi bi-chevron-left"></i></a>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('turnos.planificacion') }}">Hoy</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('turnos.planificacion', desde=siguiente.isoformat()) }}" aria-label="Siguientes"><i class="bi bi-chevron-right"></i></a>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-stack mb-0 align-top tw-plan">
+        <thead>
+          <tr><th style="width:22%">Fin de semana</th><th>Sábado</th><th>Domingo</th></tr>
+        </thead>
+        <tbody>
+          {% for fila in filas %}
+          <tr {% if fila.domingo <= limite_confirmado and fila.domingo >= hoy %}class="tw-in-horizon"{% endif %}>
+            <td data-cell="title">
+              <div class="tw-plan-week">{{ fila.sabado.day }}–{{ fila.domingo.day }} {{ ['', 'ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][fila.domingo.month] }}</div>
+              {% if fila.domingo <= limite_confirmado and fila.domingo >= hoy %}<div class="tw-muted small"><i class="bi bi-lock me-1"></i>Confirmado: no se mueve solo</div>{% endif %}
+            </td>
+            {{ celda(fila.sabado, fila.dia_sab) }}
+            {{ celda(fila.domingo, fila.dia_dom) }}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="tw-savebar">
+    <span class="tw-muted small" id="planDirty" hidden><i class="bi bi-dot"></i>Tienes cambios sin guardar</span>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Guardar y repartir</button>
+  </div>
+</form>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-7">
+    <div class="table-card h-100">
+      <div class="table-header"><h6><i class="bi bi-calendar-plus me-2"></i>Días especiales (feriados u otros)</h6></div>
+      {% if especiales %}
+      <ul class="tw-special-list">
+        {% for d in especiales %}
+        <li>
+          <div>
+            <strong>{{ d.fecha|fecha_larga }}</strong>
+            {% if d.nota %}<span class="tw-muted"> · {{ d.nota }}</span>{% endif %}
+            <div class="tw-plan-people mt-1">
+              {% for a in d.asignados %}<span class="tw-chip {% if a.origen != 'auto' %}is-fixed{% endif %}">{{ a.nombre.split(' ')[0] }}</span>{% endfor %}
+              {% if d.faltan %}<span class="tw-chip is-missing">Faltan {{ d.faltan }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="tw-state {{ d.estado }}">{{ 'Confirmado' if d.estado == 'confirmado' else 'Provisorio' }}</span>
+            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="modal" data-bs-target="#editar-{{ d.id }}">Editar</button>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="tw-muted p-3 mb-0">No hay días especiales programados en este rango.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <form class="table-card h-100" method="post" action="{{ url_for('turnos.agregar_dia') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="table-header"><h6><i class="bi bi-plus-circle me-2"></i>Agregar un día suelto</h6></div>
+      <div class="p-3">
+        <div class="row g-2">
+          <div class="col-7">
+            <label class="form-label small" for="fechaEsp">Fecha</label>
+            <input type="date" class="form-control form-control-sm" id="fechaEsp" name="fecha" min="{{ hoy.isoformat() }}" required>
+          </div>
+          <div class="col-5">
+            <label class="form-label small" for="persEsp">Personas</label>
+            <input type="number" class="form-control form-control-sm" id="persEsp" name="personas" min="1" max="20" value="{{ defecto }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label small" for="notaEsp">Nota (opcional)</label>
+            <input type="text" class="form-control form-control-sm" id="notaEsp" name="nota" maxlength="200" placeholder="Ej: Feriado 18 de septiembre, mantención línea 2">
+          </div>
+        </div>
+        <button class="btn btn-outline-primary btn-sm mt-3"><i class="bi bi-plus-lg me-1"></i>Agregar día</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modales de edición (fuera del formulario principal) ── #}
+{% set dias_editables = [] %}
+{% for fila in filas %}{% for d in [fila.dia_sab, fila.dia_dom] %}{% if d and d.fecha_obj >= hoy %}{% set _ = dias_editables.append(d) %}{% endif %}{% endfor %}{% endfor %}
+{% for d in especiales %}{% if d not in dias_editables %}{% set _ = dias_editables.append(d) %}{% endif %}{% endfor %}
+{% for d in dias_editables %}
+{% set ids_asignados = d.asignados|map(attribute='usuario_id')|list %}
+<div class="modal fade" id="editar-{{ d.id }}" tabindex="-1" aria-labelledby="editarLabel-{{ d.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('turnos.editar_dia', dia_id=d.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editarLabel-{{ d.id }}">{{ d.fecha|fecha_larga }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-label">¿Quiénes van?</div>
+        <div class="tw-pick">
+          {% for t in tecnicos if t.activo or t.usuario_id in ids_asignados %}
+          <label class="tw-pick-item">
+            <input type="checkbox" class="form-check-input" name="asignados" value="{{ t.usuario_id }}" {% if t.usuario_id in ids_asignados %}checked{% endif %}>
+            <span>{{ t.nombre }}</span>
+            {% if t.tipo == 'ocasional' %}<span class="tw-tag">Ocasional</span>{% endif %}
+            {% if not t.activo %}<span class="tw-tag warn">Inactivo</span>{% endif %}
+          </label>
+          {% endfor %}
+        </div>
+        <div class="row g-2 mt-2">
+          <div class="col-5">
+            <label class="form-label small">Personas</label>
+            <input type="number" class="form-control form-control-sm" name="personas" min="1" max="20" value="{{ d.personas }}">
+          </div>
+          <div class="col-7">
+            <label class="form-label small">Estado</label>
+            <select name="estado" class="form-select form-select-sm">
+              <option value="provisorio" {% if d.estado == 'provisorio' %}selected{% endif %}>Provisorio</option>
+              <option value="confirmado" {% if d.estado == 'confirmado' %}selected{% endif %}>Confirmado</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Nota</label>
+            <input type="text" class="form-control form-control-sm" name="nota" maxlength="200" value="{{ d.nota or '' }}">
+          </div>
+        </div>
+        <p class="tw-muted small mt-3 mb-0">Las personas marcadas quedan fijadas en este día y las que desmarques no se vuelven a asignar ese día. Si quedan plazas libres, el sistema las completa con los demás.
+          {% if d.estado == 'confirmado' %}Como el día está confirmado, se avisará a quien entre o salga.{% endif %}</p>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <div class="d-flex gap-1">
+          <button type="submit" name="accion" value="eliminar" class="btn btn-outline-danger btn-sm"
+                  title="Quitar este día del calendario"><i class="bi bi-trash"></i></button>
+          <button type="submit" name="accion" value="automatico" class="btn btn-outline-secondary btn-sm"
+                  title="Quita lo puesto a mano y deja que el sistema elija">Automático</button>
+        </div>
+        <button type="submit" name="accion" value="guardar" class="btn btn-primary btn-sm">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var form = document.getElementById('formPlan');
+    var aviso = document.getElementById('planDirty');
+    if (!form) return;
+    form.addEventListener('change', function (e) {
+      if (aviso) aviso.hidden = false;
+      var t = e.target;
+      if (t.matches('[data-toggle-day]')) {
+        t.closest('td').classList.toggle('is-on', t.checked);
+      }
+    });
+  })();
+</script>
+{% endblock %}

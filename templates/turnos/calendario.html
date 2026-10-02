@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Turnos de fin de semana — Wintec{% endblock %}
+{% block topbar_title %}Turnos de fin de semana{% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') == 'admin' %}
+  <a href="{{ url_for('turnos.planificacion') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center">
+    <i class="bi bi-calendar2-check me-1"></i><span class="d-none d-sm-inline">Planificar</span>
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% if soy_tecnico %}
+<section class="tw-mine mb-3" aria-label="Tus turnos">
+  <div class="tw-mine-head">
+    <h2 class="tw-h2"><i class="bi bi-person-check me-2"></i>Tus próximos turnos</h2>
+  </div>
+  {% if mis_proximos %}
+  <div class="tw-mine-list">
+    {% for d in mis_proximos %}
+    <a class="tw-mine-chip {{ d.estado }}" href="{{ url_for('turnos.calendario', mes=d.fecha[:7]) }}#dia-{{ d.id }}">
+      <span class="tw-mine-date">{{ d.fecha|fecha_larga }}</span>
+      <span class="tw-state {{ d.estado }}">{{ 'Confirmado' if d.estado == 'confirmado' else 'Provisorio' }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="tw-muted mb-0">No tienes turnos programados por ahora.</p>
+  {% endif %}
+  {% if mis_cambios %}
+  <div class="tw-mine-requests">
+    {% for c in mis_cambios %}
+    <div class="tw-req {{ c.estado }}">
+      <i class="bi {% if c.estado == 'pendiente' %}bi-hourglass-split{% elif c.estado == 'aprobada' %}bi-check-circle{% elif c.estado == 'rechazada' %}bi-x-circle{% else %}bi-dash-circle{% endif %}"></i>
+      <span>Cambio del {{ c.fecha|fecha_larga|lower }}:
+        <strong>{{ c.estado|capitalize }}</strong>
+        {% if c.estado == 'aprobada' and c.reemplazo_nombre %} · te reemplaza {{ c.reemplazo_nombre }}{% endif %}
+        {% if c.respuesta %} · “{{ c.respuesta }}”{% endif %}
+      </span>
+      {% if c.estado == 'pendiente' %}
+      <form method="post" action="{{ url_for('turnos.cancelar_cambio', cid=c.id) }}" class="ms-auto">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-link btn-sm p-0">Retirar solicitud</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+<div class="tw-monthbar mb-3">
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('turnos.calendario', mes=anterior.strftime('%Y-%m')) }}" aria-label="Mes anterior"><i class="bi bi-chevron-left"></i></a>
+  <h2 class="tw-month">{{ nombre_mes }}</h2>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('turnos.calendario', mes=siguiente.strftime('%Y-%m')) }}" aria-label="Mes siguiente"><i class="bi bi-chevron-right"></i></a>
+  {% if primero.month != hoy.month or primero.year != hoy.year %}
+  <a class="btn btn-link btn-sm" href="{{ url_for('turnos.calendario') }}">Hoy</a>
+  {% endif %}
+  <div class="tw-legend ms-auto">
+    <span><i class="tw-dot confirmado"></i>Confirmado</span>
+    <span><i class="tw-dot provisorio"></i>Provisorio (puede cambiar)</span>
+  </div>
+</div>
+
+{% if grupos %}
+<div class="tw-weeks">
+  {% for g in grupos %}
+  <article class="tw-week">
+    <header class="tw-week-head">
+      <span class="tw-week-kicker">{{ 'Fin de semana' if g.es_fin_de_semana else 'Día especial' }}</span>
+      <span class="tw-week-title">{{ g.titulo }}</span>
+    </header>
+    <div class="tw-days">
+      {% for d in g.dias %}
+      {% set pasado = d.fecha_obj < hoy %}
+      <div class="tw-day {{ d.estado }} {% if pasado %}is-past{% endif %}" id="dia-{{ d.id }}">
+        <div class="tw-day-head">
+          <div class="tw-day-date">
+            <span class="tw-day-name">{{ d.dia_semana }}</span>
+            <span class="tw-day-num">{{ d.fecha_obj.day }}</span>
+          </div>
+          <span class="tw-state {{ d.estado }}">{% if pasado %}Realizado{% elif d.estado == 'confirmado' %}Confirmado{% else %}Provisorio{% endif %}</span>
+        </div>
+        {% if d.nota %}<div class="tw-note"><i class="bi bi-info-circle me-1"></i>{{ d.nota }}</div>{% endif %}
+        <ul class="tw-people">
+          {% for a in d.asignados %}
+          {% set es_yo = a.usuario_id == session.get('user_id') %}
+          {% set pend = d.pendientes.get(a.usuario_id) %}
+          <li class="tw-person {% if es_yo %}is-me{% endif %} {% if pend %}is-pending{% endif %}">
+            <span class="tw-avatar">{{ a.nombre[0]|upper }}</span>
+            <span class="tw-person-name">{{ a.nombre }}{% if es_yo %} <small>(tú)</small>{% endif %}</span>
+            {% if pend %}
+              <span class="tw-tag warn" title="{{ pend.motivo }}">Pidió cambio</span>
+            {% elif a.origen == 'reemplazo' %}
+              <span class="tw-tag">Reemplazo</span>
+            {% endif %}
+            {% if es_yo and not pasado and not pend %}
+            <button type="button" class="btn btn-sm tw-cant"
+                    data-bs-toggle="modal" data-bs-target="#modalNoPuedo"
+                    data-action="{{ url_for('turnos.pedir_cambio', dia_id=d.id) }}"
+                    data-fecha="{{ d.fecha|fecha_larga|lower }}">No puedo ir</button>
+            {% endif %}
+          </li>
+          {% endfor %}
+          {% for i in range(d.faltan) %}
+          <li class="tw-person is-empty"><span class="tw-avatar"><i class="bi bi-question"></i></span><span>Sin asignar</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="table-card">
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-calendar-x"></i></div>
+    <h6>No hay días de trabajo en {{ nombre_mes|lower }}</h6>
+    <p>{% if session.get('role') == 'admin' %}Marca los fines de semana que se trabajan en Planificación.{% else %}Cuando el jefe programe un fin de semana aparecerá aquí.{% endif %}</p>
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('turnos.planificacion') }}" class="btn btn-primary btn-sm">Ir a Planificación</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<p class="tw-footnote mt-3">
+  <i class="bi bi-shield-check me-1"></i>
+  Los turnos hasta el {{ limite_confirmado|fecha_larga|lower }} están confirmados y no cambian solos.
+  Los siguientes son provisorios: se reajustan si alguien pide un cambio, para que el reparto siga parejo.
+  <a href="{{ url_for('turnos.equidad') }}">Ver cuántos turnos lleva cada uno</a>.
+</p>
+
+<div class="modal fade" id="modalNoPuedo" tabindex="-1" aria-labelledby="modalNoPuedoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" id="formNoPuedo">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNoPuedoLabel">No puedo ir el <span data-fecha></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="tw-muted">Tu solicitud le llega al jefe de mantenimiento. Hasta que la apruebe, el turno sigue a tu nombre.</p>
+        <label for="motivo" class="form-label">Motivo</label>
+        <textarea class="form-control" name="motivo" id="motivo" rows="3" maxlength="500" required
+                  placeholder="Ej: tengo un trámite médico ese día"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Volver</button>
+        <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('modalNoPuedo')?.addEventListener('show.bs.modal', function (e) {
+    var b = e.relatedTarget;
+    if (!b) return;
+    document.getElementById('formNoPuedo').action = b.getAttribute('data-action');
+    this.querySelector('[data-fecha]').textContent = b.getAttribute('data-fecha');
+  });
+</script>
+{% endblock %}

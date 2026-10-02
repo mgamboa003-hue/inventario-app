@@ -59,6 +59,10 @@ if FORCE_HTTPS:
 
 csrf = CSRFProtect(app)
 
+# Modulo de turnos de fin de semana (turnos.py)
+from turnos import bp as turnos_bp
+app.register_blueprint(turnos_bp)
+
 
 @app.context_processor
 def inject_session_idle_minutes():

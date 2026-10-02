@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Técnicos en rotación — Wintec{% endblock %}
+{% block topbar_title %}Técnicos y ausencias{% endblock %}
+
+{% block content %}
+<div class="tw-help mb-3">
+  <i class="bi bi-lightbulb"></i>
+  <div><strong>Fijos</strong> rotan siempre. <strong>Ocasionales</strong> solo entran cuando los activas; al activarlos parten con el promedio de turnos del grupo,
+    para que el sistema no les cargue todos los turnos de golpe. Al desactivar a alguien, deja de recibir turnos nuevos.</div>
+</div>
+
+<div class="table-card mb-3">
+  <div class="table-header"><h6><i class="bi bi-people me-2"></i>En la rotación ({{ tecnicos|selectattr('activo')|list|length }} activos)</h6></div>
+  {% if tecnicos %}
+  <div class="table-responsive">
+    <table class="table table-hover table-stack mb-0 align-middle">
+      <thead><tr><th>Técnico</th><th>Tipo</th><th>Estado</th><th>Ajuste de ingreso</th><th class="text-end">Acciones</th></tr></thead>
+      <tbody>
+        {% for t in tecnicos %}
+        <tr {% if not t.activo %}class="table-secondary"{% endif %}>
+          <td data-cell="title"><span class="tw-avatar me-2">{{ t.nombre[0]|upper }}</span>{{ t.nombre }}</td>
+          <td>
+            <form method="post" action="{{ url_for('turnos.actualizar_tecnico', tid=t.id) }}" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="accion" value="tipo">
+              <select name="tipo" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()" aria-label="Tipo de {{ t.nombre }}">
+                <option value="fijo" {% if t.tipo == 'fijo' %}selected{% endif %}>Fijo</option>
+                <option value="ocasional" {% if t.tipo == 'ocasional' %}selected{% endif %}>Ocasional</option>
+              </select>
+            </form>
+          </td>
+          <td data-cell="status">{% if t.activo %}<span class="tw-state confirmado">Activo</span>{% else %}<span class="tw-state off">Inactivo</span>{% endif %}</td>
+          <td>{% if t.ajuste_dias %}{{ '%+d'|format(t.ajuste_dias) }} días{% else %}—{% endif %}</td>
+          <td data-cell="actions" class="text-end">
+            <form method="post" action="{{ url_for('turnos.actualizar_tecnico', tid=t.id) }}" class="row-actions d-inline-flex gap-1 justify-content-end">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if t.activo %}
+              <button name="accion" value="desactivar" class="btn btn-outline-secondary btn-sm">Desactivar</button>
+              {% else %}
+              <button name="accion" value="activar" class="btn btn-primary btn-sm">Activar</button>
+              {% endif %}
+              <button name="accion" value="quitar" class="btn btn-outline-danger btn-sm" title="Quitar de la rotación"><i class="bi bi-person-dash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="tw-muted p-3 mb-0">Aún no hay nadie en la rotación. Agrega a los técnicos abajo.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('turnos.agregar_tecnico') }}" class="tw-addrow">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="usuario_id" class="form-select form-select-sm" required aria-label="Usuario">
+      <option value="">Agregar usuario…</option>
+      {% for u in disponibles %}<option value="{{ u.id }}">{{ u.nombre or u.username }} ({{ u.username }})</option>{% endfor %}
+    </select>
+    <select name="tipo" class="form-select form-select-sm" aria-label="Tipo">
+      <option value="fijo">Fijo</option>
+      <option value="ocasional">Ocasional</option>
+    </select>
+    <button class="btn btn-outline-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Agregar</button>
+  </form>
+</div>
+
+<div class="table-card">
+  <div class="table-header"><h6><i class="bi bi-airplane me-2"></i>Ausencias (vacaciones, licencias, permisos)</h6></div>
+  {% if ausencias %}
+  <div class="table-responsive">
+    <table class="table table-hover table-stack mb-0 align-middle">
+      <thead><tr><th>Técnico</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th></th></tr></thead>
+      <tbody>
+        {% for a in ausencias %}
+        <tr>
+          <td data-cell="title">{{ a.nombre or a.username }}</td>
+          <td>{{ a.desde|fecha_corta }}</td>
+          <td>{{ a.hasta|fecha_corta }}</td>
+          <td>{{ a.motivo }}</td>
+          <td data-cell="actions" class="text-end">
+            <form method="post" action="{{ url_for('turnos.eliminar_ausencia', aid=a.id) }}" class="row-actions d-inline-flex">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-outline-danger btn-sm" title="Eliminar ausencia"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="tw-muted p-3 mb-0">No hay ausencias registradas desde hoy en adelante.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('turnos.agregar_ausencia') }}" class="tw-addrow">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="usuario_id" class="form-select form-select-sm" required aria-label="Técnico">
+      <option value="">Técnico…</option>
+      {% for t in tecnicos %}<option value="{{ t.usuario_id }}">{{ t.nombre }}</option>{% endfor %}
+    </select>
+    <input type="date" name="desde" class="form-control form-control-sm" min="{{ hoy.isoformat() }}" required aria-label="Desde">
+    <input type="date" name="hasta" class="form-control form-control-sm" min="{{ hoy.isoformat() }}" aria-label="Hasta">
+    <input type="text" name="motivo" class="form-control form-control-sm" maxlength="200" placeholder="Motivo (ej: vacaciones)" aria-label="Motivo">
+    <button class="btn btn-outline-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Registrar</button>
+  </form>
+</div>
+{% endblock %}
