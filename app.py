@@ -1,4 +1,4 @@
-# app.py -- Inventario Wintec v3
+# app.py -- Portal Mantenimiento Wintec (antes Inventario Wintec v3)
 import io
 import json
 import os
@@ -1597,7 +1597,7 @@ def _planilla_pedido(proveedor, items, solicitante, fecha, correlativo):
     ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.print_title_rows = f"{ENCABEZADO}:{ENCABEZADO}"
     ws.freeze_panes = f"A{ENCABEZADO + 1}"
-    ws.oddFooter.left.text = f"{CODIGO_DOC_PEDIDO} — Inventario Wintec"
+    ws.oddFooter.left.text = f"{CODIGO_DOC_PEDIDO} — Portal Mantenimiento Wintec"
     ws.oddFooter.right.text = "Página &P de &N"
     ws.page_margins.left = 0.4
     ws.page_margins.right = 0.4
@@ -1900,7 +1900,7 @@ def exportar_orden_compra(oid):
 
     wb = Workbook(); ws = wb.active; ws.title = "Orden de Compra"
     ws.merge_cells("A1:E1")
-    ws["A1"] = "ORDEN DE COMPRA -- INVENTARIO WINTEC"
+    ws["A1"] = "ORDEN DE COMPRA -- PORTAL MANTENIMIENTO WINTEC"
     ws["A1"].font = Font(bold=True, size=14, color="1B4F8A")
     ws["A3"] = "N Orden:"; ws["B3"] = orden["numero"]
     ws["A4"] = "Fecha:"; ws["B4"] = str(orden["fecha"])[:19]
@@ -2462,7 +2462,7 @@ def detalle_solicitud(sid):
     prioridad = "\u25B2 *PRIORIDAD URGENTE*" if es_urgente else "Prioridad normal"
 
     lineas = [
-        f"*SOLICITUD #{sid} · INVENTARIO WINTEC*",
+        f"*SOLICITUD #{sid} · PORTAL MANTENIMIENTO WINTEC*",
         prioridad,
         "",
         f"*Ítem:* {solicitud['nombre_item']}",
@@ -3299,8 +3299,8 @@ def api_crear_movimiento():
 @app.route("/manifest.json")
 def manifest():
     return jsonify({
-        "name": "Inventario Wintec",
-        "short_name": "Wintec Inv.",
+        "name": "Portal Mantenimiento Wintec",
+        "short_name": "Mantenimiento",
         "start_url": "/",
         "scope": "/",
         "display": "standalone",
@@ -3383,6 +3383,20 @@ def _tarea_alertas_stock_diaria():
         registrar_auditoria("alertas", None, "enviar_email_automatico", None, "scheduler", msg)
 
 
+def _tarea_recordatorio_correo_ingreso():
+    """Viernes 9:00: si falta enviar la solicitud de ingreso del proximo fin
+    de semana, deja un aviso en la campanita de los administradores."""
+    with app.app_context():
+        if not reclamar_tarea_diaria("recordatorio_correo_ingreso"):
+            return
+        from turnos import enviar_recordatorio_correo
+        try:
+            n = enviar_recordatorio_correo()
+            registrar_auditoria("turnos", None, "recordatorio_correo", None, "scheduler", f"{n} pendiente(s)")
+        except Exception as e:
+            app.logger.warning("Recordatorio de correo de ingreso fallo: %s", e)
+
+
 def iniciar_tareas_programadas():
     import sys
     if app.config.get("TESTING") or "pytest" in sys.modules:
@@ -3402,6 +3416,10 @@ def iniciar_tareas_programadas():
     scheduler = BackgroundScheduler(timezone="America/Santiago")
     scheduler.add_job(_tarea_respaldo_diario, "cron", hour=3, minute=0, id="respaldo_diario", replace_existing=True)
     scheduler.add_job(_tarea_alertas_stock_diaria, "cron", hour=8, minute=0, id="alertas_stock_diaria", replace_existing=True)
+    scheduler.add_job(_tarea_recordatorio_correo_ingreso, "cron",
+                      day_of_week=os.environ.get("TURNOS_RECORDATORIO_DIA", "fri"),
+                      hour=int(os.environ.get("TURNOS_RECORDATORIO_HORA", 9)), minute=0,
+                      id="recordatorio_correo_ingreso", replace_existing=True)
     scheduler.start()
 
 

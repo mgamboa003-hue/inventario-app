@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>{% block title %}Inventario Wintec{% endblock %}</title>
+  <title>{% block title %}Portal Mantenimiento Wintec{% endblock %}</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a1a2f">
   <meta name="color-scheme" content="light dark">
@@ -49,6 +49,7 @@
         <span class="brand-icon"><i class="bi bi-boxes"></i></span>
         <span class="brand-text">WINTEC</span>
       {% endif %}
+      <span class="brand-sub">Portal<br>Mantenimiento</span>
     </a>
     <button class="sidebar-toggle d-lg-none" id="sidebarClose" aria-label="Cerrar menú">
       <i class="bi bi-x-lg"></i>
@@ -56,38 +57,37 @@
   </div>
 
   <nav class="sidebar-nav" aria-label="Navegación principal">
-    <div class="nav-section-label">Principal</div>
     {% if rol != 'comprador' %}
     <a href="{{ url_for('index') }}" class="nav-link {% if ep == 'index' %}active{% endif %}">
-      <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+      <i class="bi bi-speedometer2"></i><span>Inicio</span>
     </a>
+
+    <div class="nav-section-label mt-3">Bodega</div>
     <a href="{{ url_for('listar_productos') }}" class="nav-link {% if 'producto' in ep %}active{% endif %}">
       <i class="bi bi-box-seam"></i><span>Inventario</span>
     </a>
     <a href="{{ url_for('listar_movimientos') }}" class="nav-link {% if 'movimiento' in ep %}active{% endif %}">
       <i class="bi bi-arrow-left-right"></i><span>Movimientos</span>
     </a>
-    {% endif %}
-    {% if rol == 'admin' %}
-    <a href="{{ url_for('listar_ordenes_compra') }}" class="nav-link {% if 'orden' in ep %}active{% endif %}">
-      <i class="bi bi-cart-check"></i><span>Órdenes de compra</span>
-    </a>
-    {% endif %}
-    {% if rol != 'comprador' %}
-    <a href="{{ url_for('listar_ubicaciones') }}" class="nav-link {% if 'ubicacion' in ep %}active{% endif %}">
+    <a href="{{ url_for('listar_ubicaciones') }}" class="nav-link {% if 'ubicacion' in ep and ep != 'admin_ubicaciones' %}active{% endif %}">
       <i class="bi bi-geo-alt"></i><span>Ubicaciones</span>
     </a>
     {% endif %}
+
+    <div class="nav-section-label mt-3">Compras</div>
+    <a href="{{ url_for('listar_solicitudes') }}" class="nav-link {% if 'solicitud' in ep %}active{% endif %}">
+      <i class="bi bi-clipboard-check"></i><span>Solicitudes del equipo</span>
+    </a>
     {% if rol == 'admin' %}
     <a href="{{ url_for('listar_cotizaciones') }}" class="nav-link {% if 'cotizacion' in ep %}active{% endif %}">
       <i class="bi bi-file-earmark-text"></i><span>Cotizaciones</span>
     </a>
-    {% endif %}
-    <a href="{{ url_for('listar_solicitudes') }}" class="nav-link {% if 'solicitud' in ep %}active{% endif %}">
-      <i class="bi bi-clipboard-check"></i><span>Solicitudes del equipo</span>
+    <a href="{{ url_for('listar_ordenes_compra') }}" class="nav-link {% if 'orden' in ep %}active{% endif %}">
+      <i class="bi bi-cart-check"></i><span>Órdenes de compra</span>
     </a>
+    {% endif %}
 
-    <div class="nav-section-label mt-3">Turnos fin de semana</div>
+    <div class="nav-section-label mt-3">Personal · Turnos</div>
     <a href="{{ url_for('turnos.calendario') }}" class="nav-link {% if ep == 'turnos.calendario' %}active{% endif %}">
       <i class="bi bi-calendar-week"></i><span>Calendario de turnos</span>
     </a>
@@ -96,8 +96,12 @@
       <i class="bi bi-calendar2-check"></i><span>Planificación</span>
     </a>
     <a href="{{ url_for('turnos.cambios') }}" class="nav-link {% if ep == 'turnos.cambios' %}active{% endif %}">
-      <i class="bi bi-arrow-left-right"></i><span>Cambios de turno</span>
+      <i class="bi bi-arrow-repeat"></i><span>Cambios de turno</span>
       {% if turnos_cambios_pendientes %}<span class="nav-count">{{ turnos_cambios_pendientes }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('turnos.correo_ingreso') }}" class="nav-link {% if ep == 'turnos.correo_ingreso' %}active{% endif %}">
+      <i class="bi bi-envelope-paper"></i><span>Correo de ingreso</span>
+      {% if turnos_correos_pendientes %}<span class="nav-count">{{ turnos_correos_pendientes }}</span>{% endif %}
     </a>
     <a href="{{ url_for('turnos.tecnicos') }}" class="nav-link {% if ep == 'turnos.tecnicos' %}active{% endif %}">
       <i class="bi bi-person-gear"></i><span>Técnicos y ausencias</span>
@@ -108,7 +112,7 @@
     </a>
 
     {% if rol == 'admin' %}
-    <div class="nav-section-label mt-3">Exportar a Excel</div>
+    <div class="nav-section-label mt-3">Reportes Excel</div>
     <a href="{{ url_for('exportar_stock_bajo') }}" class="nav-link">
       <i class="bi bi-exclamation-triangle"></i><span>Stock bajo</span>
     </a>
@@ -124,9 +128,7 @@
     <a href="{{ url_for('exportar_abc') }}" class="nav-link">
       <i class="bi bi-bar-chart-steps"></i><span>Clasificación ABC</span>
     </a>
-    {% endif %}
 
-    {% if rol == 'admin' %}
     <div class="nav-section-label mt-3">Administración</div>
     {% if session.get('super_admin') %}
     <a href="{{ url_for('admin_usuarios') }}" class="nav-link {% if 'usuario' in ep %}active{% endif %}">

@@ -6,10 +6,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
-  <title>Solicitud #{{ sid }} — Inventario Wintec</title>
+  <title>Solicitud #{{ sid }} — Portal Mantenimiento Wintec</title>
 
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Inventario Wintec">
+  <meta property="og:site_name" content="Portal Mantenimiento Wintec">
   <meta property="og:title" content="Solicitud #{{ sid }} · {{ solicitud['nombre_item'] }}">
   <meta property="og:description" content="{{ texto_cantidad(solicitud['cantidad'], unidad_de(solicitud)) }} · {{ 'URGENTE' if es_urgente else 'Prioridad normal' }} · Pide {{ solicitud['solicitado_por'] or '—' }} · {{ fecha_texto }}">
   <meta property="og:url" content="{{ url_for('solicitud_publica', sid=sid, _external=True) }}">
@@ -86,7 +86,7 @@
     <div class="cabecera">
       <img src="{{ url_for('static', filename='logo_wintec.png') }}" alt="Wintec">
       <div>
-        <div class="titulo">Inventario Wintec</div>
+        <div class="titulo">Portal Mantenimiento Wintec</div>
         <div class="folio">Solicitud #{{ sid }}</div>
       </div>
     </div>

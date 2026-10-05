@@ -70,6 +70,14 @@
     <header class="tw-week-head">
       <span class="tw-week-kicker">{{ 'Fin de semana' if g.es_fin_de_semana else 'Día especial' }}</span>
       <span class="tw-week-title">{{ g.titulo }}</span>
+      {% set ec = estado_correo.get(g.dias[0].fecha) %}
+      {% if ec and g.dias[-1].fecha_obj >= hoy %}
+      <a class="tw-mail-link {{ ec.estado }}" href="{{ url_for('turnos.correo_ingreso', clave=ec.clave) }}"
+         title="Correo de solicitud de ingreso">
+        <i class="bi {% if ec.estado == 'enviado' %}bi-envelope-check{% elif ec.estado == 'desactualizado' %}bi-envelope-exclamation{% else %}bi-envelope{% endif %}"></i>
+        {% if ec.estado == 'enviado' %}Ingreso enviado{% elif ec.estado == 'desactualizado' %}Reenviar ingreso{% else %}Pedir ingreso{% endif %}
+      </a>
+      {% endif %}
     </header>
     <div class="tw-days">
       {% for d in g.dias %}
@@ -89,7 +97,8 @@
           {% set pend = d.pendientes.get(a.usuario_id) %}
           <li class="tw-person {% if es_yo %}is-me{% endif %} {% if pend %}is-pending{% endif %}">
             <span class="tw-avatar">{{ a.nombre[0]|upper }}</span>
-            <span class="tw-person-name">{{ a.nombre }}{% if es_yo %} <small>(tú)</small>{% endif %}</span>
+            <span class="tw-person-name">{{ a.nombre }}{% if es_yo %} <small>(tú)</small>{% endif %}
+              {% if a.linea_efectiva %}<span class="tw-line">Línea {{ a.linea_efectiva }}</span>{% endif %}</span>
             {% if pend %}
               <span class="tw-tag warn" title="{{ pend.motivo }}">Pidió cambio</span>
             {% elif a.origen == 'reemplazo' %}

@@ -1,0 +1,47 @@
+{# Tarjeta "Personal · Turnos" del inicio. Se incluye desde index.html. #}
+{% set rt = resumen_turnos() %}
+{% if rt and (rt.proximo or rt.mi_proximo or rt.cambios or rt.correos) %}
+<section class="mb-3" aria-label="Turnos de fin de semana">
+  <div class="nav-section-title d-flex align-items-center justify-content-between mb-2">
+    <h2 class="tw-h2"><i class="bi bi-calendar-week me-2"></i>Personal · Turnos</h2>
+    <a href="{{ url_for('turnos.calendario') }}" class="small">Ver calendario</a>
+  </div>
+  <div class="tw-dash">
+    {% if rt.mi_proximo %}
+    <a class="tw-dash-card" href="{{ url_for('turnos.calendario', mes=rt.mi_proximo.fecha[:7]) }}#dia-{{ rt.mi_proximo.id }}">
+      <div class="tw-dash-kicker">Tu próximo turno</div>
+      <div class="tw-dash-title">{{ rt.mi_proximo.fecha|fecha_larga }}</div>
+      <span class="tw-state {{ rt.mi_proximo.estado }}">{{ 'Confirmado' if rt.mi_proximo.estado == 'confirmado' else 'Provisorio' }}</span>
+    </a>
+    {% endif %}
+    {% if rt.proximo %}
+    <a class="tw-dash-card" href="{{ url_for('turnos.calendario', mes=rt.proximo[0].fecha[:7]) }}">
+      <div class="tw-dash-kicker">Próximos días de trabajo</div>
+      <div class="tw-dash-title">{{ rt.titulo|replace(' del ' ~ rt.proximo[0].fecha_obj.year, '')|primera_mayuscula }}</div>
+      <div class="tw-plan-people">
+        {% set vistos = [] %}
+        {% for d in rt.proximo %}{% for a in d.asignados if a.usuario_id not in vistos %}{% set _ = vistos.append(a.usuario_id) %}
+        <span class="tw-chip">{{ a.nombre.split(' ')[0] }}</span>{% endfor %}{% endfor %}
+      </div>
+    </a>
+    {% endif %}
+    {% if session.get('role') == 'admin' %}
+      {% if rt.correos %}
+      {% set c = rt.correos[0] %}
+      <a class="tw-dash-card {{ 'bad' if c.estado == 'desactualizado' else 'warn' }}" href="{{ url_for('turnos.correo_ingreso', clave=c.clave) }}">
+        <div class="tw-dash-kicker">Solicitud de ingreso</div>
+        <div class="tw-dash-title">{{ 'Reenviar: cambió el personal' if c.estado == 'desactualizado' else 'Falta enviar el correo' }}</div>
+        <span class="small tw-muted">{{ c.titulo|primera_mayuscula }}{% if rt.correos|length > 1 %} y {{ rt.correos|length - 1 }} más{% endif %}</span>
+      </a>
+      {% endif %}
+      {% if rt.cambios %}
+      <a class="tw-dash-card warn" href="{{ url_for('turnos.cambios') }}">
+        <div class="tw-dash-kicker">Cambios de turno</div>
+        <div class="tw-dash-title">{{ rt.cambios }} solicitud{{ 'es' if rt.cambios != 1 }} por revisar</div>
+        <span class="small tw-muted">Aprobar o rechazar</span>
+      </a>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+{% endif %}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Iniciar sesión — Inventario Wintec</title>
+  <title>Iniciar sesión — Portal Mantenimiento Wintec</title>
   <meta name="theme-color" content="#0a1a2f">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo_wintec.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
@@ -25,7 +25,7 @@
       {% else %}
         <div class="logo-placeholder">WINTEC</div>
       {% endif %}
-      <p>Sistema de control de inventario</p>
+      <p>Portal de Mantenimiento · Bodega, compras y turnos</p>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}

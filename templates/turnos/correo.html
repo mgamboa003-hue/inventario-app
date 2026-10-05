@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Correo de ingreso — Portal Mantenimiento Wintec{% endblock %}
+{% block topbar_title %}Solicitud de ingreso{% endblock %}
+
+{% macro badge(estado, lejano=false) %}
+  {% if estado == 'pendiente' and lejano %}<span class="tw-mail-state later"><i class="bi bi-clock"></i>Más adelante</span>
+  {% elif estado == 'enviado' %}<span class="tw-mail-state ok"><i class="bi bi-check2-circle"></i>Enviado</span>
+  {% elif estado == 'desactualizado' %}<span class="tw-mail-state bad"><i class="bi bi-exclamation-triangle"></i>Cambió, reenviar</span>
+  {% else %}<span class="tw-mail-state warn"><i class="bi bi-envelope"></i>Por enviar</span>{% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="tw-mail-layout">
+  <aside class="tw-mail-list" aria-label="Días con turno">
+    <div class="tw-mail-list-head">Días con turno</div>
+    {% for g in grupos %}
+    <a href="{{ url_for('turnos.correo_ingreso', clave=g.clave) }}"
+       class="tw-mail-item {% if actual and g.clave == actual.clave %}active{% endif %} {% if g.dias[-1].fecha_obj < hoy %}is-past{% endif %}">
+      <span class="tw-mail-item-title">{{ g.titulo|replace(' del ' ~ g.dias[0].fecha_obj.year, '')|primera_mayuscula }}</span>
+      <span class="tw-mail-item-meta">
+        {{ g.redaccion.personas|length }} persona{{ 's' if g.redaccion.personas|length != 1 }}
+        {% if not g.confirmado %} · provisorio{% endif %}
+      </span>
+      {{ badge(g.estado, g.dias[0].fecha_obj > limite_aviso) }}
+    </a>
+    {% else %}
+    <p class="tw-muted small p-3 mb-0">No hay días de trabajo programados. Márcalos en <a href="{{ url_for('turnos.planificacion') }}">Planificación</a>.</p>
+    {% endfor %}
+  </aside>
+
+  <div class="tw-mail-main">
+  {% if actual %}
+    <div class="tw-mail-status {{ actual.estado }}">
+      {{ badge(actual.estado) }}
+      <div class="flex-grow-1">
+        {% if actual.estado == 'enviado' %}
+          Enviado el {{ actual.envio.enviado_at[8:10] }}/{{ actual.envio.enviado_at[5:7] }} a las {{ actual.envio.enviado_at[11:16] }} por {{ actual.envio.enviado_por }}.
+        {% elif actual.estado == 'desactualizado' %}
+          Ya se había enviado ({{ actual.envio.enviado_at[8:10] }}/{{ actual.envio.enviado_at[5:7] }}), pero después cambió el personal o la línea. Envía el correo de nuevo con la corrección.
+        {% else %}
+          Este correo todavía no se envía.{% if not actual.confirmado %} Ojo: hay días provisorios, el personal todavía puede cambiar.{% endif %}
+        {% endif %}
+      </div>
+      {% if actual.envio %}
+      <form method="post" action="{{ url_for('turnos.correo_marcar_enviado', clave=actual.clave) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button name="accion" value="deshacer" class="btn btn-link btn-sm p-0">Deshacer</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <form class="table-card mb-3" method="post" action="{{ url_for('turnos.correo_guardar_lineas', clave=actual.clave) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="table-header">
+        <h6><i class="bi bi-diagram-3 me-2"></i>Quién va y en qué línea</h6>
+        <button class="btn btn-outline-primary btn-sm"><i class="bi bi-check2 me-1"></i>Guardar</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-stack mb-0 align-middle">
+          <thead><tr><th>Técnico</th><th>Día</th><th style="width:28%">Línea</th><th style="width:36%">Tarea</th></tr></thead>
+          <tbody>
+            {% for per in red.personas %}{% for x in per.dias %}
+            <tr>
+              <td data-cell="title">{{ per.nombre }}</td>
+              <td data-cell="status">{{ x.fecha|fecha_corta }}</td>
+              <td data-cell="tags" data-label="Línea">
+                <select name="linea_{{ x.asignacion_id }}" class="form-select form-select-sm" aria-label="Línea de {{ per.nombre }}">
+                  <option value="" {% if not x.linea %}selected{% endif %}>— Sin línea —</option>
+                  {% for l in cfg.lista_lineas %}<option {% if l == x.linea %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                  {% if x.linea and x.linea not in cfg.lista_lineas %}<option selected>{{ x.linea }}</option>{% endif %}
+                </select>
+              </td>
+              <td data-cell="tags" data-label="Tarea">
+                <input type="text" name="tarea_{{ x.asignacion_id }}" class="form-control form-control-sm" maxlength="200"
+                       value="{{ x.tarea }}" aria-label="Tarea de {{ per.nombre }}">
+              </td>
+            </tr>
+            {% endfor %}{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+
+    <div class="table-card tw-mail-preview">
+      <div class="table-header">
+        <h6><i class="bi bi-envelope-paper me-2"></i>Correo listo</h6>
+      </div>
+      <dl class="tw-mail-fields">
+        <dt>Para</dt><dd>{{ red.para|join(', ') }}</dd>
+        <dt>CC</dt><dd>{{ red.cc|join(', ') }}
+          <button type="button" class="btn btn-link btn-sm p-0 ms-1" data-copiar="{{ red.cc|join('; ') }}">copiar</button></dd>
+        <dt>Asunto</dt><dd>{{ red.asunto }}</dd>
+      </dl>
+      <div class="tw-mail-body">{{ red.html|safe }}</div>
+
+      <div class="tw-mail-actions">
+        <a href="{{ url_outlook }}" target="_blank" rel="noopener" class="btn btn-primary" id="btnOutlook">
+          <i class="bi bi-microsoft me-1"></i>Abrir en Outlook
+        </a>
+        <button type="button" class="btn btn-outline-secondary" id="btnCopiarHtml"><i class="bi bi-clipboard me-1"></i>Copiar con formato</button>
+        <a href="{{ url_mailto }}" class="btn btn-link btn-sm">Abrir en la app de correo</a>
+        <span class="tw-copy-ok" id="copyOk" role="status" hidden><i class="bi bi-check2"></i> Copiado</span>
+      </div>
+      <ol class="tw-mail-steps">
+        <li><strong>Abrir en Outlook</strong> abre un correo nuevo ya completado (y de paso copia la versión con negritas).</li>
+        <li>Revísalo. Si quieres las negritas, borra el texto del cuerpo y pega con <kbd>Ctrl</kbd>+<kbd>V</kbd>. Si Outlook no completó las copias (CC), usa “copiar” al lado de CC.</li>
+        <li>Envíalo y vuelve aquí a marcarlo:</li>
+      </ol>
+      {% if actual.estado != 'enviado' %}
+      <form method="post" action="{{ url_for('turnos.correo_marcar_enviado', clave=actual.clave) }}" class="px-3 pb-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-success"><i class="bi bi-send-check me-1"></i>Ya lo envié</button>
+      </form>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="table-card">
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-envelope"></i></div>
+        <h6>No hay turnos próximos</h6>
+        <p>Cuando programes un fin de semana, aquí aparecerá el correo listo para enviar.</p>
+      </div>
+    </div>
+  {% endif %}
+
+    <details class="table-card mt-3 tw-mail-config">
+      <summary class="table-header"><h6><i class="bi bi-gear me-2"></i>Destinatarios, líneas y texto por defecto</h6></summary>
+      <form method="post" action="{{ url_for('turnos.correo_config') }}" class="p-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="clave" value="{{ actual.clave if actual else '' }}">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small" for="cfgPara">Para</label>
+            <input class="form-control form-control-sm" id="cfgPara" name="para" value="{{ cfg.para }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small" for="cfgCc">CC (separados por coma)</label>
+            <input class="form-control form-control-sm" id="cfgCc" name="cc" value="{{ cfg.cc }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small" for="cfgAsunto">Asunto</label>
+            <input class="form-control form-control-sm" id="cfgAsunto" name="asunto" value="{{ cfg.asunto }}">
+            <div class="form-text">Se le agregan las fechas al final.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small" for="cfgTarea">Tarea por defecto</label>
+            <input class="form-control form-control-sm" id="cfgTarea" name="tarea" value="{{ cfg.tarea }}">
+            <div class="form-text">Queda como: “Estará a cargo de <em>{{ cfg.tarea }}</em> de la línea …”</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small" for="cfgLineas">Líneas (una por renglón)</label>
+            <textarea class="form-control form-control-sm" id="cfgLineas" name="lineas" rows="4">{{ cfg.lineas }}</textarea>
+          </div>
+        </div>
+        <button class="btn btn-outline-primary btn-sm mt-3">Guardar configuración</button>
+      </form>
+    </details>
+  </div>
+</div>
+
+{% if red %}
+<script type="application/json" id="correoDatos">{{ {"html": red.html, "texto": red.texto}|tojson }}</script>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var datosEl = document.getElementById('correoDatos');
+    var datos = datosEl ? JSON.parse(datosEl.textContent) : null;
+    var ok = document.getElementById('copyOk');
+
+    function avisar() {
+      if (!ok) return;
+      ok.hidden = false;
+      clearTimeout(avisar._t);
+      avisar._t = setTimeout(function () { ok.hidden = true; }, 2500);
+    }
+
+    // Copia con formato (negritas). Si el navegador no permite el
+    // portapapeles moderno, se usa una seleccion temporal.
+    function copiarHtml(html, texto) {
+      if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+        var item = new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([texto], { type: 'text/plain' })
+        });
+        return navigator.clipboard.write([item]).then(avisar).catch(function () { copiarRespaldo(html); });
+      }
+      copiarRespaldo(html);
+      return Promise.resolve();
+    }
+    function copiarRespaldo(html) {
+      var div = document.createElement('div');
+      div.contentEditable = 'true';
+      div.style.position = 'fixed'; div.style.left = '-9999px';
+      div.innerHTML = html;
+      document.body.appendChild(div);
+      var r = document.createRange(); r.selectNodeContents(div);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      try { document.execCommand('copy'); avisar(); } catch (e) {}
+      sel.removeAllRanges(); div.remove();
+    }
+    function copiarTexto(t) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(avisar).catch(function () {});
+      }
+    }
+
+    document.getElementById('btnCopiarHtml')?.addEventListener('click', function () {
+      if (datos) copiarHtml(datos.html, datos.texto);
+    });
+    document.getElementById('btnOutlook')?.addEventListener('click', function () {
+      if (datos) copiarHtml(datos.html, datos.texto);
+    });
+    document.querySelectorAll('[data-copiar]').forEach(function (b) {
+      b.addEventListener('click', function () { copiarTexto(b.getAttribute('data-copiar')); });
+    });
+  })();
+</script>
+{% endblock %}

@@ -194,7 +194,7 @@ def enviar_alertas_stock_bajo():
         for f in filas
     )
     html = f"""
-    <h2>Alerta de stock bajo -- Inventario Wintec</h2>
+    <h2>Alerta de stock bajo -- Portal Mantenimiento Wintec</h2>
     <p>{len(filas)} producto(s) estan bajo el stock minimo al {ahora().strftime('%d-%m-%Y %H:%M')}:</p>
     <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
         <tr style="background:#1B4F8A;color:#fff">
@@ -205,7 +205,7 @@ def enviar_alertas_stock_bajo():
     """
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[Inventario Wintec] {len(filas)} producto(s) con stock bajo"
+    msg["Subject"] = f"[Portal Mantenimiento Wintec] {len(filas)} producto(s) con stock bajo"
     msg["From"] = remitente
     msg["To"] = ", ".join(destinatarios)
     msg.attach(MIMEText(html, "html"))
@@ -514,7 +514,7 @@ def enviar_notificacion_solicitud(solicitud):
     """
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[Inventario Wintec] Nueva solicitud: {solicitud.get('nombre_item')}"
+    msg["Subject"] = f"[Portal Mantenimiento Wintec] Nueva solicitud: {solicitud.get('nombre_item')}"
     msg["From"] = remitente
     msg["To"] = ", ".join(destinatarios)
     msg.attach(MIMEText(html, "html"))
@@ -824,12 +824,12 @@ def enviar_correo_reset_password(email, nombre, link):
 
     html = f"""
     <p>Hola {nombre or ''},</p>
-    <p>Recibimos una solicitud para restablecer tu contraseña en Inventario Wintec.</p>
+    <p>Recibimos una solicitud para restablecer tu contraseña en el Portal Mantenimiento Wintec.</p>
     <p><a href="{link}">Haz clic aquí para elegir una nueva contraseña</a></p>
     <p>Este enlace vence en 30 minutos. Si tú no pediste esto, puedes ignorar este correo.</p>
     """
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Restablecer tu contraseña -- Inventario Wintec"
+    msg["Subject"] = "Restablecer tu contraseña -- Portal Mantenimiento Wintec"
     msg["From"] = remitente
     msg["To"] = email
     msg.attach(MIMEText(html, "html"))

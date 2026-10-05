@@ -270,3 +270,108 @@ def test_tecnico_no_puede_entrar_a_planificacion(app_turnos):
     r = client.get("/turnos/planificacion")
     assert r.status_code == 302
     assert client.get("/turnos").status_code == 200
+
+
+# ── Correo de solicitud de ingreso ────────────────────────────────
+import turnos_correo as tc
+
+
+def test_frase_de_fechas_como_el_correo_original():
+    assert tc.frase_fechas([date(2026, 10, 3)]) == "sábado 03 de Octubre del 2026"
+    assert tc.frase_fechas([date(2026, 10, 10), date(2026, 10, 11)]) == "sábado 10 y domingo 11 de Octubre del 2026"
+    assert tc.frase_fechas([date(2026, 10, 31), date(2026, 11, 1)]) == \
+        "sábado 31 de Octubre y domingo 01 de Noviembre del 2026"
+    assert tc.frase_fechas([date(2026, 10, 10), date(2026, 10, 11), date(2026, 10, 12)]) == \
+        "sábado 10, domingo 11 y lunes 12 de Octubre del 2026"
+
+
+def _grupo_demo():
+    def a(aid, uid, nombre, linea=None, habitual=None, tarea=None):
+        return {"id": aid, "usuario_id": uid, "nombre": nombre, "linea": linea,
+                "linea_habitual": habitual, "tarea": tarea}
+    sab = {"fecha_obj": date(2026, 10, 10), "asignados": [a(1, 1, "Willy Barrios", habitual="Americana"),
+                                                          a(2, 2, "Enrique Villegas", habitual="Europea")]}
+    dom = {"fecha_obj": date(2026, 10, 11), "asignados": [a(3, 2, "Enrique Villegas", habitual="Europea"),
+                                                          a(4, 3, "Juan Pérez", linea="Termopanel")]}
+    return [sab, dom]
+
+
+def test_redaccion_del_correo():
+    from datetime import datetime
+    cfg = dict(tc.CONFIG_DEFECTO)
+    red = tc.redactar(_grupo_demo(), cfg, momento=datetime(2026, 10, 9, 9, 0))
+    t = red["texto"]
+    assert t.startswith("Buenos días,")
+    assert "solicito gestionar el acceso del personal de mantenimiento para los siguientes días: " \
+           "sábado 10 y domingo 11 de Octubre del 2026, de acuerdo con la siguiente planificación:" in t
+    assert "• Willy Barrios – Sábado 10.\nEstará a cargo de hacer mantenimiento correctivo de la línea Americana." in t
+    assert "• Enrique Villegas – Sábado 10 y Domingo 11.\nEstará a cargo de hacer mantenimiento correctivo de la línea Europea." in t
+    assert "• Juan Pérez – Domingo 11.\nEstará a cargo de hacer mantenimiento correctivo de la línea Termopanel." in t
+    assert t.rstrip().endswith("Saludos cordiales,")
+    assert "<b>Willy Barrios</b>" in red["html"] and "<b>sábado 10 y domingo 11 de Octubre del 2026</b>" in red["html"]
+    assert red["para"] == ["lgomez@wintec.cl"] and red["cc"] == ["evidal@wintec.cl", "planta@wintec.cl"]
+    assert red["asunto"] == "Solicitud de ingreso personal de mantenimiento – 10/10 y 11/10"
+    url = tc.url_outlook(red)
+    assert url.startswith("https://outlook.office.com/mail/deeplink/compose?to=lgomez@wintec.cl&cc=evidal@wintec.cl,planta@wintec.cl&subject=")
+    assert "%0A" in url and " " not in url
+
+
+def test_linea_distinta_por_dia_y_sin_linea():
+    grupo = _grupo_demo()
+    grupo[1]["asignados"][0]["linea"] = "Corte de cristales"   # Enrique cambia el domingo
+    grupo[0]["asignados"][0]["linea"] = ""                       # Willy sin linea ese dia
+    red = tc.redactar(grupo, dict(tc.CONFIG_DEFECTO))
+    assert "• Willy Barrios – Sábado 10.\nEstará a cargo de hacer mantenimiento correctivo." in red["texto"]
+    assert "Sábado 10: estará a cargo de hacer mantenimiento correctivo de la línea Europea." in red["texto"]
+    assert "Domingo 11: estará a cargo de hacer mantenimiento correctivo de la línea Corte de cristales." in red["texto"]
+
+
+def test_flujo_correo_enviado_y_desactualizado(app_turnos):
+    client, ids = app_turnos
+    _planificar(client, fines=2)
+    html = client.get("/turnos/correo?clave=2026-10-10").get_data(as_text=True)
+    assert "Abrir en Outlook" in html and "Por enviar" in html
+
+    # Linea habitual de ana y linea especial de un dia
+    from db import get_db_connection
+    conn = get_db_connection(); cur = conn.cursor()
+    cur.execute(f"SELECT id FROM turnos_tecnicos WHERE usuario_id = {ids['ana']}")
+    tid = cur.fetchone()["id"]
+    cur.execute("""SELECT a.id, a.usuario_id FROM turnos_asignaciones a JOIN turnos_dias d ON d.id = a.dia_id
+                   WHERE d.fecha = '2026-10-10'""")
+    asig = [dict(r) for r in cur.fetchall()]; conn.close()
+    client.post(f"/turnos/tecnicos/{tid}/actualizar", data={"accion": "linea", "linea": "Americana"})
+    client.post("/turnos/correo/2026-10-10/lineas", data={
+        f"linea_{asig[0]['id']}": "Termopanel", f"tarea_{asig[0]['id']}": "hacer mantenimiento correctivo"})
+    html = client.get("/turnos/correo?clave=2026-10-10").get_data(as_text=True)
+    assert "línea Termopanel" in html
+
+    # Recordatorio del viernes: hay un correo por enviar
+    import turnos
+    assert turnos.enviar_recordatorio_correo() >= 1
+
+    client.post("/turnos/correo/2026-10-10/enviado", data={})
+    html = client.get("/turnos/correo?clave=2026-10-10").get_data(as_text=True)
+    assert "Enviado el" in html
+
+    # Cambia el personal despues de enviado -> queda desactualizado y avisa
+    conn = get_db_connection(); cur = conn.cursor()
+    cur.execute("SELECT id FROM turnos_dias WHERE fecha = '2026-10-11'")
+    dia_id = cur.fetchone()["id"]; conn.close()
+    client.post(f"/turnos/dia/{dia_id}/editar", data={"accion": "guardar", "personas": "2", "estado": "confirmado",
+                                                      "asignados": [str(ids["ana"]), str(ids["beto"])]})
+    html = client.get("/turnos/correo?clave=2026-10-10").get_data(as_text=True)
+    if "Cambió, reenviar" not in html:
+        # si la seleccion coincidia con la anterior, forzamos otra distinta
+        client.post(f"/turnos/dia/{dia_id}/editar", data={"accion": "guardar", "personas": "2", "estado": "confirmado",
+                                                          "asignados": [str(ids["beto"]), str(ids["carla"])]})
+        html = client.get("/turnos/correo?clave=2026-10-10").get_data(as_text=True)
+    assert "Cambió, reenviar" in html
+    conn = get_db_connection(); cur = conn.cursor()
+    cur.execute("SELECT mensaje FROM notificaciones WHERE mensaje LIKE '%ya se había enviado%'")
+    assert cur.fetchall()
+    conn.close()
+
+    # Pantallas generales siguen funcionando
+    for ruta in ("/", "/turnos", "/turnos/tecnicos", "/manifest.json"):
+        assert client.get(ruta).status_code == 200, ruta

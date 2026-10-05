@@ -102,6 +102,15 @@ def ddl_turnos():
             leida      INTEGER NOT NULL DEFAULT 0,
             created_at TEXT
         )""",
+        f"""CREATE TABLE IF NOT EXISTS turnos_correos (
+            id             {pk},
+            clave          TEXT NOT NULL UNIQUE,
+            fechas         TEXT,
+            firma          TEXT,
+            enviado_at     TEXT,
+            enviado_por    TEXT,
+            avisado_firma  TEXT
+        )""",
         "CREATE INDEX IF NOT EXISTS idx_turnos_dias_fecha ON turnos_dias(fecha)",
         "CREATE INDEX IF NOT EXISTS idx_turnos_asig_dia ON turnos_asignaciones(dia_id)",
         "CREATE INDEX IF NOT EXISTS idx_turnos_asig_usuario ON turnos_asignaciones(usuario_id)",
@@ -111,7 +120,14 @@ def ddl_turnos():
 
 
 TABLAS_TURNOS = ["turnos_tecnicos", "turnos_dias", "turnos_asignaciones",
-                 "turnos_ausencias", "turnos_cambios", "notificaciones"]
+                 "turnos_ausencias", "turnos_cambios", "notificaciones", "turnos_correos"]
+
+# Columnas agregadas despues de la primera version (se crean solas).
+COLUMNAS_NUEVAS = [
+    ("turnos_tecnicos", "linea", "TEXT"),        # linea habitual del tecnico
+    ("turnos_asignaciones", "linea", "TEXT"),    # linea de ese dia (si cambia)
+    ("turnos_asignaciones", "tarea", "TEXT"),    # tarea de ese dia (si cambia)
+]
 
 
 def crear_tablas_turnos(conn):
@@ -119,6 +135,21 @@ def crear_tablas_turnos(conn):
     for stmt in ddl_turnos():
         try:
             cur.execute(stmt)
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+    for tabla, col, tipo in COLUMNAS_NUEVAS:
+        try:
+            if USE_POSTGRES:
+                cur.execute(f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS {col} {tipo}")
+            else:
+                cur.execute(f"PRAGMA table_info({tabla})")
+                if col in [r[1] for r in cur.fetchall()]:
+                    continue
+                cur.execute(f"ALTER TABLE {tabla} ADD COLUMN {col} {tipo}")
             conn.commit()
         except Exception:
             try:

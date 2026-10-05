@@ -14,7 +14,7 @@
   {% if tecnicos %}
   <div class="table-responsive">
     <table class="table table-hover table-stack mb-0 align-middle">
-      <thead><tr><th>Técnico</th><th>Tipo</th><th>Estado</th><th>Ajuste de ingreso</th><th class="text-end">Acciones</th></tr></thead>
+      <thead><tr><th>Técnico</th><th>Tipo</th><th>Línea habitual</th><th>Estado</th><th>Ajuste de ingreso</th><th class="text-end">Acciones</th></tr></thead>
       <tbody>
         {% for t in tecnicos %}
         <tr {% if not t.activo %}class="table-secondary"{% endif %}>
@@ -26,6 +26,17 @@
               <select name="tipo" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()" aria-label="Tipo de {{ t.nombre }}">
                 <option value="fijo" {% if t.tipo == 'fijo' %}selected{% endif %}>Fijo</option>
                 <option value="ocasional" {% if t.tipo == 'ocasional' %}selected{% endif %}>Ocasional</option>
+              </select>
+            </form>
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('turnos.actualizar_tecnico', tid=t.id) }}" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="accion" value="linea">
+              <select name="linea" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()" aria-label="Línea habitual de {{ t.nombre }}">
+                <option value="" {% if not t.linea %}selected{% endif %}>— Sin línea —</option>
+                {% for l in lineas %}<option {% if l == t.linea %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                {% if t.linea and t.linea not in lineas %}<option selected>{{ t.linea }}</option>{% endif %}
               </select>
             </form>
           </td>

@@ -148,7 +148,7 @@ def test_api_token_funciona(admin_client):
 def test_manifest_y_service_worker(client):
     r = client.get("/manifest.json")
     assert r.status_code == 200
-    assert r.get_json()["name"] == "Inventario Wintec"
+    assert r.get_json()["name"] == "Portal Mantenimiento Wintec"
 
     r = client.get("/sw.js")
     assert r.status_code == 200

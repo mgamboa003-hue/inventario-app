@@ -21,6 +21,7 @@ from flask import (Blueprint, flash, redirect, render_template, request,
 from db import get_db_connection, p, USE_POSTGRES, ahora_str
 from services import registrar_auditoria
 import turnos_logica as tl
+import turnos_correo as tc
 
 bp = Blueprint("turnos", __name__)
 
@@ -82,6 +83,7 @@ def _url_cal():
 
 def _recalcular(cur):
     faltan = tl.recalcular(cur, _url_cal())
+    revisar_correos_enviados(cur)
     if faltan:
         dias = ", ".join(tl.fecha_larga(f) for f in sorted(faltan))
         flash(f"Atención: no hay suficientes técnicos disponibles para: {dias}.", "warning")
@@ -103,13 +105,16 @@ def _dias_con_asignados(cur, desde, hasta):
         return []
     ids = [d["id"] for d in dias]
     marcas = ",".join([ph] * len(ids))
-    cur.execute(f"""SELECT a.*, u.nombre, u.username FROM turnos_asignaciones a
+    cur.execute(f"""SELECT a.*, u.nombre, u.username, t.linea AS linea_habitual
+                    FROM turnos_asignaciones a
                     JOIN usuarios u ON u.id = a.usuario_id
+                    LEFT JOIN turnos_tecnicos t ON t.usuario_id = a.usuario_id
                     WHERE a.dia_id IN ({marcas}) ORDER BY a.id""", ids)
     por_dia = {}
     for r in cur.fetchall():
         r = dict(r)
         r["nombre"] = r["nombre"] or r["username"]
+        r["linea_efectiva"] = tc.linea_efectiva(r)
         por_dia.setdefault(r["dia_id"], []).append(r)
     cur.execute(f"""SELECT * FROM turnos_cambios WHERE estado = 'pendiente'
                     AND dia_id IN ({marcas})""", ids)
@@ -183,6 +188,12 @@ def _f_fecha_larga(v):
     return texto[0].upper() + texto[1:]
 
 
+@bp.app_template_filter("primera_mayuscula")
+def _f_primera_mayuscula(v):
+    v = str(v or "")
+    return v[:1].upper() + v[1:]
+
+
 @bp.app_template_filter("fecha_corta")
 def _f_fecha_corta(v):
     if not v:
@@ -208,6 +219,7 @@ def _inyectar_notificaciones():
         if session.get("role") == "admin":
             cur.execute("SELECT COUNT(*) AS n FROM turnos_cambios WHERE estado = 'pendiente'")
             datos["turnos_cambios_pendientes"] = cur.fetchone()["n"]
+            datos["turnos_correos_pendientes"] = len(correos_pendientes(cur))
         return datos
     except Exception:
         if conn is not None:
@@ -264,8 +276,14 @@ def calendario():
                             WHERE c.usuario_id = {ph} ORDER BY c.id DESC LIMIT 5""", (uid,))
             mis_cambios = [dict(r) for r in cur.fetchall()]
 
+    estado_correo = {}
+    if _es_admin():
+        with _Conn() as (conn, cur):
+            for g in grupos_correo(cur, desde, hasta):
+                for d in g["dias"]:
+                    estado_correo[d["fecha"]] = {"clave": g["clave"], "estado": g["estado"]}
     return render_template(
-        "turnos/calendario.html",
+        "turnos/calendario.html", estado_correo=estado_correo,
         grupos=grupos, primero=primero, anterior=anterior, siguiente=siguiente,
         nombre_mes=f"{tl.MESES[primero.month].capitalize()} {primero.year}",
         hoy=hoy, soy_tecnico=soy_tecnico, mis_proximos=mis_proximos, mis_cambios=mis_cambios,
@@ -690,8 +708,9 @@ def tecnicos():
                         JOIN usuarios u ON u.id = a.usuario_id
                         WHERE a.hasta >= {p()} ORDER BY a.desde""", (tl.hoy().isoformat(),))
         ausencias = [dict(r) for r in cur.fetchall()]
+        lineas = tc.leer_config(cur)["lista_lineas"]
     return render_template("turnos/tecnicos.html", tecnicos=lista, disponibles=disponibles,
-                           ausencias=ausencias, hoy=tl.hoy())
+                           ausencias=ausencias, hoy=tl.hoy(), lineas=lineas)
 
 
 @bp.route("/turnos/tecnicos/agregar", methods=["POST"])
@@ -749,6 +768,10 @@ def actualizar_tecnico(tid):
             cur.execute(f"UPDATE turnos_tecnicos SET activo = 0 WHERE id = {ph}", (tid,))
             msg = ("Desactivado: no se le asignarán turnos nuevos. "
                    "Revisa si tenía turnos confirmados (aparecen en Planificación).")
+        elif accion == "linea":
+            linea = (request.form.get("linea") or "").strip()[:60] or None
+            cur.execute(f"UPDATE turnos_tecnicos SET linea = {ph} WHERE id = {ph}", (linea, tid))
+            msg = "Línea habitual actualizada."
         elif accion == "tipo":
             tipo = "ocasional" if request.form.get("tipo") == "ocasional" else "fijo"
             cur.execute(f"UPDATE turnos_tecnicos SET tipo = {ph} WHERE id = {ph}", (tipo, tid))
@@ -856,3 +879,200 @@ def leer_todas():
     with _Conn() as (conn, cur):
         cur.execute(f"UPDATE notificaciones SET leida = 1 WHERE usuario_id = {p()}", (_uid(),))
     return redirect(url_for("turnos.notificaciones"))
+
+
+# ═══════════════════════════════════════════════════════════════
+# CORREO DE SOLICITUD DE INGRESO (admin)
+# ═══════════════════════════════════════════════════════════════
+DIAS_AVISO_CORREO = 7     # se considera "por enviar" lo que viene en la proxima semana
+
+
+def grupos_correo(cur, desde, hasta, cfg=None):
+    """Grupos de dias seguidos trabajados, con su redaccion y estado de envio."""
+    cfg = cfg or tc.leer_config(cur)
+    dias = _dias_con_asignados(cur, desde, hasta)
+    salida = []
+    for grupo in tc.agrupar_consecutivos(dias):
+        red = tc.redactar(grupo, cfg)
+        clave = tc.clave_grupo(grupo)
+        envio = tc.leer_envio(cur, clave)
+        salida.append({
+            "clave": clave, "dias": grupo, "redaccion": red, "envio": envio,
+            "estado": tc.estado_envio(envio, red["firma"]),
+            "titulo": tc.frase_fechas(red["fechas"]),
+            "confirmado": all(d["estado"] == "confirmado" for d in grupo),
+        })
+    return salida
+
+
+def correos_pendientes(cur, dias=DIAS_AVISO_CORREO):
+    """Grupos de los proximos `dias` dias cuyo correo falta o quedo desactualizado."""
+    hoy = tl.hoy()
+    return [g for g in grupos_correo(cur, hoy, hoy + timedelta(days=dias))
+            if g["estado"] != "enviado" and g["dias"][0]["asignados"]]
+
+
+def revisar_correos_enviados(cur, url_base="/turnos/correo"):
+    """Si ya se envio un correo y despues cambio el personal (o la linea),
+    avisa una sola vez a los administradores para que manden una correccion."""
+    hoy = tl.hoy()
+    try:
+        cur.execute(f"SELECT * FROM turnos_correos WHERE enviado_at IS NOT NULL AND clave >= {p()}",
+                    ((hoy - timedelta(days=3)).isoformat(),))
+        enviados = [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return
+    if not enviados:
+        return
+    hasta = max(tl.a_fecha(e["clave"]) for e in enviados) + timedelta(days=10)
+    actuales = {g["clave"]: g for g in grupos_correo(cur, hoy - timedelta(days=3), hasta)}
+    ph = p()
+    for e in enviados:
+        g = actuales.get(e["clave"])
+        firma_actual = g["redaccion"]["firma"] if g else "sin-dias"
+        if firma_actual == e["firma"] or firma_actual == e.get("avisado_firma"):
+            continue
+        fechas = tl.fecha_larga(e["clave"])
+        tl.notificar_admins(cur, f"Cambió el personal del {fechas} y la solicitud de ingreso ya se había enviado. "
+                                 "Envía una corrección al correo.", f"{url_base}?clave={e['clave']}")
+        cur.execute(f"UPDATE turnos_correos SET avisado_firma = {ph} WHERE id = {ph}", (firma_actual, e["id"]))
+
+
+def enviar_recordatorio_correo():
+    """Tarea programada (viernes 9:00): avisa en la campanita si falta
+    enviar la solicitud de ingreso de los dias de la proxima semana."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        pendientes = correos_pendientes(cur)
+        for g in pendientes:
+            accion = "Reenvía (cambió el personal)" if g["estado"] == "desactualizado" else "Falta enviar"
+            tl.notificar_admins(cur, f"{accion} la solicitud de ingreso para el {g['titulo']}.",
+                                f"/turnos/correo?clave={g['clave']}")
+        conn.commit()
+        return len(pendientes)
+    finally:
+        conn.close()
+
+
+@bp.app_template_global()
+def resumen_turnos():
+    """Datos para la tarjeta de turnos del dashboard."""
+    if not session.get("logged_in"):
+        return None
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        hoy = tl.hoy()
+        dias = _dias_con_asignados(cur, hoy, hoy + timedelta(days=60))
+        grupos = tc.agrupar_consecutivos(dias)
+        proximo = grupos[0] if grupos else None
+        datos = {"proximo": proximo,
+                 "titulo": tc.frase_fechas([d["fecha_obj"] for d in proximo]) if proximo else None}
+        uid = _uid()
+        mio = None
+        for d in dias:
+            if any(a["usuario_id"] == uid for a in d["asignados"]):
+                mio = d
+                break
+        datos["mi_proximo"] = mio
+        if _es_admin():
+            cur.execute("SELECT COUNT(*) AS n FROM turnos_cambios WHERE estado = 'pendiente'")
+            datos["cambios"] = cur.fetchone()["n"]
+            datos["correos"] = correos_pendientes(cur)
+        return datos
+    except Exception:
+        return None
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@bp.route("/turnos/correo")
+@_admin
+def correo_ingreso():
+    hoy = tl.hoy()
+    with _Conn() as (conn, cur):
+        cfg = tc.leer_config(cur)
+        grupos = grupos_correo(cur, hoy - timedelta(days=7), hoy + timedelta(days=7 * 10), cfg)
+        tecnicos = tl.leer_tecnicos(cur)
+    clave = request.args.get("clave")
+    actual = next((g for g in grupos if g["clave"] == clave), None)
+    if actual is None:
+        futuros = [g for g in grupos if g["dias"][-1]["fecha_obj"] >= hoy]
+        actual = next((g for g in futuros if g["estado"] != "enviado"), None) or (futuros[0] if futuros else None)
+    red = actual["redaccion"] if actual else None
+    return render_template(
+        "turnos/correo.html", grupos=grupos, actual=actual, red=red, cfg=cfg, hoy=hoy,
+        limite_aviso=hoy + timedelta(days=DIAS_AVISO_CORREO),
+        tecnicos=tecnicos,
+        url_outlook=tc.url_outlook(red) if red else None,
+        url_mailto=tc.url_mailto(red) if red else None,
+    )
+
+
+@bp.route("/turnos/correo/<clave>/lineas", methods=["POST"])
+@_admin
+def correo_guardar_lineas(clave):
+    with _Conn() as (conn, cur):
+        cfg = tc.leer_config(cur)
+        ph = p()
+        cambios = 0
+        for k, v in request.form.items():
+            if not k.startswith("linea_"):
+                continue
+            try:
+                aid = int(k.split("_", 1)[1])
+            except ValueError:
+                continue
+            cur.execute(f"""SELECT a.id, t.linea AS habitual FROM turnos_asignaciones a
+                            LEFT JOIN turnos_tecnicos t ON t.usuario_id = a.usuario_id WHERE a.id = {ph}""", (aid,))
+            fila = cur.fetchone()
+            if not fila:
+                continue
+            linea = (v or "").strip()[:60]
+            tarea = (request.form.get(f"tarea_{aid}") or "").strip()[:200]
+            # Solo se guarda lo que difiere de lo habitual, asi un cambio en la
+            # linea habitual del tecnico se refleja en los dias sin excepcion.
+            linea_db = None if linea == (fila["habitual"] or "") else (linea or "")
+            tarea_db = None if (not tarea or tarea == cfg["tarea"]) else tarea
+            cur.execute(f"UPDATE turnos_asignaciones SET linea = {ph}, tarea = {ph} WHERE id = {ph}",
+                        (linea_db, tarea_db, aid))
+            cambios += 1
+    _auditar(None, "correo_lineas", clave)
+    flash("Líneas y tareas guardadas. La redacción se actualizó.", "success")
+    return redirect(url_for("turnos.correo_ingreso", clave=clave))
+
+
+@bp.route("/turnos/correo/<clave>/enviado", methods=["POST"])
+@_admin
+def correo_marcar_enviado(clave):
+    deshacer = request.form.get("accion") == "deshacer"
+    with _Conn() as (conn, cur):
+        if deshacer:
+            tc.desmarcar_enviado(cur, clave)
+        else:
+            f = tl.a_fecha(clave)
+            g = next((x for x in grupos_correo(cur, f, f + timedelta(days=10)) if x["clave"] == clave), None)
+            if not g:
+                flash("No se encontró ese día.", "warning")
+                return redirect(url_for("turnos.correo_ingreso"))
+            tc.marcar_enviado(cur, clave, g["redaccion"]["fechas"], g["redaccion"]["firma"], session.get("nombre"))
+            # El recordatorio de ese grupo ya no aplica
+            cur.execute(f"""UPDATE notificaciones SET leida = 1 WHERE url = {p()} AND leida = 0""",
+                        (f"/turnos/correo?clave={clave}",))
+    _auditar(None, "correo_deshacer" if deshacer else "correo_enviado", clave)
+    flash("Marcado como pendiente otra vez." if deshacer else "Listo, quedó registrado como enviado.",
+          "info" if deshacer else "success")
+    return redirect(url_for("turnos.correo_ingreso", clave=clave))
+
+
+@bp.route("/turnos/correo/config", methods=["POST"])
+@_admin
+def correo_config():
+    with _Conn() as (conn, cur):
+        tc.guardar_config(cur, {k: request.form.get(k) for k in tc.CONFIG_DEFECTO})
+    _auditar(None, "correo_config", "")
+    flash("Configuración del correo guardada.", "success")
+    return redirect(url_for("turnos.correo_ingreso", clave=request.form.get("clave") or None))

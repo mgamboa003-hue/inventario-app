@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — Inventario Wintec{% endblock %}
-{% block topbar_title %}Dashboard{% endblock %}
+{% block title %}Inicio — Portal Mantenimiento Wintec{% endblock %}
+{% block topbar_title %}Inicio{% endblock %}
 {% block topbar_actions %}
   {% if session.get('role') == 'admin' %}
   <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary btn-sm d-none d-md-inline-flex align-items-center">
@@ -64,6 +64,8 @@
     </a>
   </div>
 </div>
+
+{% include "turnos/_dashboard.html" %}
 
 <!-- ══ Alertas primero: es lo que exige acción ══ -->
 {% if alertas %}

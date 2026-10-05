@@ -757,7 +757,7 @@ TABLAS_RESPALDO = [
     "solicitudes", "sesiones",
     # modulo de turnos
     "turnos_tecnicos", "turnos_dias", "turnos_asignaciones",
-    "turnos_ausencias", "turnos_cambios", "notificaciones",
+    "turnos_ausencias", "turnos_cambios", "notificaciones", "turnos_correos",
 ]
 
 
