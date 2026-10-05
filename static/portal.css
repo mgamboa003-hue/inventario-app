@@ -413,3 +413,18 @@ body { font-family: var(--font); background: var(--bg); }
   .pm-tile:not(.wide):not(.compact) .pm-state-txt { display: none; }
   .pm-hello .pm-led { background: #bbf7d0; box-shadow: 0 0 0 4px rgba(255,255,255,.18); }
 }
+
+/* ── Modales ──
+   styles.css anima la entrada de cada hijo directo de .page-content con
+   "fill-mode: both"; una animación que sigue "en efecto" crea un contexto
+   de apilamiento, y como en el portal todo el contenido va dentro de
+   .pm-wrap, los modales quedaban atrapados DEBAJO del fondo oscuro
+   (pantalla oscurecida que no responde). La animación pasa a los hijos
+   del contenedor, no se aplica a los modales y no se queda pegada al
+   terminar ("backwards"). */
+.page-content.pm-main > .pm-wrap { animation: none !important; }
+.page-content.pm-main > .pm-wrap > *:not(.modal):not(.offcanvas) { animation: rise .22s var(--ease) backwards; }
+.page-content.pm-main .modal { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .page-content.pm-main > .pm-wrap > * { animation: none !important; }
+}

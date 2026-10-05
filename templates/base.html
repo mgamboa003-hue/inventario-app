@@ -311,6 +311,14 @@
     });
   });
 
+  // ── Modales: siempre se abren colgando de <body> ──
+  // Si un modal queda dentro de un contenedor con overflow, transform o
+  // animación, el fondo oscuro lo tapa y la pantalla queda bloqueada.
+  // Moverlo a <body> justo antes de mostrarlo lo evita en cualquier pantalla.
+  document.addEventListener('show.bs.modal', function (e) {
+    if (e.target && e.target.parentElement !== document.body) document.body.appendChild(e.target);
+  });
+
   // ── "Buscar" de la barra inferior: enfoca el buscador de la pantalla ──
   (function () {
     if (!/[?&]buscar=1/.test(window.location.search)) return;
