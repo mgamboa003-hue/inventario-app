@@ -95,6 +95,31 @@
     </div>
   </div>
 
+  <!-- Correo del portal: prueba real de envio -->
+  <div class="col-lg-6">
+    <div class="table-card p-4">
+      <h6 class="fw-bold mb-2"><i class="bi bi-envelope-check me-2 text-primary"></i>Correo del portal</h6>
+      <p class="text-muted small mb-2">
+        Se usa para recuperar contraseñas y para los avisos por correo.
+        Medio de envío: <strong>{{ proveedor_correo }}</strong>.
+      </p>
+      {% if proveedor_correo == 'SMTP' %}
+      <div class="alert alert-warning small py-2">Railway bloquea el envío por SMTP en el plan Hobby: los correos no salen.
+        Configura <code>RESEND_API_KEY</code> (o <code>BREVO_API_KEY</code>) y <code>EMAIL_FROM</code> en Railway.</div>
+      {% endif %}
+      <form method="post" action="{{ url_for('portal.probar_correo') }}" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="visually-hidden" for="destinoPrueba">Correo de destino</label>
+        <input type="email" id="destinoPrueba" name="destino" class="form-control form-control-sm" style="flex:1 1 220px"
+               placeholder="correo de destino" required>
+        <button type="submit" class="btn btn-outline-primary btn-sm" {% if not correo_ok %}disabled{% endif %}>
+          <i class="bi bi-send me-1"></i>Enviar correo de prueba
+        </button>
+      </form>
+      <div class="text-muted small mt-2">Muestra el error exacto si el envío falla.</div>
+    </div>
+  </div>
+
   <!-- Fotos rotas -->
   <div class="col-lg-6">
     <div class="table-card p-4">

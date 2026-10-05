@@ -214,6 +214,25 @@ def reportes():
     return render_template("portal/reportes.html", reportes=REPORTES)
 
 
+@bp.route("/admin/sistema/probar-correo", methods=["POST"])
+@_admin
+def probar_correo():
+    """Envia un correo de prueba y muestra el resultado real (o el error)."""
+    from flask import flash
+    from services import enviar_email, registrar_auditoria
+    destino = (request.form.get("destino") or "").strip()
+    if not destino or "@" not in destino:
+        flash("Escribe un correo de destino válido.", "warning")
+        return redirect(url_for("admin_sistema"))
+    ok, detalle = enviar_email([destino], "Prueba de correo — Portal Mantenimiento Wintec",
+                               "<p>Este es un correo de prueba del Portal Mantenimiento Wintec.</p>"
+                               "<p>Si lo recibiste, la recuperación de contraseña y los avisos por correo funcionan.</p>")
+    registrar_auditoria("sistema", None, "probar_correo", session.get("user_id"), session.get("nombre"), detalle)
+    flash(("Correo de prueba enviado. Revisa la bandeja de " + destino + " (y la carpeta de spam).") if ok
+          else ("No se pudo enviar: " + detalle), "success" if ok else "danger")
+    return redirect(url_for("admin_sistema"))
+
+
 @bp.route("/escanear")
 @_login
 def escanear():

@@ -150,9 +150,112 @@ def revocar_api_token(token_id):
     conn.close()
 
 
-# ALERTAS DE STOCK BAJO POR EMAIL
+# ENVIO DE CORREOS
+# Railway bloquea la salida por SMTP (puertos 25/465/587) en el plan Hobby,
+# asi que los correos pueden salir por una API web (HTTPS), que si funciona:
+#   - RESEND_API_KEY  -> Resend (https://resend.com)
+#   - BREVO_API_KEY   -> Brevo  (https://brevo.com)
+#   - si no hay ninguna, se usa SMTP (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)
+# El remitente sale de EMAIL_FROM (o SMTP_FROM). Las alertas de stock y los
+# avisos de solicitudes van a SMTP_TO.
+
+def proveedor_correo():
+    if os.environ.get("RESEND_API_KEY"):
+        return "resend"
+    if os.environ.get("BREVO_API_KEY"):
+        return "brevo"
+    if os.environ.get("SMTP_HOST"):
+        return "smtp"
+    return None
+
+
+def correo_disponible():
+    """Hay algun medio configurado para enviar correos."""
+    return proveedor_correo() is not None
+
+
 def email_configurado():
-    return bool(os.environ.get("SMTP_HOST")) and bool(os.environ.get("SMTP_TO"))
+    """Correos de alerta: hay medio de envio y destinatarios (SMTP_TO)."""
+    return correo_disponible() and bool(os.environ.get("SMTP_TO"))
+
+
+def _remitente():
+    return (os.environ.get("EMAIL_FROM") or os.environ.get("SMTP_FROM")
+            or os.environ.get("SMTP_USER") or "portal@wintec.local")
+
+
+def _post_json(url, cabeceras, datos, timeout=15):
+    import json as _json
+    import urllib.request
+    import urllib.error
+    req = urllib.request.Request(url, data=_json.dumps(datos).encode("utf-8"), method="POST",
+                                 headers={"Content-Type": "application/json", "Accept": "application/json", **cabeceras})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode("utf-8", "replace")
+
+
+def enviar_email(destinatarios, asunto, html):
+    """Envia un correo HTML por el medio configurado. Nunca lanza excepcion:
+    devuelve (ok, mensaje) con el detalle del error si falla."""
+    if isinstance(destinatarios, str):
+        destinatarios = [destinatarios]
+    destinatarios = [d.strip() for d in destinatarios if d and d.strip()]
+    if not destinatarios:
+        return False, "No hay destinatarios."
+    proveedor = proveedor_correo()
+    remitente = _remitente()
+    nombre = os.environ.get("EMAIL_FROM_NAME", "Portal Mantenimiento Wintec")
+    try:
+        if proveedor == "resend":
+            de = remitente if "<" in remitente else f"{nombre} <{remitente}>"
+            status, cuerpo = _post_json(
+                "https://api.resend.com/emails",
+                {"Authorization": f"Bearer {os.environ['RESEND_API_KEY']}"},
+                {"from": de, "to": destinatarios, "subject": asunto, "html": html},
+            )
+            if 200 <= status < 300:
+                return True, f"Correo enviado a {', '.join(destinatarios)}."
+            return False, f"Resend respondio {status}: {cuerpo[:300]}"
+        if proveedor == "brevo":
+            status, cuerpo = _post_json(
+                "https://api.brevo.com/v3/smtp/email",
+                {"api-key": os.environ["BREVO_API_KEY"]},
+                {"sender": {"email": remitente, "name": nombre},
+                 "to": [{"email": d} for d in destinatarios], "subject": asunto, "htmlContent": html},
+            )
+            if 200 <= status < 300:
+                return True, f"Correo enviado a {', '.join(destinatarios)}."
+            return False, f"Brevo respondio {status}: {cuerpo[:300]}"
+        if proveedor == "smtp":
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = asunto
+            msg["From"] = remitente
+            msg["To"] = ", ".join(destinatarios)
+            msg.attach(MIMEText(html, "html"))
+            host = os.environ.get("SMTP_HOST")
+            port = int(os.environ.get("SMTP_PORT", 587))
+            user = os.environ.get("SMTP_USER", "")
+            pwd = os.environ.get("SMTP_PASS", "")
+            with smtplib.SMTP(host, port, timeout=15) as server:
+                server.starttls()
+                if user:
+                    server.login(user, pwd)
+                server.sendmail(remitente, destinatarios, msg.as_string())
+            return True, f"Correo enviado a {', '.join(destinatarios)}."
+        return False, "No hay medio de envio de correo configurado (RESEND_API_KEY, BREVO_API_KEY o SMTP_HOST)."
+    except Exception as e:
+        detalle = str(e) or e.__class__.__name__
+        if proveedor == "smtp" and ("timed out" in detalle.lower() or "unreachable" in detalle.lower()):
+            detalle += (" -- Railway bloquea SMTP en el plan Hobby; usa RESEND_API_KEY o BREVO_API_KEY.")
+        return False, f"Error enviando correo ({proveedor}): {detalle}"
+
+
+def _destinatarios_alertas():
+    return [d.strip() for d in os.environ.get("SMTP_TO", "").split(",") if d.strip()]
+
 
 
 def enviar_alertas_stock_bajo():
@@ -179,13 +282,6 @@ def enviar_alertas_stock_bajo():
     if not filas:
         return False, "No hay productos bajo el stock minimo."
 
-    host = os.environ.get("SMTP_HOST")
-    port = int(os.environ.get("SMTP_PORT", 587))
-    user = os.environ.get("SMTP_USER", "")
-    pwd = os.environ.get("SMTP_PASS", "")
-    remitente = os.environ.get("SMTP_FROM", user or "inventario@wintec.local")
-    destinatarios = [d.strip() for d in os.environ.get("SMTP_TO", "").split(",") if d.strip()]
-
     filas_html = "".join(
         f"<tr><td>{f['codigo'] or ''}</td><td>{f['nombre']}</td>"
         f"<td style='text-align:center'>{f['stock_actual']}</td>"
@@ -204,21 +300,9 @@ def enviar_alertas_stock_bajo():
     </table>
     """
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[Portal Mantenimiento Wintec] {len(filas)} producto(s) con stock bajo"
-    msg["From"] = remitente
-    msg["To"] = ", ".join(destinatarios)
-    msg.attach(MIMEText(html, "html"))
-
-    try:
-        with smtplib.SMTP(host, port, timeout=15) as server:
-            server.starttls()
-            if user:
-                server.login(user, pwd)
-            server.sendmail(remitente, destinatarios, msg.as_string())
-        return True, f"Correo enviado a {', '.join(destinatarios)} ({len(filas)} productos)."
-    except Exception as e:
-        return False, f"Error enviando correo: {e}"
+    ok, mensaje = enviar_email(_destinatarios_alertas(),
+                               f"[Portal Mantenimiento Wintec] {len(filas)} producto(s) con stock bajo", html)
+    return ok, (f"{mensaje} ({len(filas)} productos)" if ok else mensaje)
 
 
 # ALMACENAMIENTO DE ARCHIVOS (local o S3/R2 opcional)
@@ -494,13 +578,6 @@ def enviar_notificacion_solicitud(solicitud):
     if not email_configurado():
         return False, "SMTP no configurado."
 
-    host = os.environ.get("SMTP_HOST")
-    port = int(os.environ.get("SMTP_PORT", 587))
-    user = os.environ.get("SMTP_USER", "")
-    pwd = os.environ.get("SMTP_PASS", "")
-    remitente = os.environ.get("SMTP_FROM", user or "inventario@wintec.local")
-    destinatarios = [d.strip() for d in os.environ.get("SMTP_TO", "").split(",") if d.strip()]
-
     html = f"""
     <h2>Nueva solicitud de repuesto/herramienta</h2>
     <p><b>{solicitud.get('solicitado_por') or 'Alguien del equipo'}</b> solicito:</p>
@@ -513,21 +590,8 @@ def enviar_notificacion_solicitud(solicitud):
     <p>Revisa el detalle y el estado en la app, seccion Solicitudes.</p>
     """
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[Portal Mantenimiento Wintec] Nueva solicitud: {solicitud.get('nombre_item')}"
-    msg["From"] = remitente
-    msg["To"] = ", ".join(destinatarios)
-    msg.attach(MIMEText(html, "html"))
-
-    try:
-        with smtplib.SMTP(host, port, timeout=15) as server:
-            server.starttls()
-            if user:
-                server.login(user, pwd)
-            server.sendmail(remitente, destinatarios, msg.as_string())
-        return True, "Notificacion enviada."
-    except Exception as e:
-        return False, f"Error enviando notificacion: {e}"
+    return enviar_email(_destinatarios_alertas(),
+                        f"[Portal Mantenimiento Wintec] Nueva solicitud: {solicitud.get('nombre_item')}", html)
 
 
 # COTIZACIONES
@@ -813,14 +877,8 @@ def verificar_token_reset_password(token, max_edad_segundos=1800):
 
 
 def enviar_correo_reset_password(email, nombre, link):
-    if not email_configurado():
-        return False, "SMTP no configurado (faltan SMTP_HOST / SMTP_TO en variables de entorno)."
-
-    host = os.environ.get("SMTP_HOST")
-    port = int(os.environ.get("SMTP_PORT", 587))
-    user = os.environ.get("SMTP_USER", "")
-    pwd = os.environ.get("SMTP_PASS", "")
-    remitente = os.environ.get("SMTP_FROM", user or "inventario@wintec.local")
+    if not correo_disponible():
+        return False, "No hay medio de envio de correo configurado."
 
     html = f"""
     <p>Hola {nombre or ''},</p>
@@ -828,18 +886,4 @@ def enviar_correo_reset_password(email, nombre, link):
     <p><a href="{link}">Haz clic aquí para elegir una nueva contraseña</a></p>
     <p>Este enlace vence en 30 minutos. Si tú no pediste esto, puedes ignorar este correo.</p>
     """
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Restablecer tu contraseña -- Portal Mantenimiento Wintec"
-    msg["From"] = remitente
-    msg["To"] = email
-    msg.attach(MIMEText(html, "html"))
-
-    try:
-        with smtplib.SMTP(host, port, timeout=15) as server:
-            server.starttls()
-            if user:
-                server.login(user, pwd)
-            server.sendmail(remitente, [email], msg.as_string())
-        return True, "Correo enviado."
-    except Exception as e:
-        return False, f"Error enviando correo: {e}"
+    return enviar_email([email], "Restablecer tu contraseña -- Portal Mantenimiento Wintec", html)

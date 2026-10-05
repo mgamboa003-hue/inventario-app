@@ -31,6 +31,7 @@ from services import (
     sesion_activa_minutos, formatear_duracion,
     calcular_dias_restantes_por_producto,
     generar_token_reset_password, verificar_token_reset_password, enviar_correo_reset_password,
+    correo_disponible, proveedor_correo,
 )
 
 load_dotenv()
@@ -693,12 +694,19 @@ def olvide_password():
 
         # Mensaje generico siempre (exista o no el usuario, tenga o no correo)
         # para no revelar nombres de usuario validos a quien no los conoce.
-        if usuario and usuario["email"] and email_configurado():
+        if usuario and usuario["email"] and correo_disponible():
             token = generar_token_reset_password(usuario["id"], usuario["password"])
             link = url_for("restablecer_password", token=token, _external=True)
-            enviar_correo_reset_password(usuario["email"], usuario["nombre"], link)
-            registrar_auditoria("usuarios", usuario["id"], "solicitar_reset_password",
-                                 None, username, "Solicito restablecer su contrasena")
+            ok, detalle = enviar_correo_reset_password(usuario["email"], usuario["nombre"], link)
+            # Queda en Auditoria si salio o por que fallo (el usuario no lo ve,
+            # para no revelar datos), asi el administrador puede revisarlo.
+            registrar_auditoria("usuarios", usuario["id"],
+                                "solicitar_reset_password" if ok else "reset_password_fallo",
+                                None, username, detalle)
+        elif usuario:
+            motivo = "el usuario no tiene correo registrado" if not usuario["email"] else "no hay medio de envio de correo configurado"
+            registrar_auditoria("usuarios", usuario["id"], "reset_password_fallo", None, username,
+                                f"No se envio el enlace: {motivo}")
         flash("Si el usuario existe y tiene un correo registrado, se envio un enlace para restablecer la contrasena.", "info")
         return redirect(url_for("login"))
     return render_template("olvide_password.html")
@@ -3133,6 +3141,8 @@ def admin_sistema():
         backups=backups,
         backups_remotos=backups_remotos,
         email_ok=email_configurado(),
+        correo_ok=correo_disponible(),
+        proveedor_correo={"resend": "Resend (API web)", "brevo": "Brevo (API web)", "smtp": "SMTP"}.get(proveedor_correo() or "", "Ninguno"),
         s3_ok=s3_configurado(),
         force_https=FORCE_HTTPS,
         use_postgres=USE_POSTGRES,
