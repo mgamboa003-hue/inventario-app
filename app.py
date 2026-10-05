@@ -63,6 +63,10 @@ csrf = CSRFProtect(app)
 from turnos import bp as turnos_bp
 app.register_blueprint(turnos_bp)
 
+# Estructura del portal: areas, pestanas, reportes y escaner QR (portal.py)
+from portal import bp as portal_bp
+app.register_blueprint(portal_bp)
+
 
 @app.context_processor
 def inject_session_idle_minutes():
@@ -813,6 +817,23 @@ def index():
     sql_alertas += " ORDER BY (stock_minimo - stock_actual) DESC LIMIT 8"
     cur.execute(sql_alertas, params_alertas)
     alertas = [dict(a) for a in cur.fetchall()]
+
+    # Datos extra para la pantalla de bienvenida del portal
+    if planta_activa:
+        cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE stock_actual <= 0 AND activo = {ACTIVO_TRUE} AND planta = {ph}", (planta_activa,))
+    else:
+        cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE stock_actual <= 0 AND activo = {ACTIVO_TRUE}")
+    sin_stock = cur.fetchone()["n"]
+    if session.get("role") == "admin":
+        cur.execute("SELECT COUNT(*) AS n FROM solicitudes WHERE estado = 'pendiente'")
+    else:
+        cur.execute(f"SELECT COUNT(*) AS n FROM solicitudes WHERE estado = 'pendiente' AND solicitado_por_id = {ph}",
+                    (session.get("user_id"),))
+    solicitudes_pendientes = cur.fetchone()["n"]
+    ordenes_abiertas = 0
+    if session.get("role") == "admin":
+        cur.execute("SELECT COUNT(*) AS n FROM ordenes_compra WHERE estado IN ('pendiente', 'enviada')")
+        ordenes_abiertas = cur.fetchone()["n"]
     conn.close()
 
     proyeccion = calcular_dias_restantes_por_producto([a["id"] for a in alertas])
@@ -820,7 +841,8 @@ def index():
         a["dias_restantes"] = proyeccion.get(a["id"], {}).get("dias_restantes")
 
     return render_template(
-        "index.html",
+        "index.html" if request.endpoint == "bodega_resumen" else "inicio.html",
+        sin_stock=sin_stock, solicitudes_pendientes=solicitudes_pendientes, ordenes_abiertas=ordenes_abiertas,
         total_productos=total_productos,
         total_stock=total_stock,
         stock_bajo=stock_bajo,
@@ -833,6 +855,11 @@ def index():
         email_configurado=email_configurado(),
         planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS,
     )
+
+
+# Resumen de Bodega: las mismas cifras y graficos que antes eran el
+# dashboard; la raiz "/" ahora es la bienvenida del portal (inicio.html).
+app.add_url_rule("/bodega", "bodega_resumen", index)
 
 
 # PRODUCTOS

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Inicio — Portal Mantenimiento Wintec{% endblock %}
+
+{% block content %}
+{% set rol = session.get('role') %}
+{% set s = saludo_portal() %}
+{% set rt = resumen_turnos() %}
+{% set nombre_corto = (session.get('nombre') or session.get('username') or '').split(' ')[0] %}
+
+<section class="pm-hello">
+  <div>
+    <div class="pm-date">{{ s.fecha }}</div>
+    <h1>{{ s.saludo }}, {{ nombre_corto }}</h1>
+  </div>
+  {% if rol != 'comprador' %}
+  <form method="get" action="{{ url_for('listar_productos') }}" class="pm-hello-search" role="search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input type="search" name="q" placeholder="Buscar repuesto o código…" aria-label="Buscar repuesto">
+  </form>
+  {% endif %}
+  <div class="pm-hello-side">
+    {% if rt and rt.proximo %}
+    {% set vistos = [] %}
+    {% for d in rt.proximo %}{% for a in d.asignados if a.nombre.split(' ')[0] not in vistos %}{% set _ = vistos.append(a.nombre.split(' ')[0]) %}{% endfor %}{% endfor %}
+    <a class="pm-weekend" href="{{ url_for('turnos.calendario', mes=rt.proximo[0].fecha[:7]) }}">
+      <span class="pm-led"></span>
+      <span>Próximo turno: <strong>{% for d in rt.proximo %}{{ d.dia_semana[:3] }} {{ d.fecha_obj.day }}{{ ' · ' if not loop.last }}{% endfor %}</strong>{% if vistos %} — {{ vistos|join(', ') }}{% endif %}</span>
+    </a>
+    {% endif %}
+    {% if planta_restringida %}
+    <span class="badge bg-secondary"><i class="bi bi-geo-alt me-1"></i>Planta {{ PLANTAS.get(planta_restringida, planta_restringida) }}</span>
+    {% elif rol == 'admin' %}
+    <form method="get" class="d-inline-flex align-items-center gap-2">
+      <label class="visually-hidden" for="selPlanta">Planta</label>
+      <select name="planta" id="selPlanta" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">Ambas plantas</option>
+        {% for clave, nombre in PLANTAS.items() %}
+        <option value="{{ clave }}" {% if clave == planta_activa %}selected{% endif %}>Planta {{ nombre }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+{# ── Requiere atención ── #}
+{% set items = [] %}
+{% if rol == 'admin' and rt and rt.correos %}
+  {% set c = rt.correos[0] %}
+  {% set _ = items.append({'cls': 'bad' if c.estado == 'desactualizado' else 'warn', 'ico': 'bi-envelope-exclamation' if c.estado == 'desactualizado' else 'bi-envelope',
+      'titulo': 'Reenviar correo de ingreso' if c.estado == 'desactualizado' else 'Correo de ingreso por enviar',
+      'sub': c.titulo|primera_mayuscula, 'url': url_for('turnos.correo_ingreso', clave=c.clave)}) %}
+{% endif %}
+{% if stock_bajo %}
+  {% set _ = items.append({'cls': 'warn', 'ico': 'bi-exclamation-triangle', 'titulo': stock_bajo ~ ' repuesto' ~ ('s' if stock_bajo != 1 else '') ~ ' bajo el mínimo',
+      'sub': (sin_stock ~ ' sin stock') if sin_stock else 'Revisa qué reponer', 'url': url_for('listar_productos', stock_bajo=1)}) %}
+{% endif %}
+{% if rol == 'admin' and rt and rt.cambios %}
+  {% set _ = items.append({'cls': '', 'ico': 'bi-arrow-left-right', 'titulo': rt.cambios ~ ' cambio' ~ ('s' if rt.cambios != 1 else '') ~ ' de turno por aprobar',
+      'sub': 'Personal · Cambios', 'url': url_for('turnos.cambios')}) %}
+{% endif %}
+{% if rol == 'admin' and solicitudes_pendientes %}
+  {% set _ = items.append({'cls': '', 'ico': 'bi-clipboard-check', 'titulo': solicitudes_pendientes ~ ' solicitud' ~ ('es' if solicitudes_pendientes != 1 else '') ~ ' del equipo pendiente' ~ ('s' if solicitudes_pendientes != 1 else ''),
+      'sub': 'Compras · Solicitudes', 'url': url_for('listar_solicitudes')}) %}
+{% endif %}
+{% if rt and rt.mi_proximo %}
+  {% set _ = items.append({'cls': '', 'ico': 'bi-person-check', 'titulo': 'Tu próximo turno: ' ~ (rt.mi_proximo.fecha|fecha_larga),
+      'sub': 'Confirmado' if rt.mi_proximo.estado == 'confirmado' else 'Provisorio, puede cambiar', 'url': url_for('turnos.calendario', mes=rt.mi_proximo.fecha[:7])}) %}
+{% endif %}
+
+<h2 class="pm-section-label">Requiere atención</h2>
+{% if items %}
+<div class="pm-attn">
+  {% for it in items %}
+  <a href="{{ it.url }}" class="pm-attn-item {{ it.cls }}">
+    <span class="pm-attn-ico"><i class="bi {{ it.ico }}"></i></span>
+    <span><strong>{{ it.titulo }}</strong><small>{{ it.sub }}</small></span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="pm-allgood"><span class="pm-led"></span>Todo al día. No hay nada pendiente.</p>
+{% endif %}
+
+{# ── Áreas ── #}
+<h2 class="pm-section-label">Áreas</h2>
+<div class="pm-tiles">
+  {% for a in portal_areas %}
+  {% if a.clave == 'bodega' %}
+  <article class="pm-tile">
+    <div class="pm-tile-top">
+      <span class="pm-plate">{{ a.num }}<span class="pm-plate-name"> · BODEGA</span></span>
+      {% if stock_bajo %}<span class="pm-state warn"><span class="pm-led warn"></span><span class="pm-state-txt">{{ stock_bajo }} bajo mínimo</span></span>
+      {% else %}<span class="pm-state"><span class="pm-led"></span><span class="pm-state-txt">Al día</span></span>{% endif %}
+    </div>
+    <a class="pm-tile-id pm-tile-link" href="{{ url_for(a.inicio) }}">
+      <span class="pm-tile-ico"><i class="bi {{ a.icono }}"></i></span>
+      <span><h2>Bodega</h2><p>{{ a.descripcion }}</p></span>
+    </a>
+    <div class="pm-kpis">
+      <div class="pm-kpi"><b>{{ total_productos }}</b><span>repuestos</span></div>
+      <div class="pm-kpi {% if stock_bajo %}warn{% endif %}"><b>{{ stock_bajo }}</b><span>bajo el mínimo</span></div>
+    </div>
+    <div class="pm-tile-actions">
+      <a href="{{ url_for(a.inicio) }}" class="btn btn-primary">Entrar</a>
+      {% if rol in ('admin', 'solicitante') %}<a href="{{ url_for('nuevo_movimiento', tipo='salida') }}" class="btn btn-outline-secondary">Registrar salida</a>{% endif %}
+    </div>
+  </article>
+  {% elif a.clave == 'compras' %}
+  <article class="pm-tile">
+    <div class="pm-tile-top">
+      <span class="pm-plate">{{ a.num }}<span class="pm-plate-name"> · COMPRAS</span></span>
+      {% if solicitudes_pendientes %}<span class="pm-state warn"><span class="pm-led warn"></span><span class="pm-state-txt">{{ solicitudes_pendientes }} pendiente{{ 's' if solicitudes_pendientes != 1 }}</span></span>
+      {% else %}<span class="pm-state"><span class="pm-led"></span><span class="pm-state-txt">Al día</span></span>{% endif %}
+    </div>
+    <a class="pm-tile-id pm-tile-link" href="{{ url_for(a.inicio) }}">
+      <span class="pm-tile-ico"><i class="bi {{ a.icono }}"></i></span>
+      <span><h2>Compras</h2><p>{{ a.descripcion }}</p></span>
+    </a>
+    <div class="pm-kpis">
+      <div class="pm-kpi {% if solicitudes_pendientes %}warn{% endif %}"><b>{{ solicitudes_pendientes }}</b><span>{{ 'solicitudes pendientes' if rol == 'admin' else 'tus solicitudes pendientes' }}</span></div>
+      {% if rol == 'admin' %}<div class="pm-kpi"><b>{{ ordenes_abiertas }}</b><span>órdenes abiertas</span></div>{% endif %}
+    </div>
+    <div class="pm-tile-actions">
+      <a href="{{ url_for(a.inicio) }}" class="btn btn-primary">Entrar</a>
+      {% if rol in ('admin', 'solicitante') %}<a href="{{ url_for('nueva_solicitud') }}" class="btn btn-outline-secondary">Pedir algo</a>{% endif %}
+    </div>
+  </article>
+  {% elif a.clave == 'personal' %}
+  {% set pend_personal = rt and ((rt.cambios or 0) + (rt.correos|length if rt.correos else 0)) %}
+  <article class="pm-tile wide">
+    <div class="pm-tile-top">
+      <span class="pm-plate">{{ a.num }}<span class="pm-plate-name"> · PERSONAL</span></span>
+      {% if pend_personal %}<span class="pm-state warn"><span class="pm-led warn"></span>{{ pend_personal }} pendiente{{ 's' if pend_personal != 1 }}</span>
+      {% else %}<span class="pm-state"><span class="pm-led"></span><span class="pm-state-txt">Al día</span></span>{% endif %}
+    </div>
+    <a class="pm-tile-id pm-tile-link" href="{{ url_for(a.inicio) }}">
+      <span class="pm-tile-ico"><i class="bi {{ a.icono }}"></i></span>
+      <span><h2>Personal · Turnos</h2><p>{{ a.descripcion }}</p></span>
+    </a>
+    <div class="pm-kpis">
+      <div class="pm-kpi"><b class="sm">{% if rt and rt.proximo %}{% for d in rt.proximo %}{{ d.dia_semana[:3] }} {{ d.fecha_obj.day }}{{ ' · ' if not loop.last }}{% endfor %}{% else %}Sin programar{% endif %}</b><span>próximo turno</span></div>
+      {% if rol == 'admin' %}
+        {% set c = rt.correos[0] if rt and rt.correos else none %}
+        <div class="pm-kpi {% if c %}warn{% endif %}"><b class="sm">{% if c %}{{ 'Reenviar' if c.estado == 'desactualizado' else 'Por enviar' }}{% else %}Al día{% endif %}</b><span>correo de ingreso</span></div>
+      {% else %}
+        <div class="pm-kpi"><b class="sm">{% if rt and rt.mi_proximo %}{{ rt.mi_proximo.fecha|fecha_corta }}{% else %}—{% endif %}</b><span>tu próximo turno</span></div>
+      {% endif %}
+    </div>
+    <div class="pm-tile-actions">
+      <a href="{{ url_for(a.inicio) }}" class="btn btn-primary">Entrar</a>
+      {% if rol == 'admin' %}<a href="{{ url_for('turnos.correo_ingreso') }}" class="btn btn-outline-secondary">Preparar correo</a>
+      {% else %}<a href="{{ url_for('turnos.equidad') }}" class="btn btn-outline-secondary">Ver reparto</a>{% endif %}
+    </div>
+  </article>
+  {% else %}
+  <article class="pm-tile compact">
+    <a class="pm-tile-id pm-tile-link d-flex align-items-center gap-3 flex-grow-1" href="{{ url_for(a.inicio) }}" style="min-width:0">
+      <span class="pm-tile-ico"><i class="bi {{ a.icono }}"></i></span>
+      <span style="min-width:0">
+        <span class="pm-num">{{ a.num }}</span>
+        <h2>{{ a.nombre_largo or a.nombre }}</h2>
+        <p>{{ a.descripcion }}</p>
+      </span>
+    </a>
+    <a href="{{ url_for(a.inicio) }}" class="pm-go" aria-label="Entrar a {{ a.nombre }}"><i class="bi bi-chevron-right"></i></a>
+  </article>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<footer class="pm-foot">
+  <span>Portal Mantenimiento Wintec · Quilicura</span>
+  <a href="{{ url_for('bodega_resumen') }}">Ver resumen y gráficos de bodega</a>
+</footer>
+{% endblock %}

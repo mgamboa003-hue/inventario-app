@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Escanear QR — Portal Mantenimiento Wintec{% endblock %}
+{% block topbar_title %}Escanear código QR{% endblock %}
+
+{% block content %}
+<div class="pm-scan-box">
+  <p class="text-muted">Apunta la cámara a la etiqueta QR de un repuesto o de una ubicación. Se abre sola al reconocerla.</p>
+  <div class="pm-video">
+    <video id="video" playsinline muted></video>
+    <div class="pm-frame" id="marco" hidden></div>
+    <div class="pm-video-msg" id="mensaje">
+      <i class="bi bi-qr-code-scan" style="font-size:2.5rem"></i>
+      <span>Toca el botón para encender la cámara.</span>
+      <button type="button" class="btn btn-light" id="btnCamara"><i class="bi bi-camera me-1"></i>Encender cámara</button>
+    </div>
+  </div>
+  <form method="get" action="{{ url_for('listar_productos') }}" class="mt-3 d-flex gap-2" role="search">
+    <label class="visually-hidden" for="codigoManual">Código del repuesto</label>
+    <input type="search" id="codigoManual" name="q" class="form-control" placeholder="…o escribe el código a mano">
+    <button class="btn btn-primary">Buscar</button>
+  </form>
+  <p class="small text-muted mt-3 mb-0">Si la cámara no abre, revisa que el navegador tenga permiso de cámara para este sitio. También puedes usar la cámara normal del celular: las etiquetas de ubicación abren directo el portal.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/jsqr/jsQR.js') }}"></script>
+<script>
+(function () {
+  var video = document.getElementById('video');
+  var msg = document.getElementById('mensaje');
+  var marco = document.getElementById('marco');
+  var btn = document.getElementById('btnCamara');
+  var canvas = document.createElement('canvas');
+  var ctx = canvas.getContext('2d', { willReadFrequently: true });
+  var detector = null, stream = null, listo = false;
+  var buscar = {{ url_for('listar_productos')|tojson }};
+
+  if ('BarcodeDetector' in window) {
+    try { detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { detector = null; }
+  }
+
+  function abrir(texto) {
+    if (listo) return;
+    listo = true;
+    texto = (texto || '').trim();
+    if (navigator.vibrate) navigator.vibrate(60);
+    if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+    var destino;
+    try {
+      var u = new URL(texto);
+      // Solo se navega directo si el QR es de este mismo portal.
+      destino = (u.origin === window.location.origin) ? u.href : null;
+    } catch (e) { destino = null; }
+    if (!destino) destino = buscar + '?q=' + encodeURIComponent(texto);
+    msg.hidden = false;
+    msg.innerHTML = '<i class="bi bi-check-circle" style="font-size:2.5rem"></i><span>Código leído: <strong></strong></span>';
+    msg.querySelector('strong').textContent = texto;
+    window.location.href = destino;
+  }
+
+  function leer() {
+    if (listo || !stream) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      if (detector) {
+        detector.detect(video).then(function (r) { if (r.length) abrir(r[0].rawValue); })
+          .catch(function () {}).finally(function () { requestAnimationFrame(leer); });
+        return;
+      }
+      if (window.jsQR) {
+        var w = video.videoWidth, h = video.videoHeight;
+        var escala = Math.min(1, 640 / Math.max(w, h));
+        canvas.width = Math.round(w * escala); canvas.height = Math.round(h * escala);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+        if (code && code.data) { abrir(code.data); return; }
+      }
+    }
+    requestAnimationFrame(leer);
+  }
+
+  function encender() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      msg.querySelector('span').textContent = 'Este navegador no permite usar la cámara. Escribe el código abajo.';
+      btn.hidden = true;
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+      .then(function (s) {
+        stream = s;
+        video.srcObject = s;
+        return video.play();
+      })
+      .then(function () { msg.hidden = true; marco.hidden = false; requestAnimationFrame(leer); })
+      .catch(function () {
+        msg.querySelector('span').textContent = 'No se pudo abrir la cámara. Revisa el permiso de cámara del navegador.';
+      });
+  }
+  btn.addEventListener('click', encender);
+  window.addEventListener('pagehide', function () { if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Reportes Excel — Portal Mantenimiento Wintec{% endblock %}
+{% block topbar_title %}Reportes en Excel{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-3">Cada reporte se descarga al instante como archivo Excel, con los datos de este momento.</p>
+<div class="pm-reports">
+  {% for endpoint, titulo, desc, icono in reportes %}
+  <a class="pm-report" href="{{ url_for(endpoint) }}">
+    <i class="bi {{ icono }}"></i>
+    <span><strong>{{ titulo }}</strong><small>{{ desc }}</small></span>
+    <i class="bi bi-download pm-dl" aria-hidden="true"></i>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1528,7 +1528,8 @@ def test_unificar_catalogos_requiere_admin(client):
 
 
 def test_nav_muestra_link_unificar_para_admin(admin_client):
-    r = admin_client.get("/productos")
+    # En el portal, "Unificar nombres" es una pestaña del área Administración
+    r = admin_client.get("/admin/categorias")
     assert "Unificar nombres" in r.get_data(as_text=True)
 
 
@@ -1913,7 +1914,7 @@ def test_dashboard_alertas_muestran_dias_de_stock_cuando_hay_consumo(admin_clien
     pid = int(m.group(1))
     admin_client.post("/movimientos/nuevo/salida", data={"producto_id": pid, "cantidad": "2"})
 
-    r = admin_client.get("/")
+    r = admin_client.get("/bodega")
     assert r.status_code == 200
     body = r.get_data(as_text=True)
     assert "días de stock" in body or "día de stock" in body

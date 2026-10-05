@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Portal Mantenimiento Wintec{% endblock %}</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0a1a2f">
+  <meta name="theme-color" content="#15803d">
   <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo_wintec.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo_wintec.png') }}">
@@ -15,206 +15,146 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/select2/select2-bootstrap-5-theme.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='turnos.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='portal.css') }}">
   <script>
-    // Se aplica el tema guardado ANTES de pintar, para que la pantalla
-    // no destelle en blanco al abrir la app en modo oscuro.
+    // Apariencia guardada (modo y color) ANTES de pintar, para que la
+    // pantalla no destelle con otro tema al abrir la app.
     (function () {
+      var modo = 'auto', color = 'wintec';
       try {
-        var t = localStorage.getItem('wt-theme');
-        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', t);
-        document.documentElement.setAttribute('data-bs-theme', t);
-      } catch (e) {
-        document.documentElement.setAttribute('data-theme', 'light');
-        document.documentElement.setAttribute('data-bs-theme', 'light');
-      }
+        modo = localStorage.getItem('wt-theme') || 'auto';
+        color = localStorage.getItem('wt-color') || 'wintec';
+      } catch (e) {}
+      var oscuro = modo === 'dark' || (modo === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var r = document.documentElement;
+      r.setAttribute('data-theme', oscuro ? 'dark' : 'light');
+      r.setAttribute('data-bs-theme', oscuro ? 'dark' : 'light');
+      r.setAttribute('data-color', color);
+      r.setAttribute('data-modo', modo);
     })();
   </script>
 </head>
 <body class="role-{{ session.get('role', 'invitado') }}">
 
+{% macro apariencia(sufijo) %}
+<div class="pm-look" data-apariencia>
+  <div class="pm-look-label" id="lookModo{{ sufijo }}">Modo</div>
+  <div class="pm-seg" role="group" aria-labelledby="lookModo{{ sufijo }}">
+    <button type="button" data-set-modo="light"><i class="bi bi-sun"></i>Claro</button>
+    <button type="button" data-set-modo="dark"><i class="bi bi-moon-stars"></i>Oscuro</button>
+    <button type="button" data-set-modo="auto"><i class="bi bi-circle-half"></i>Auto</button>
+  </div>
+  <div class="pm-look-label" id="lookColor{{ sufijo }}">Color del portal</div>
+  <div class="pm-swatches" role="group" aria-labelledby="lookColor{{ sufijo }}">
+    <button type="button" data-set-color="wintec" style="--sw:#15803d" title="Verde Wintec" aria-label="Verde Wintec"></button>
+    <button type="button" data-set-color="azul" style="--sw:#0e2a47" title="Azul" aria-label="Azul"></button>
+    <button type="button" data-set-color="petroleo" style="--sw:#0f5257" title="Petróleo" aria-label="Petróleo"></button>
+    <button type="button" data-set-color="grafito" style="--sw:#1f2937" title="Grafito" aria-label="Grafito"></button>
+    <button type="button" data-set-color="naranjo" style="--sw:#b45309" title="Naranjo" aria-label="Naranjo"></button>
+    <button type="button" data-set-color="vino" style="--sw:#6b1d2a" title="Vino" aria-label="Vino"></button>
+  </div>
+</div>
+{% endmacro %}
+
 {% if session.get('logged_in') %}
 {% set rol = session.get('role') %}
 {% set ep = request.endpoint or '' %}
+{% set es_inicio = ep == 'index' %}
+{% set avisos_n = notif_sin_leer or 0 %}
 
-<!-- ══ Barra lateral ══ -->
-<div class="sidebar" id="sidebar">
-  <div class="sidebar-header">
-    <a href="{{ url_for('index') }}" class="sidebar-brand" aria-label="Ir al inicio">
-      {% if logo_path %}
-        <span class="sidebar-logo-chip">
-          <img src="{{ url_for('static', filename='logo_wintec.png') }}" alt="Wintec" class="sidebar-logo">
-        </span>
-      {% else %}
-        <span class="brand-icon"><i class="bi bi-boxes"></i></span>
-        <span class="brand-text">WINTEC</span>
-      {% endif %}
-      <span class="brand-sub">Portal<br>Mantenimiento</span>
+<!-- ══ Barra superior ══ -->
+<header class="pm-top">
+  <div class="pm-wrap pm-top-in">
+    <a href="{{ url_for('index') }}" class="pm-brand" aria-label="Portal Mantenimiento Wintec: ir al inicio">
+      <span class="pm-logo"><img src="{{ url_for('static', filename='logo_wintec.png') }}" alt="Wintec"></span>
+      <span class="pm-brand-text">Portal<br>Mantenimiento</span>
     </a>
-    <button class="sidebar-toggle d-lg-none" id="sidebarClose" aria-label="Cerrar menú">
-      <i class="bi bi-x-lg"></i>
-    </button>
-  </div>
 
-  <nav class="sidebar-nav" aria-label="Navegación principal">
+    <nav class="pm-areas" aria-label="Áreas del portal">
+      {% for a in portal_areas %}
+      {% set pend = (a.clave == 'personal' and ((turnos_cambios_pendientes or 0) + (turnos_correos_pendientes or 0)) > 0) %}
+      <a href="{{ url_for(a.inicio) }}" class="pm-area-link {% if portal_area and portal_area.clave == a.clave %}active{% endif %}"
+         {% if portal_area and portal_area.clave == a.clave %}aria-current="page"{% endif %}>
+        {{ a.nombre }}{% if pend %}<span class="pm-dot" aria-label="con pendientes"></span>{% endif %}
+      </a>
+      {% endfor %}
+    </nav>
+
     {% if rol != 'comprador' %}
-    <a href="{{ url_for('index') }}" class="nav-link {% if ep == 'index' %}active{% endif %}">
-      <i class="bi bi-speedometer2"></i><span>Inicio</span>
-    </a>
-
-    <div class="nav-section-label mt-3">Bodega</div>
-    <a href="{{ url_for('listar_productos') }}" class="nav-link {% if 'producto' in ep %}active{% endif %}">
-      <i class="bi bi-box-seam"></i><span>Inventario</span>
-    </a>
-    <a href="{{ url_for('listar_movimientos') }}" class="nav-link {% if 'movimiento' in ep %}active{% endif %}">
-      <i class="bi bi-arrow-left-right"></i><span>Movimientos</span>
-    </a>
-    <a href="{{ url_for('listar_ubicaciones') }}" class="nav-link {% if 'ubicacion' in ep and ep != 'admin_ubicaciones' %}active{% endif %}">
-      <i class="bi bi-geo-alt"></i><span>Ubicaciones</span>
-    </a>
-    {% endif %}
-
-    <div class="nav-section-label mt-3">Compras</div>
-    <a href="{{ url_for('listar_solicitudes') }}" class="nav-link {% if 'solicitud' in ep %}active{% endif %}">
-      <i class="bi bi-clipboard-check"></i><span>Solicitudes del equipo</span>
-    </a>
-    {% if rol == 'admin' %}
-    <a href="{{ url_for('listar_cotizaciones') }}" class="nav-link {% if 'cotizacion' in ep %}active{% endif %}">
-      <i class="bi bi-file-earmark-text"></i><span>Cotizaciones</span>
-    </a>
-    <a href="{{ url_for('listar_ordenes_compra') }}" class="nav-link {% if 'orden' in ep %}active{% endif %}">
-      <i class="bi bi-cart-check"></i><span>Órdenes de compra</span>
-    </a>
-    {% endif %}
-
-    <div class="nav-section-label mt-3">Personal · Turnos</div>
-    <a href="{{ url_for('turnos.calendario') }}" class="nav-link {% if ep == 'turnos.calendario' %}active{% endif %}">
-      <i class="bi bi-calendar-week"></i><span>Calendario de turnos</span>
-    </a>
-    {% if rol == 'admin' %}
-    <a href="{{ url_for('turnos.planificacion') }}" class="nav-link {% if ep == 'turnos.planificacion' %}active{% endif %}">
-      <i class="bi bi-calendar2-check"></i><span>Planificación</span>
-    </a>
-    <a href="{{ url_for('turnos.cambios') }}" class="nav-link {% if ep == 'turnos.cambios' %}active{% endif %}">
-      <i class="bi bi-arrow-repeat"></i><span>Cambios de turno</span>
-      {% if turnos_cambios_pendientes %}<span class="nav-count">{{ turnos_cambios_pendientes }}</span>{% endif %}
-    </a>
-    <a href="{{ url_for('turnos.correo_ingreso') }}" class="nav-link {% if ep == 'turnos.correo_ingreso' %}active{% endif %}">
-      <i class="bi bi-envelope-paper"></i><span>Correo de ingreso</span>
-      {% if turnos_correos_pendientes %}<span class="nav-count">{{ turnos_correos_pendientes }}</span>{% endif %}
-    </a>
-    <a href="{{ url_for('turnos.tecnicos') }}" class="nav-link {% if ep == 'turnos.tecnicos' %}active{% endif %}">
-      <i class="bi bi-person-gear"></i><span>Técnicos y ausencias</span>
-    </a>
-    {% endif %}
-    <a href="{{ url_for('turnos.equidad') }}" class="nav-link {% if ep == 'turnos.equidad' %}active{% endif %}">
-      <i class="bi bi-bar-chart"></i><span>Reparto (equidad)</span>
-    </a>
-
-    {% if rol == 'admin' %}
-    <div class="nav-section-label mt-3">Reportes Excel</div>
-    <a href="{{ url_for('exportar_stock_bajo') }}" class="nav-link">
-      <i class="bi bi-exclamation-triangle"></i><span>Stock bajo</span>
-    </a>
-    <a href="{{ url_for('exportar_pedidos') }}" class="nav-link">
-      <i class="bi bi-bag-check"></i><span>Pedidos por proveedor</span>
-    </a>
-    <a href="{{ url_for('exportar_valorizacion') }}" class="nav-link">
-      <i class="bi bi-cash-stack"></i><span>Valorización</span>
-    </a>
-    <a href="{{ url_for('exportar_rotacion') }}" class="nav-link">
-      <i class="bi bi-arrow-repeat"></i><span>Rotación</span>
-    </a>
-    <a href="{{ url_for('exportar_abc') }}" class="nav-link">
-      <i class="bi bi-bar-chart-steps"></i><span>Clasificación ABC</span>
-    </a>
-
-    <div class="nav-section-label mt-3">Administración</div>
-    {% if session.get('super_admin') %}
-    <a href="{{ url_for('admin_usuarios') }}" class="nav-link {% if 'usuario' in ep %}active{% endif %}">
-      <i class="bi bi-people"></i><span>Usuarios</span>
-    </a>
-    {% endif %}
-    <a href="{{ url_for('admin_categorias') }}" class="nav-link {% if ep == 'admin_categorias' %}active{% endif %}">
-      <i class="bi bi-tags"></i><span>Categorías</span>
-    </a>
-    <a href="{{ url_for('admin_equipos') }}" class="nav-link {% if ep == 'admin_equipos' %}active{% endif %}">
-      <i class="bi bi-gear"></i><span>Equipos</span>
-    </a>
-    <a href="{{ url_for('admin_proveedores') }}" class="nav-link {% if 'proveedor' in ep %}active{% endif %}">
-      <i class="bi bi-building"></i><span>Proveedores</span>
-    </a>
-    {% if session.get('super_admin') %}
-    <a href="{{ url_for('admin_unificar_catalogos') }}" class="nav-link {% if ep == 'admin_unificar_catalogos' %}active{% endif %}">
-      <i class="bi bi-arrow-repeat"></i><span>Unificar nombres</span>
-    </a>
-    {% endif %}
-    <a href="{{ url_for('admin_ubicaciones') }}" class="nav-link {% if ep == 'admin_ubicaciones' %}active{% endif %}">
-      <i class="bi bi-geo"></i><span>Gestionar ubicaciones</span>
-    </a>
-    <a href="{{ url_for('admin_api_tokens') }}" class="nav-link {% if ep == 'admin_api_tokens' %}active{% endif %}">
-      <i class="bi bi-key"></i><span>Tokens de API</span>
-    </a>
-    {% if session.get('super_admin') %}
-    <a href="{{ url_for('admin_auditoria') }}" class="nav-link {% if ep == 'admin_auditoria' %}active{% endif %}">
-      <i class="bi bi-shield-check"></i><span>Auditoría</span>
-    </a>
-    <a href="{{ url_for('admin_accesos') }}" class="nav-link {% if ep == 'admin_accesos' %}active{% endif %}">
-      <i class="bi bi-clock-history"></i><span>Control de accesos</span>
-    </a>
-    <a href="{{ url_for('admin_sistema') }}" class="nav-link {% if ep == 'admin_sistema' %}active{% endif %}">
-      <i class="bi bi-hdd-network"></i><span>Sistema y respaldos</span>
-    </a>
-    {% endif %}
-    {% endif %}
-  </nav>
-
-  <div class="sidebar-footer">
-    <div class="user-info">
-      <div class="user-avatar">{{ session.get('nombre','U')[0]|upper }}</div>
-      <div>
-        <div class="user-name">{{ session.get('nombre', session.get('username','')) }}</div>
-        <span class="user-role badge {% if rol == 'admin' %}bg-danger{% elif rol == 'solicitante' %}bg-info{% elif rol == 'comprador' %}bg-warning{% else %}bg-secondary{% endif %}">
-          {% if rol == 'admin' and session.get('super_admin') %}Admin principal{% elif rol == 'admin' %}Admin{% elif rol == 'solicitante' %}Solicitante{% elif rol == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}
-        </span>
-      </div>
-    </div>
-    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light w-100">
-      <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
-    </a>
-  </div>
-</div>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<div class="main-content" id="mainContent">
-  <header class="topbar">
-    <button class="sidebar-toggle-btn d-lg-none" id="sidebarOpen" aria-label="Abrir menú">
-      <i class="bi bi-list"></i>
-    </button>
-    <div class="topbar-title">{% block topbar_title %}{% endblock %}</div>
-    {% if rol != 'comprador' %}
-    <form method="get" action="{{ url_for('listar_productos') }}" class="topbar-search" role="search">
-      <i class="bi bi-search"></i>
-      <input type="search" name="q" class="form-control form-control-sm" placeholder="Buscar repuesto por código o nombre..."
-             aria-label="Buscar repuesto"
+    <form method="get" action="{{ url_for('listar_productos') }}" class="pm-search" role="search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input type="search" name="q" placeholder="Buscar repuesto o código…" aria-label="Buscar repuesto"
              value="{{ request.args.get('q','') if ep == 'listar_productos' else '' }}">
+      <kbd class="pm-kbd" aria-hidden="true">/</kbd>
     </form>
     {% endif %}
-    <div class="topbar-actions">
-      {% block topbar_actions %}{% endblock %}
-      <a href="{{ url_for('turnos.notificaciones') }}" class="theme-toggle notif-bell {% if notif_sin_leer %}has-unread{% endif %}"
-         aria-label="Avisos{% if notif_sin_leer %}: {{ notif_sin_leer }} sin leer{% endif %}" title="Avisos">
-        <i class="bi bi-bell"></i>
-        {% if notif_sin_leer %}<span class="notif-count">{{ notif_sin_leer if notif_sin_leer < 100 else '99+' }}</span>{% endif %}
-      </a>
-      <button type="button" class="theme-toggle" id="themeToggle"
-              aria-label="Cambiar entre modo claro y oscuro" title="Cambiar tema">
-        <i class="bi bi-moon-stars"></i><i class="bi bi-sun"></i>
-      </button>
-    </div>
-  </header>
 
-  <div class="page-content">
+    <div class="pm-tools">
+      <a href="{{ url_for('turnos.notificaciones') }}" class="pm-icon-btn notif-bell {% if avisos_n %}has-unread{% endif %}"
+         aria-label="Avisos{% if avisos_n %}: {{ avisos_n }} sin leer{% endif %}" title="Avisos">
+        <i class="bi bi-bell"></i>
+        {% if avisos_n %}<span class="pm-count">{{ avisos_n if avisos_n < 100 else '99+' }}</span>{% endif %}
+      </a>
+      <div class="dropdown d-none d-lg-block">
+        <button type="button" class="pm-icon-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                aria-expanded="false" aria-label="Apariencia: modo oscuro y colores" title="Apariencia">
+          <i class="bi bi-palette"></i>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end pm-pop">
+          {{ apariencia('D') }}
+        </div>
+      </div>
+      <div class="dropdown d-none d-lg-block">
+        <button type="button" class="pm-user" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Mi cuenta">
+          <span class="pm-avatar">{{ (session.get('nombre') or 'U')[0]|upper }}</span>
+          <span class="pm-user-name">{{ (session.get('nombre') or session.get('username',''))|truncate(18, True, '…') }}</span>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end pm-pop">
+          <div class="pm-pop-head">
+            <strong>{{ session.get('nombre', session.get('username','')) }}</strong>
+            <span>{% if rol == 'admin' and session.get('super_admin') %}Admin principal{% elif rol == 'admin' %}Administrador{% elif rol == 'solicitante' %}Técnico / solicitante{% elif rol == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}</span>
+          </div>
+          <a class="dropdown-item" href="{{ url_for('turnos.notificaciones') }}"><i class="bi bi-bell me-2"></i>Mis avisos</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+{% if not es_inicio %}
+<!-- ══ Cabecera de la pantalla: área, título, acciones y pestañas ══ -->
+<div class="pm-head">
+  <div class="pm-wrap">
+    <div class="pm-head-row">
+      <a href="{{ url_for('index') }}" class="pm-back d-lg-none" aria-label="Volver al inicio del portal">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+      <div class="pm-head-title">
+        {% if portal_area %}<div class="pm-kicker">{{ portal_area.num }} · {{ (portal_area.nombre_largo or portal_area.nombre)|upper }}</div>{% endif %}
+        <h1>{% block topbar_title %}{% endblock %}</h1>
+      </div>
+      <div class="pm-head-actions">{% block topbar_actions %}{% endblock %}</div>
+    </div>
+    {% if portal_area and portal_area.secciones|length > 1 %}
+    <nav class="pm-tabs" aria-label="Secciones de {{ portal_area.nombre }}">
+      {% for s in portal_area.secciones %}
+      {% set n = (turnos_cambios_pendientes if s.badge == 'turnos_cambios_pendientes' else (turnos_correos_pendientes if s.badge == 'turnos_correos_pendientes' else 0)) or 0 %}
+      <a href="{{ url_for(s.endpoint) }}" class="pm-tab {% if portal_seccion and portal_seccion.endpoint == s.endpoint %}active{% endif %}"
+         {% if portal_seccion and portal_seccion.endpoint == s.endpoint %}aria-current="page"{% endif %}>
+        {{ s.etiqueta }}{% if n %}<span class="pm-tab-count">{{ n }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<main class="page-content pm-main {% if es_inicio %}is-home{% endif %}" id="contenido">
+  <div class="pm-wrap">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for cat, msg in messages %}
@@ -227,32 +167,57 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </div>
-</div>
+</main>
 
-<!-- ══ Navegación inferior (solo celular) ══
-     Los cuatro destinos que se usan de pie en planta. El menú
-     completo sigue disponible en el botón de arriba a la izquierda. -->
-<nav class="bottom-nav d-lg-none" aria-label="Accesos rápidos">
+<!-- ══ Barra inferior (celular) ══ -->
+<nav class="pm-bottom d-lg-none" aria-label="Accesos rápidos">
+  <a href="{{ url_for('index') }}" class="{% if es_inicio %}active{% endif %}" {% if es_inicio %}aria-current="page"{% endif %}>
+    <i class="bi bi-house-door"></i><span>Inicio</span>
+  </a>
   {% if rol != 'comprador' %}
-  <a href="{{ url_for('index') }}" class="{% if ep == 'index' %}active{% endif %}">
-    <i class="bi bi-speedometer2"></i><span>Inicio</span>
-  </a>
-  <a href="{{ url_for('listar_productos') }}" class="{% if 'producto' in ep %}active{% endif %}">
-    <i class="bi bi-box-seam"></i><span>Inventario</span>
-  </a>
-  <a href="{{ url_for('listar_movimientos') }}" class="{% if 'movimiento' in ep %}active{% endif %}">
-    <i class="bi bi-arrow-left-right"></i><span>Movim.</span>
+  <a href="{{ url_for('listar_productos', buscar=1) }}" class="{% if ep == 'listar_productos' %}active{% endif %}">
+    <i class="bi bi-search"></i><span>Buscar</span>
   </a>
   {% else %}
-  <a href="{{ url_for('listar_ordenes_compra') }}" class="{% if 'orden' in ep %}active{% endif %}">
-    <i class="bi bi-cart-check"></i><span>Órdenes</span>
-  </a>
-  {% endif %}
   <a href="{{ url_for('listar_solicitudes') }}" class="{% if 'solicitud' in ep %}active{% endif %}">
     <i class="bi bi-clipboard-check"></i><span>Solicitudes</span>
   </a>
-  <a href="#" id="bottomNavMenu"><i class="bi bi-list"></i><span>Menú</span></a>
+  {% endif %}
+  <a href="{{ url_for('portal.escanear') }}" class="pm-scan {% if ep == 'portal.escanear' %}active{% endif %}">
+    <span class="pm-scan-btn"><i class="bi bi-qr-code-scan"></i></span><span>Escanear</span>
+  </a>
+  <a href="{{ url_for('turnos.notificaciones') }}" class="{% if ep == 'turnos.notificaciones' %}active{% endif %}">
+    <i class="bi bi-bell"></i><span>Avisos</span>
+    {% if avisos_n %}<span class="pm-count">{{ avisos_n if avisos_n < 100 else '99+' }}</span>{% endif %}
+  </a>
+  <button type="button" data-bs-toggle="offcanvas" data-bs-target="#pmCuenta" aria-controls="pmCuenta">
+    <i class="bi bi-person-circle"></i><span>Mi cuenta</span>
+  </button>
 </nav>
+
+<!-- ══ Mi cuenta (celular): áreas, apariencia y salir ══ -->
+<div class="offcanvas offcanvas-bottom pm-sheet" tabindex="-1" id="pmCuenta" aria-labelledby="pmCuentaLabel">
+  <div class="offcanvas-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="pm-avatar">{{ (session.get('nombre') or 'U')[0]|upper }}</span>
+      <div>
+        <h2 class="offcanvas-title" id="pmCuentaLabel">{{ session.get('nombre', session.get('username','')) }}</h2>
+        <div class="small text-muted">{% if rol == 'admin' and session.get('super_admin') %}Admin principal{% elif rol == 'admin' %}Administrador{% elif rol == 'solicitante' %}Técnico / solicitante{% elif rol == 'comprador' %}Comprador{% else %}Solo lectura{% endif %}</div>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="pm-look-label">Áreas</div>
+    <div class="pm-sheet-areas">
+      {% for a in portal_areas %}
+      <a href="{{ url_for(a.inicio) }}"><i class="bi {{ a.icono }}"></i><span>{{ a.nombre }}</span></a>
+      {% endfor %}
+    </div>
+    {{ apariencia('M') }}
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 mt-3"><i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión</a>
+  </div>
+</div>
 
 {% block fab %}{% endblock %}
 
@@ -264,28 +229,40 @@
 <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
 <script src="{{ url_for('static', filename='vendor/select2/select2.min.js') }}"></script>
 <script>
-  // ── Menú lateral ──
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  function abrirSidebar() { sidebar?.classList.add('open'); overlay?.classList.add('show'); }
-  function cerrarSidebar() { sidebar?.classList.remove('open'); overlay?.classList.remove('show'); }
-  document.getElementById('sidebarOpen')?.addEventListener('click', abrirSidebar);
-  document.getElementById('bottomNavMenu')?.addEventListener('click', function (e) { e.preventDefault(); abrirSidebar(); });
-  ['sidebarClose', 'sidebarOverlay'].forEach(function (id) {
-    document.getElementById(id)?.addEventListener('click', cerrarSidebar);
-  });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarSidebar(); });
-
-  // ── Modo claro / oscuro ──
-  document.getElementById('themeToggle')?.addEventListener('click', function () {
-    var actual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-    var nuevo = actual === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', nuevo);
-    document.documentElement.setAttribute('data-bs-theme', nuevo);
-    try { localStorage.setItem('wt-theme', nuevo); } catch (e) {}
-    // Los gráficos del dashboard se dibujan en canvas: hay que repintarlos.
-    if (typeof window.redibujarGraficos === 'function') window.redibujarGraficos();
-  });
+  // ── Apariencia: modo claro/oscuro/automático y color del portal ──
+  (function () {
+    var r = document.documentElement;
+    function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    function aplicar() {
+      var modo = r.getAttribute('data-modo') || 'auto';
+      var oscuro = modo === 'dark' || (modo === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var t = oscuro ? 'dark' : 'light';
+      r.setAttribute('data-theme', t);
+      r.setAttribute('data-bs-theme', t);
+      document.querySelectorAll('[data-set-modo]').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.getAttribute('data-set-modo') === modo ? 'true' : 'false');
+      });
+      var color = r.getAttribute('data-color') || 'wintec';
+      document.querySelectorAll('[data-set-color]').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.getAttribute('data-set-color') === color ? 'true' : 'false');
+      });
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', getComputedStyle(r).getPropertyValue('--pm-bar').trim() || '#15803d');
+      // Los gráficos del resumen de bodega se dibujan en canvas: hay que repintarlos.
+      if (typeof window.redibujarGraficos === 'function') window.redibujarGraficos();
+    }
+    document.addEventListener('click', function (e) {
+      var bm = e.target.closest('[data-set-modo]');
+      if (bm) { r.setAttribute('data-modo', bm.getAttribute('data-set-modo')); guardar('wt-theme', bm.getAttribute('data-set-modo')); aplicar(); }
+      var bc = e.target.closest('[data-set-color]');
+      if (bc) { r.setAttribute('data-color', bc.getAttribute('data-set-color')); guardar('wt-color', bc.getAttribute('data-set-color')); aplicar(); }
+    });
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      if (mq.addEventListener) mq.addEventListener('change', function () { if (r.getAttribute('data-modo') === 'auto') aplicar(); });
+    }
+    aplicar();
+  })();
 
   // ── Tablas apilables en celular ──
   // A las tablas marcadas con .table-stack se les copia el título de
@@ -334,10 +311,19 @@
     });
   });
 
+  // ── "Buscar" de la barra inferior: enfoca el buscador de la pantalla ──
+  (function () {
+    if (!/[?&]buscar=1/.test(window.location.search)) return;
+    var campos = Array.prototype.filter.call(document.querySelectorAll('input[type=search]'), function (i) {
+      return i.offsetParent !== null;
+    });
+    if (campos[0]) { campos[0].focus(); }
+  })();
+
   // ── Atajo: "/" enfoca el buscador (uso con teclado en oficina) ──
   document.addEventListener('keydown', function (e) {
     if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
-      var b = document.querySelector('.topbar-search input');
+      var b = document.querySelector('.pm-search input');
       if (b) { e.preventDefault(); b.focus(); }
     }
   });
