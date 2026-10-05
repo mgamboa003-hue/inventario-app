@@ -445,7 +445,19 @@ def _run_migrations(conn):
         ("movimientos","usuario_id",      "INTEGER"),
         ("solicitudes","unidad",          "TEXT DEFAULT 'unidad'"),
     ]
+    existentes = set()
+    if USE_POSTGRES:
+        # Un ALTER TABLE bloquea la tabla aunque la columna ya exista, y esto
+        # corre en cada visita: se revisa primero que columnas faltan.
+        try:
+            cur.execute("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'")
+            existentes = {(r["table_name"], r["column_name"]) for r in cur.fetchall()}
+            conn.commit()
+        except Exception:
+            conn.rollback()
     for table, col, coldef in migrations:
+        if (table, col) in existentes:
+            continue
         try:
             if USE_POSTGRES:
                 cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {coldef}")
@@ -595,21 +607,28 @@ def _crear_indices(conn):
                 pass
 
 
+def crear_estructura(conn):
+    """Crea (si faltan) todas las tablas, columnas e indices, SIN cargar
+    datos de ejemplo ni el usuario admin inicial. La usa init_db y tambien
+    restaurar_respaldo.py, que necesita una base vacia con la estructura."""
+    cur = conn.cursor()
+    ddl = _DDL_POSTGRES if USE_POSTGRES else _DDL_SQLITE
+    for stmt in ddl:
+        cur.execute(stmt)
+    conn.commit()
+    _run_migrations(conn)
+    _crear_indices(conn)
+    # Tablas del modulo de turnos de fin de semana (ver turnos_logica.py)
+    from turnos_logica import crear_tablas_turnos
+    crear_tablas_turnos(conn)
+
+
 def init_db():
     """Inicializa tablas y carga seed si la BD esta vacia."""
     conn = get_db_connection()
     try:
         cur = conn.cursor()
-        ddl = _DDL_POSTGRES if USE_POSTGRES else _DDL_SQLITE
-        for stmt in ddl:
-            cur.execute(stmt)
-        conn.commit()
-
-        _run_migrations(conn)
-        _crear_indices(conn)
-        # Tablas del modulo de turnos de fin de semana (ver turnos_logica.py)
-        from turnos_logica import crear_tablas_turnos
-        crear_tablas_turnos(conn)
+        crear_estructura(conn)
         _sincronizar_ubicaciones(conn)
         _migrar_fotos_a_proxy_media(conn)
 
@@ -758,6 +777,8 @@ TABLAS_RESPALDO = [
     # modulo de turnos
     "turnos_tecnicos", "turnos_dias", "turnos_asignaciones",
     "turnos_ausencias", "turnos_cambios", "notificaciones", "turnos_correos",
+    # configuracion guardada (destinatarios del correo de ingreso, etc.)
+    "sistema_meta",
 ]
 
 

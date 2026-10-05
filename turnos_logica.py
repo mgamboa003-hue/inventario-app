@@ -144,6 +144,13 @@ def crear_tablas_turnos(conn):
     for tabla, col, tipo in COLUMNAS_NUEVAS:
         try:
             if USE_POSTGRES:
+                # Se consulta antes: un ALTER TABLE (aunque no cambie nada)
+                # bloquea la tabla completa, y esto corre en cada visita.
+                cur.execute("""SELECT 1 FROM information_schema.columns
+                               WHERE table_name = %s AND column_name = %s""", (tabla, col))
+                if cur.fetchone():
+                    conn.commit()
+                    continue
                 cur.execute(f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS {col} {tipo}")
             else:
                 cur.execute(f"PRAGMA table_info({tabla})")
