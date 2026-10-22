@@ -348,7 +348,8 @@ def leer_tecnicos(cur, solo_activos=False):
 
 
 def _tecnicos_para_algoritmo(tecnicos):
-    return [{"uid": t["usuario_id"], "activo": bool(t["activo"]),
+    return [{"uid": t["usuario_id"],
+             "activo": bool(t["activo"]) and bool(t.get("usuario_activo", True)),
              "ajuste_dias": t["ajuste_dias"] or 0, "ajuste_dobles": t["ajuste_dobles"] or 0,
              "orden": t["orden"] or 0} for t in tecnicos]
 
@@ -408,12 +409,45 @@ def confirmar_horizonte(cur, url_calendario=None):
     return len(dias)
 
 
+def retirar_usuarios_inactivos(cur):
+    """Saca de la rotacion a quienes tienen la cuenta desactivada (por ejemplo,
+    alguien desvinculado): queda inactivo en turnos_tecnicos, se borran sus
+    turnos desde hoy en adelante (provisorios y confirmados) y se cancelan sus
+    solicitudes de cambio pendientes. Los turnos pasados quedan en el historial.
+    Devuelve la lista de usuario_id retirados de algun turno futuro."""
+    ph = p()
+    inactivo = "FALSE" if USE_POSTGRES else "0"
+    cur.execute(f"SELECT id FROM usuarios WHERE activo = {inactivo}")
+    ids = [r["id"] for r in cur.fetchall()]
+    if not ids:
+        return []
+    marcas = ",".join([ph] * len(ids))
+    cur.execute(f"UPDATE turnos_tecnicos SET activo = 0 WHERE usuario_id IN ({marcas})", ids)
+    cur.execute(f"""UPDATE turnos_cambios SET estado = 'cancelada', respuesta = 'Usuario desactivado',
+                    resuelto_at = {ph} WHERE estado = 'pendiente' AND usuario_id IN ({marcas})""",
+                [ahora_str()] + ids)
+    cur.execute(f"""SELECT DISTINCT a.usuario_id FROM turnos_asignaciones a
+                    JOIN turnos_dias d ON d.id = a.dia_id
+                    WHERE d.fecha >= {ph} AND a.usuario_id IN ({marcas})""",
+                [hoy().isoformat()] + ids)
+    afectados = [r["usuario_id"] for r in cur.fetchall()]
+    if afectados:
+        cur.execute(f"""DELETE FROM turnos_asignaciones
+                        WHERE usuario_id IN ({marcas}) AND dia_id IN (
+                            SELECT id FROM turnos_dias WHERE fecha >= {ph})""",
+                    ids + [hoy().isoformat()])
+    return afectados
+
+
 def recalcular(cur, url_calendario=None):
     """Recalcula los dias provisorios desde hoy y completa plazas vacias de
     los confirmados (sin mover a nadie que ya este en un confirmado).
     Devuelve {fecha: faltan} para los dias con plazas sin cubrir."""
     ph = p()
     h = hoy()
+    # Quien tenga la cuenta desactivada sale de los turnos futuros; sus
+    # plazas quedan libres y el reparto de abajo las vuelve a cubrir.
+    retirar_usuarios_inactivos(cur)
     # Primero se confirma lo que haya entrado en el horizonte, para que esos
     # dias se traten como fijos.
     confirmar_horizonte(cur, url_calendario)

@@ -13,7 +13,7 @@ import bcrypt
 from dotenv import load_dotenv
 from flask import (Flask, Response, flash, jsonify, redirect, render_template,
                    request, send_file, session, url_for)
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from werkzeug.utils import secure_filename
 
 from db import get_db_connection, init_db, p, USE_POSTGRES, ahora, fecha_a_naive, reclamar_tarea_diaria
@@ -58,10 +58,13 @@ if FORCE_HTTPS:
     from werkzeug.middleware.proxy_fix import ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+# El token CSRF vive lo mismo que la sesion (no caduca a la hora por su cuenta).
+# Asi, una pantalla de login abierta mucho rato no da "The CSRF token has expired".
+app.config["WTF_CSRF_TIME_LIMIT"] = None
 csrf = CSRFProtect(app)
 
 # Modulo de turnos de fin de semana (turnos.py)
-from turnos import bp as turnos_bp
+from turnos import bp as turnos_bp, _recalcular as recalcular_turnos
 app.register_blueprint(turnos_bp)
 
 # Estructura del portal: areas, pestanas, reportes y escaner QR (portal.py)
@@ -477,6 +480,17 @@ def registrar_actividad_sesion():
 def archivo_muy_grande(e):
     flash(f"El archivo supera el limite de {MAX_UPLOAD_MB} MB.", "danger")
     return redirect(request.referrer or url_for("listar_productos")), 413
+
+
+@app.errorhandler(CSRFError)
+def csrf_invalido(e):
+    """Si el formulario quedo viejo (pestana abierta mucho tiempo, sesion
+    cerrada por inactividad, servidor reiniciado), en vez de la pagina cruda
+    "Bad Request" se vuelve a la pantalla con un aviso para reintentar."""
+    flash("La pagina estuvo abierta mucho tiempo. Vuelve a intentarlo.", "warning")
+    if request.endpoint == "login" or not session.get("logged_in"):
+        return redirect(url_for("login"))
+    return redirect(request.referrer or url_for("login"))
 
 
 @app.errorhandler(404)
@@ -2671,6 +2685,17 @@ def toggle_usuario(uid):
         registrar_auditoria("usuarios", uid, "toggle", session.get("user_id"), session.get("nombre"),
                              f"Usuario {'activado' if nuevo else 'desactivado'}")
         flash("Estado de usuario actualizado.", "info")
+        if not nuevo:
+            # Un usuario desactivado sale tambien de los turnos de fin de semana:
+            # se le quitan los turnos futuros y se reparten sus plazas.
+            try:
+                recalcular_turnos(cur)
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                app.logger.exception("No se pudieron actualizar los turnos al desactivar usuario %s", uid)
+                flash(f"El usuario quedó inactivo, pero no se pudo actualizar la planificación de turnos: {e}",
+                      "warning")
     conn.close()
     return redirect(url_for("admin_usuarios"))
 
