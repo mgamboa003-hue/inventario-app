@@ -61,6 +61,18 @@
             <input type="text" class="form-control" id="campoUsuario" name="usuario" value="{{ session.get('nombre','') }}" placeholder="Tu nombre">
           </div>
 
+          {% if tipo == 'salida' %}
+          <div class="mb-3">
+            <label class="form-label" for="campoDestino">Para qué equipo o máquina</label>
+            <input type="text" class="form-control" id="campoDestino" name="destino" list="listaEquipos"
+                   maxlength="120" autocomplete="off" placeholder="Ej: Selladora 2, Sierra doble cabezal 3...">
+            <datalist id="listaEquipos">
+              {% for e in equipos %}<option value="{{ e }}">{% endfor %}
+            </datalist>
+            <div class="form-text">Opcional. Sirve para saber en qué equipos se gastan los repuestos.</div>
+          </div>
+          {% endif %}
+
           <div class="mb-4">
             <label class="form-label" for="campoMotivo">Motivo u observaciones</label>
             <textarea class="form-control" id="campoMotivo" name="motivo" rows="2"

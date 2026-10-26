@@ -6,7 +6,7 @@ Soporta SQLite (desarrollo/local) y PostgreSQL (produccion Railway/Render).
 import json
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
@@ -443,6 +443,9 @@ def _run_migrations(conn):
         ("productos",  "created_at",      "TEXT" if not USE_POSTGRES else "TIMESTAMPTZ"),
         ("productos",  "activo",          "INTEGER DEFAULT 1" if not USE_POSTGRES else "BOOLEAN DEFAULT TRUE"),
         ("movimientos","usuario_id",      "INTEGER"),
+        # stock que quedo despues del movimiento, y equipo/maquina de destino de una salida
+        ("movimientos","saldo",           "INTEGER"),
+        ("movimientos","destino",         "TEXT"),
         ("solicitudes","unidad",          "TEXT DEFAULT 'unidad'"),
     ]
     existentes = set()
@@ -551,6 +554,110 @@ def _migrar_fotos_a_proxy_media(conn):
                     pass
 
 
+def _a_datetime(valor):
+    """Fecha de la BD (datetime en Postgres, texto en SQLite) -> datetime naive."""
+    if valor is None:
+        return None
+    if isinstance(valor, datetime):
+        return valor.replace(tzinfo=None)
+    try:
+        return datetime.strptime(str(valor)[:19], "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        try:
+            return datetime.strptime(str(valor)[:10], "%Y-%m-%d")
+        except ValueError:
+            return None
+
+
+def _creado_en_hora_chile(valor):
+    """productos.created_at se guarda en UTC (datetime('now') en SQLite, now()
+    en Postgres), a diferencia de movimientos.fecha que va en hora de Chile."""
+    if valor is None:
+        return None
+    if isinstance(valor, datetime) and valor.tzinfo is not None:
+        return valor.astimezone(TZ_CHILE).replace(tzinfo=None)
+    dt = _a_datetime(valor)
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=ZoneInfo("UTC")).astimezone(TZ_CHILE).replace(tzinfo=None)
+
+
+def _migrar_saldos_movimientos(conn):
+    """Una sola vez: deja el historial de movimientos cuadrado con el stock.
+
+    Antes, crear un repuesto con stock inicial o corregir el stock desde la
+    ficha no dejaba movimiento, asi que entradas - salidas no daba el stock
+    actual. Para cada repuesto se calcula esa diferencia y, si no es cero, se
+    registra un movimiento 'saldo_inicial' antes del primer movimiento. Luego
+    se rellena la columna saldo (stock despues de cada movimiento).
+    Se marca en sistema_meta para que corra una vez aunque haya varios workers."""
+    clave = "migracion_saldos_movimientos_v1"
+    cur = conn.cursor()
+    ph = p()
+    try:
+        if USE_POSTGRES:
+            cur.execute(f"INSERT INTO sistema_meta (clave, valor) VALUES ({ph}, {ph}) ON CONFLICT DO NOTHING",
+                        (clave, ahora_str()))
+        else:
+            cur.execute(f"INSERT OR IGNORE INTO sistema_meta (clave, valor) VALUES ({ph}, {ph})",
+                        (clave, ahora_str()))
+        conn.commit()
+        if not (cur.rowcount or 0) > 0:
+            return
+    except Exception:
+        conn.rollback()
+        return
+
+    try:
+        cur.execute("SELECT id, stock_actual, created_at FROM productos")
+        productos = {r["id"]: r for r in cur.fetchall()}
+        cur.execute("SELECT id, producto_id, tipo, cantidad, fecha FROM movimientos ORDER BY fecha, id")
+        por_producto = {}
+        for m in cur.fetchall():
+            por_producto.setdefault(m["producto_id"], []).append(m)
+
+        cerrado = ahora_str()
+        for pid, prod in productos.items():
+            movs = por_producto.get(pid, [])
+            neto = 0
+            for m in movs:
+                if m["tipo"] == "entrada":
+                    neto += m["cantidad"]
+                elif m["tipo"] == "salida":
+                    neto -= m["cantidad"]
+            inicial = (prod["stock_actual"] or 0) - neto
+            if inicial != 0:
+                if movs:
+                    f0 = _a_datetime(movs[0]["fecha"])
+                    fecha = (f0 - timedelta(seconds=1)) if f0 else ahora()
+                else:
+                    fecha = _creado_en_hora_chile(prod["created_at"]) or ahora()
+                cur.execute(
+                    f"""INSERT INTO movimientos (producto_id, tipo, cantidad, fecha, usuario, motivo, saldo)
+                        VALUES ({ph},'saldo_inicial',{ph},{ph},'Sistema',{ph},{ph})""",
+                    (pid, inicial, fecha.strftime("%Y-%m-%d %H:%M:%S"),
+                     f"Stock que no tenía movimiento registrado (altas y ajustes anteriores al {cerrado[:10]})",
+                     inicial),
+                )
+            saldo = inicial
+            for m in movs:
+                if m["tipo"] == "entrada":
+                    saldo += m["cantidad"]
+                elif m["tipo"] == "salida":
+                    saldo -= m["cantidad"]
+                cur.execute(f"UPDATE movimientos SET saldo = {ph} WHERE id = {ph}", (saldo, m["id"]))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        # se libera la marca para que se reintente en el proximo arranque
+        try:
+            cur.execute(f"DELETE FROM sistema_meta WHERE clave = {ph}", (clave,))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+        raise
+
+
 def _sincronizar_ubicaciones(conn):
     """Rellena el catalogo de ubicaciones con los valores de texto ya usados
     en productos.ubicacion, para que las ubicaciones existentes (Caja 1, etc.)
@@ -646,6 +753,12 @@ def init_db():
             _seed_data(cur)
             conn.commit()
             _sincronizar_ubicaciones(conn)
+
+        # Despues del seed, para que el stock de ejemplo tambien quede cuadrado.
+        try:
+            _migrar_saldos_movimientos(conn)
+        except Exception as e:
+            print(f"[init_db] No se pudo completar la migracion de saldos de movimientos: {e}")
 
         try:
             cur.execute("UPDATE productos SET planta = 'quilicura' WHERE planta IS NULL")

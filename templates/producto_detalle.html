@@ -134,22 +134,23 @@
     <table class="table table-hover mb-0 align-middle table-stack">
       <thead><tr>
         <th>Fecha</th><th>Tipo</th><th class="text-center">Cantidad</th>
-        <th>Usuario</th><th>Motivo</th>
+        <th class="text-center">Saldo</th><th>Usuario</th><th>Destino / motivo</th>
       </tr></thead>
       <tbody>
         {% for m in movimientos %}
         <tr>
           <td class="text-muted small">{{ m['fecha']|string|truncate(16, True, '') }}</td>
           <td>
-            {% if m['tipo'] == 'entrada' %}
-              <span class="badge bg-success"><i class="bi bi-plus"></i> Entrada</span>
-            {% else %}
-              <span class="badge bg-danger"><i class="bi bi-dash"></i> Salida</span>
-            {% endif %}
+            {% set _t = TIPOS_MOVIMIENTO.get(m['tipo'], {'nombre': m['tipo'], 'icono': 'dot', 'clase': 'mov-inicial'}) %}
+            <span class="badge mov-badge {{ _t.clase }}"><i class="bi bi-{{ _t.icono }}"></i>{{ _t.nombre }}</span>
           </td>
-          <td class="text-center fw-bold">{{ m['cantidad'] }}</td>
+          <td class="text-center fw-bold">{% set _c = m|cantidad_mov %}<span class="mov-cant {{ 'pos' if _c.startswith('+') else ('neg' if _c.startswith('−') else '') }}">{{ _c }}</span></td>
+          <td class="text-center mov-saldo">{{ m['saldo'] if m['saldo'] is not none else '—' }}</td>
           <td class="text-muted small">{{ m['usuario'] or '—' }}</td>
-          <td class="text-muted small">{{ m['motivo'] or '—' }}</td>
+          <td class="text-muted small">
+            {% if m['destino'] %}<span class="fw-semibold text-body">{{ m['destino'] }}</span>{% if m['motivo'] %}<br>{% endif %}{% endif %}
+            {{ m['motivo'] or ('' if m['destino'] else '—') }}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

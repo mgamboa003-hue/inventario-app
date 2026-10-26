@@ -91,8 +91,18 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Stock actual</label>
-                <input type="number" class="form-control" name="stock_actual" min="0" value="{{ producto['stock_actual'] if editing else (valores.stock_actual if valores else 0) }}">
+                <input type="number" class="form-control" name="stock_actual" id="campoStockActual" min="0" value="{{ producto['stock_actual'] if editing else (valores.stock_actual if valores else 0) }}"
+                       {% if editing %}data-original="{{ producto['stock_actual'] }}"{% endif %}>
+                {% if editing %}<div class="form-text">Para entradas y salidas normales usa <em>Movimientos</em>; aquí solo correcciones.</div>{% endif %}
               </div>
+              {% if editing %}
+              <div class="col-12 order-last d-none" id="bloqueMotivoAjuste">
+                <label class="form-label fw-semibold" for="campoMotivoAjuste">Motivo del ajuste de stock <span class="req">*</span></label>
+                <input type="text" class="form-control" name="motivo_ajuste" id="campoMotivoAjuste" maxlength="300"
+                       placeholder="Ej: conteo físico, corrección de error de digitación...">
+                <div class="form-text" id="textoAjuste"></div>
+              </div>
+              {% endif %}
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Stock mínimo</label>
                 <input type="number" class="form-control" name="stock_minimo" min="0" value="{{ producto['stock_minimo'] if editing else (valores.stock_minimo if valores else 0) }}">
@@ -229,5 +239,28 @@ fetch('/api/productos').then(r=>r.json()).then(prods => {
     revisarCodigo();
   }
 });
+
+// Si se cambia el stock al editar, se pide el motivo: queda como "Ajuste" en Movimientos.
+(function() {
+  const campo = document.getElementById('campoStockActual');
+  const bloque = document.getElementById('bloqueMotivoAjuste');
+  if (!campo || !bloque || campo.dataset.original === undefined) return;
+  const motivo = document.getElementById('campoMotivoAjuste');
+  const texto = document.getElementById('textoAjuste');
+  const original = parseInt(campo.dataset.original || '0', 10);
+  function revisar() {
+    const nuevo = parseInt(campo.value || '0', 10);
+    const cambia = !isNaN(nuevo) && nuevo !== original;
+    bloque.classList.toggle('d-none', !cambia);
+    motivo.required = cambia;
+    if (cambia) {
+      const d = nuevo - original;
+      texto.textContent = 'Stock ' + original + ' → ' + nuevo + ' (' + (d > 0 ? '+' : '−') + Math.abs(d) +
+        '). Quedará registrado como ajuste en Movimientos.';
+    }
+  }
+  campo.addEventListener('input', revisar);
+  revisar();
+})();
 </script>
 {% endblock %}

@@ -804,6 +804,23 @@ a.stat-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2p
 .badge-stock-low  { background: var(--warn-bg);   color: var(--warn);   border-color: var(--warn-bd); }
 .badge-stock-zero { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-bd); }
 
+/* Tipos de movimiento de stock (pantalla Movimientos y ficha del repuesto) */
+.mov-badge {
+  display: inline-flex; align-items: center; gap: .3em; white-space: nowrap;
+  font-weight: 700; padding: .25em .5em; border: 1px solid transparent;
+}
+.mov-entrada    { background: var(--ok-bg);     color: var(--ok);     border-color: var(--ok-bd); }
+.mov-salida     { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-bd); }
+.mov-alta       { background: var(--info-bg);   color: var(--info);   border-color: var(--info-bd); }
+.mov-ajuste     { background: var(--warn-bg);   color: var(--warn);   border-color: var(--warn-bd); }
+.mov-baja, .mov-restaurado, .mov-inicial {
+  background: var(--surface-3); color: var(--text-soft); border-color: var(--border-strong);
+}
+.mov-cant { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mov-cant.pos { color: var(--ok); }
+.mov-cant.neg { color: var(--danger); }
+.mov-saldo { font-variant-numeric: tabular-nums; color: var(--text-soft); }
+
 /* Insignias de Bootstrap reinterpretadas con la paleta */
 .badge.bg-primary   { background: var(--info-bg) !important; color: var(--info) !important; }
 .badge.bg-success   { background: var(--ok-bg) !important; color: var(--ok) !important; }

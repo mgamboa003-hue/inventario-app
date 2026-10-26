@@ -888,6 +888,50 @@ app.add_url_rule("/bodega", "bodega_resumen", index)
 PRODUCTOS_POR_PAGINA = 20
 MOVIMIENTOS_POR_PAGINA = 20
 
+# Tipos de movimiento de stock. 'entrada' y 'salida' son los de siempre (los
+# unicos que cuentan para consumo y graficos); el resto deja registro de todo lo
+# que cambia o explica el stock de un repuesto.
+#   cantidad: entrada/salida/alta en positivo; ajuste y saldo_inicial con signo;
+#   baja/restaurado en 0 (no mueven stock). saldo = stock que quedo despues.
+TIPOS_MOVIMIENTO = {
+    "entrada":       {"nombre": "Entrada",      "plural": "Entradas",       "icono": "box-arrow-in-down", "clase": "mov-entrada", "signo": 1},
+    "salida":        {"nombre": "Salida",       "plural": "Salidas",        "icono": "box-arrow-up",      "clase": "mov-salida",  "signo": -1},
+    "alta":          {"nombre": "Alta",         "plural": "Altas (repuestos nuevos)", "icono": "plus-square", "clase": "mov-alta", "signo": 1},
+    "ajuste":        {"nombre": "Ajuste",       "plural": "Ajustes de stock", "icono": "sliders",         "clase": "mov-ajuste",  "signo": 1},
+    "baja":          {"nombre": "Baja",         "plural": "Bajas (eliminados)", "icono": "trash3",         "clase": "mov-baja",    "signo": 0},
+    "restaurado":    {"nombre": "Restaurado",   "plural": "Restaurados",    "icono": "arrow-counterclockwise", "clase": "mov-restaurado", "signo": 0},
+    "saldo_inicial": {"nombre": "Saldo inicial", "plural": "Saldos iniciales", "icono": "flag",           "clase": "mov-inicial", "signo": 1},
+}
+
+
+def registrar_movimiento(cur, producto_id, tipo, cantidad, saldo, usuario=None, usuario_id=None,
+                         motivo=None, destino=None):
+    """Inserta una fila en movimientos (no hace commit ni toca el stock)."""
+    ph = p()
+    cur.execute(
+        f"""INSERT INTO movimientos (producto_id, tipo, cantidad, fecha, usuario, usuario_id, motivo, saldo, destino)
+            VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})""",
+        (producto_id, tipo, cantidad, ahora().strftime("%Y-%m-%d %H:%M:%S"),
+         (usuario or "")[:100], usuario_id, (motivo or "")[:500] or None, saldo,
+         (destino or "").strip()[:120] or None),
+    )
+
+
+def _cantidad_mov(m):
+    """Texto de la cantidad con signo, para pantalla y Excel."""
+    tipo, cant = m["tipo"], m["cantidad"] or 0
+    if tipo in ("baja", "restaurado"):
+        return "—"
+    if tipo == "salida":
+        return f"−{cant}"
+    if tipo in ("ajuste", "saldo_inicial"):
+        return f"+{cant}" if cant > 0 else (f"−{abs(cant)}" if cant < 0 else "0")
+    return f"+{cant}"
+
+
+app.jinja_env.globals["TIPOS_MOVIMIENTO"] = TIPOS_MOVIMIENTO
+app.jinja_env.filters["cantidad_mov"] = _cantidad_mov
+
 
 @app.route("/productos")
 @login_required
@@ -1050,6 +1094,11 @@ def nuevo_producto():
             cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1", (nombre,))
             nuevo_id_row = cur.fetchone()
             nuevo_id = nuevo_id_row["id"] if nuevo_id_row else None
+            if nuevo_id:
+                registrar_movimiento(cur, nuevo_id, "alta", stock_actual, stock_actual,
+                                     session.get("nombre"), session.get("user_id"),
+                                     "Repuesto nuevo" + (f" (stock inicial {stock_actual})" if stock_actual else ""))
+                conn.commit()
             registrar_auditoria("productos", nuevo_id, "crear", session.get("user_id"), session.get("nombre"),
                                  f"Producto '{nombre}' (codigo {codigo or '-'}) creado con stock {stock_actual}")
             flash("Producto creado correctamente.", "success")
@@ -1110,6 +1159,14 @@ def editar_producto(pid):
             flash("Ya existe otro producto con ese codigo.", "danger")
             return redirect(url_for("editar_producto", pid=pid))
 
+        stock_anterior = producto["stock_actual"] or 0
+        motivo_ajuste = (request.form.get("motivo_ajuste") or "").strip()
+        if stock_actual != stock_anterior and not motivo_ajuste:
+            conn.close()
+            flash("Cambiaste el stock: indica el motivo del ajuste (por ejemplo, conteo físico). "
+                  "No se guardaron los cambios.", "warning")
+            return redirect(url_for("editar_producto", pid=pid))
+
         try:
             cambios = []
             if producto["stock_minimo"] != stock_minimo:
@@ -1129,6 +1186,9 @@ def editar_producto(pid):
                 (codigo, nombre, descripcion, categoria, equipo, linea,
                  stock_minimo, stock_actual, ubicacion, proveedor, precio, imagen_url, planta, pid),
             )
+            if stock_actual != stock_anterior:
+                registrar_movimiento(cur, pid, "ajuste", stock_actual - stock_anterior, stock_actual,
+                                     session.get("nombre"), session.get("user_id"), motivo_ajuste)
             conn.commit()
             registrar_auditoria("productos", pid, "editar", session.get("user_id"), session.get("nombre"),
                                  "; ".join(cambios) if cambios else "Edicion sin cambios de stock/precio")
@@ -1184,7 +1244,13 @@ def eliminar_producto(pid):
     conn = get_db_connection()
     ph = p()
     try:
-        conn.cursor().execute(f"UPDATE productos SET activo = {ACTIVO_FALSE} WHERE id = {ph}", (pid,))
+        cur = conn.cursor()
+        cur.execute(f"SELECT stock_actual FROM productos WHERE id = {ph}", (pid,))
+        fila = cur.fetchone()
+        cur.execute(f"UPDATE productos SET activo = {ACTIVO_FALSE} WHERE id = {ph}", (pid,))
+        if fila:
+            registrar_movimiento(cur, pid, "baja", 0, fila["stock_actual"] or 0,
+                                 session.get("nombre"), session.get("user_id"), "Repuesto eliminado del inventario")
         conn.commit()
         registrar_auditoria("productos", pid, "eliminar", session.get("user_id"), session.get("nombre"),
                              "Producto desactivado (soft delete)")
@@ -1201,7 +1267,13 @@ def restaurar_producto(pid):
     conn = get_db_connection()
     ph = p()
     try:
-        conn.cursor().execute(f"UPDATE productos SET activo = {ACTIVO_TRUE} WHERE id = {ph}", (pid,))
+        cur = conn.cursor()
+        cur.execute(f"SELECT stock_actual FROM productos WHERE id = {ph}", (pid,))
+        fila = cur.fetchone()
+        cur.execute(f"UPDATE productos SET activo = {ACTIVO_TRUE} WHERE id = {ph}", (pid,))
+        if fila:
+            registrar_movimiento(cur, pid, "restaurado", 0, fila["stock_actual"] or 0,
+                                 session.get("nombre"), session.get("user_id"), "Repuesto restaurado al inventario")
         conn.commit()
         registrar_auditoria("productos", pid, "restaurar", session.get("user_id"), session.get("nombre"),
                              "Producto reactivado")
@@ -1212,6 +1284,45 @@ def restaurar_producto(pid):
 
 
 # MOVIMIENTOS
+def _filtros_movimientos(args, planta_activa):
+    """Arma el WHERE de movimientos a partir de los filtros de la pantalla
+    (lo usan el listado y la exportacion a Excel, para que coincidan)."""
+    ph = p()
+    tipo = args.get("tipo", "")
+    producto_id = args.get("producto_id", "")
+    usuario = args.get("usuario", "")
+    desde = args.get("desde", "")
+    hasta = args.get("hasta", "")
+    where_sql = " WHERE 1=1"
+    params = []
+    if tipo in TIPOS_MOVIMIENTO:
+        where_sql += f" AND m.tipo = {ph}"; params.append(tipo)
+    if producto_id:
+        where_sql += f" AND m.producto_id = {ph}"; params.append(producto_id)
+    if usuario:
+        # el nombre se escribe a mano: "Jimmy" y "jimmy " son la misma persona
+        where_sql += f" AND LOWER(TRIM(m.usuario)) = LOWER(TRIM({ph}))"; params.append(usuario)
+    if desde:
+        if USE_POSTGRES:
+            where_sql += f" AND m.fecha::date >= {ph}::date"
+        else:
+            where_sql += f" AND date(m.fecha) >= date({ph})"
+        params.append(desde)
+    if hasta:
+        if USE_POSTGRES:
+            where_sql += f" AND m.fecha::date <= {ph}::date"
+        else:
+            where_sql += f" AND date(m.fecha) <= date({ph})"
+        params.append(hasta)
+    if planta_activa:
+        where_sql += f" AND p.planta = {ph}"; params.append(planta_activa)
+    return where_sql, params
+
+
+_SELECT_MOVIMIENTOS = ("SELECT m.*, p.nombre AS nombre_producto, p.codigo AS codigo_producto "
+                       "FROM movimientos m JOIN productos p ON p.id = m.producto_id")
+
+
 @app.route("/movimientos")
 @login_required
 def listar_movimientos():
@@ -1219,6 +1330,7 @@ def listar_movimientos():
         return redirect(url_for("listar_solicitudes"))
     tipo = request.args.get("tipo", "")
     producto_id = request.args.get("producto_id", "")
+    usuario = request.args.get("usuario", "")
     desde = request.args.get("desde", "")
     hasta = request.args.get("hasta", "")
     planta_activa = planta_filtro_activo()
@@ -1234,28 +1346,17 @@ def listar_movimientos():
     else:
         cur.execute("SELECT id, nombre, codigo FROM productos ORDER BY nombre")
     productos = cur.fetchall()
+    cur.execute("SELECT DISTINCT usuario FROM movimientos WHERE usuario IS NOT NULL AND TRIM(usuario) <> ''")
+    vistos = {}
+    for r in cur.fetchall():
+        nombre = r["usuario"].strip()
+        clave = nombre.lower()
+        # entre variantes ("jimmy" / "Jimmy") se muestra la que empieza con mayuscula
+        if clave not in vistos or (nombre[:1].isupper() and not vistos[clave][:1].isupper()):
+            vistos[clave] = nombre
+    usuarios = sorted(vistos.values(), key=str.lower)
 
-    where_sql = " WHERE 1=1"
-    params = []
-    if tipo in ("entrada", "salida"):
-        where_sql += f" AND m.tipo = {ph}"; params.append(tipo)
-    if producto_id:
-        where_sql += f" AND m.producto_id = {ph}"; params.append(producto_id)
-    if desde:
-        if USE_POSTGRES:
-            where_sql += f" AND m.fecha::date >= {ph}::date"
-        else:
-            where_sql += f" AND date(m.fecha) >= date({ph})"
-        params.append(desde)
-    if hasta:
-        if USE_POSTGRES:
-            where_sql += f" AND m.fecha::date <= {ph}::date"
-        else:
-            where_sql += f" AND date(m.fecha) <= date({ph})"
-        params.append(hasta)
-    if planta_activa:
-        where_sql += f" AND p.planta = {ph}"; params.append(planta_activa)
-
+    where_sql, params = _filtros_movimientos(request.args, planta_activa)
     from_sql = "FROM movimientos m JOIN productos p ON p.id = m.producto_id"
 
     cur.execute(f"SELECT COUNT(*) AS n {from_sql}{where_sql}", params)
@@ -1266,8 +1367,7 @@ def listar_movimientos():
     offset = (pagina - 1) * MOVIMIENTOS_POR_PAGINA
 
     cur.execute(
-        f"SELECT m.*, p.nombre AS nombre_producto, p.codigo AS codigo_producto {from_sql}{where_sql} "
-        f"ORDER BY m.fecha DESC, m.id DESC LIMIT {ph} OFFSET {ph}",
+        f"{_SELECT_MOVIMIENTOS}{where_sql} ORDER BY m.fecha DESC, m.id DESC LIMIT {ph} OFFSET {ph}",
         params + [MOVIMIENTOS_POR_PAGINA, offset],
     )
     movimientos = cur.fetchall()
@@ -1278,12 +1378,61 @@ def listar_movimientos():
 
     return render_template(
         "movimientos.html",
-        movimientos=movimientos, productos=productos,
-        tipo=tipo, producto_id=producto_id, desde=desde, hasta=hasta,
+        movimientos=movimientos, productos=productos, usuarios=usuarios,
+        tipo=tipo, producto_id=producto_id, usuario=usuario, desde=desde, hasta=hasta,
         planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS,
         pagina=pagina, total_paginas=total_paginas, total_movimientos=total_movimientos,
         base_params=base_params,
     )
+
+
+@app.route("/movimientos/exportar")
+@login_required
+def exportar_movimientos():
+    """Excel con los movimientos que muestra la pantalla, con los mismos filtros."""
+    if session.get("role") == "comprador":
+        return redirect(url_for("listar_solicitudes"))
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment
+
+    planta_activa = planta_filtro_activo()
+    where_sql, params = _filtros_movimientos(request.args, planta_activa)
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(f"{_SELECT_MOVIMIENTOS}{where_sql} ORDER BY m.fecha DESC, m.id DESC", params)
+    filas = cur.fetchall()
+    conn.close()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Movimientos"
+    ws.append(["Fecha", "Tipo", "Código", "Repuesto", "Cantidad", "Saldo", "Usuario", "Destino", "Motivo"])
+    brd = _estilo_encabezado(ws)
+    for m in filas:
+        info = TIPOS_MOVIMIENTO.get(m["tipo"], {"nombre": m["tipo"], "signo": 1})
+        cant = m["cantidad"] or 0
+        if m["tipo"] == "salida":
+            cant = -cant
+        elif m["tipo"] in ("baja", "restaurado"):
+            cant = None
+        ws.append([
+            str(m["fecha"])[:16], info["nombre"], m["codigo_producto"] or "", m["nombre_producto"],
+            cant, m["saldo"], m["usuario"] or "", m["destino"] or "", m["motivo"] or "",
+        ])
+    for row in ws.iter_rows(min_row=2):
+        for cell in row:
+            cell.border = brd
+        row[4].alignment = Alignment(horizontal="center")
+        row[5].alignment = Alignment(horizontal="center")
+    for col, w in zip("ABCDEFGHI", [17, 14, 16, 40, 10, 10, 22, 24, 40]):
+        ws.column_dimensions[col].width = w
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+
+    buf = io.BytesIO(); wb.save(buf); buf.seek(0)
+    return send_file(buf, download_name=f"movimientos_{ahora().strftime('%Y-%m-%d')}.xlsx",
+                     as_attachment=True,
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 @app.route("/movimientos/nuevo/<tipo>", methods=["GET", "POST"])
@@ -1321,6 +1470,7 @@ def nuevo_movimiento(tipo):
 
         usuario = request.form.get("usuario", session.get("nombre", ""))[:100]
         motivo = request.form.get("motivo", "")[:500]
+        destino = (request.form.get("destino") or "").strip()[:120] if tipo == "salida" else ""
 
         cur.execute(f"SELECT stock_actual, planta FROM productos WHERE id = {ph}", (producto_id,))
         prod = cur.fetchone()
@@ -1340,24 +1490,29 @@ def nuevo_movimiento(tipo):
             return redirect(url_for("nuevo_movimiento", tipo=tipo))
 
         nuevo_stock = stock_actual + cantidad if tipo == "entrada" else stock_actual - cantidad
-        fecha = ahora().strftime("%Y-%m-%d %H:%M:%S")
         user_id = session.get("user_id")
 
-        cur.execute(
-            f"INSERT INTO movimientos (producto_id,tipo,cantidad,fecha,usuario,usuario_id,motivo) VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph})",
-            (producto_id, tipo, cantidad, fecha, usuario, user_id, motivo),
-        )
+        registrar_movimiento(cur, producto_id, tipo, cantidad, nuevo_stock, usuario, user_id, motivo, destino)
         cur.execute(f"UPDATE productos SET stock_actual = {ph} WHERE id = {ph}", (nuevo_stock, producto_id))
         conn.commit()
         registrar_auditoria("movimientos", producto_id, tipo, user_id, usuario,
-                             f"{cantidad} unidad(es). Stock {stock_actual}->{nuevo_stock}. Motivo: {motivo or '-'}")
+                             f"{cantidad} unidad(es). Stock {stock_actual}->{nuevo_stock}. "
+                             f"{('Destino: ' + destino + '. ') if destino else ''}Motivo: {motivo or '-'}")
         conn.close()
         flash("Movimiento registrado.", "success")
         return redirect(url_for("listar_movimientos"))
 
+    equipos = []
+    if tipo == "salida":
+        try:
+            cur.execute("SELECT nombre FROM equipos ORDER BY nombre")
+            equipos = [r["nombre"] for r in cur.fetchall()]
+        except Exception:
+            equipos = []
     conn.close()
     producto_id_pref = request.args.get("producto_id", type=int)
-    return render_template("movimiento_form.html", tipo=tipo, productos=productos, producto_id_pref=producto_id_pref)
+    return render_template("movimiento_form.html", tipo=tipo, productos=productos,
+                           producto_id_pref=producto_id_pref, equipos=equipos)
 
 
 # EXPORTAR EXCEL
@@ -3303,6 +3458,10 @@ def api_crear_producto():
         conn.commit()
         cur.execute(f"SELECT id FROM productos WHERE nombre = {ph} ORDER BY id DESC LIMIT 1", (nombre,))
         row = cur.fetchone()
+        if row:
+            registrar_movimiento(cur, row["id"], "alta", stock_actual, stock_actual,
+                                 request.api_actor["nombre"], request.api_actor["id"], "Repuesto nuevo (vía API)")
+            conn.commit()
         conn.close()
         registrar_auditoria("productos", row["id"] if row else None, "crear",
                              request.api_actor["id"], request.api_actor["nombre"], f"Creado via API: '{nombre}'")
@@ -3341,14 +3500,12 @@ def api_crear_movimiento():
         return jsonify({"error": f"Stock insuficiente. Solo hay {stock_actual} unidades."}), 400
 
     nuevo_stock = stock_actual + cantidad if tipo == "entrada" else stock_actual - cantidad
-    fecha = ahora().strftime("%Y-%m-%d %H:%M:%S")
     motivo = str(data.get("motivo", ""))[:500]
+    destino = str(data.get("destino") or "")[:120] if tipo == "salida" else ""
     usuario = request.api_actor["nombre"]
 
-    cur.execute(
-        f"INSERT INTO movimientos (producto_id,tipo,cantidad,fecha,usuario,usuario_id,motivo) VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph})",
-        (producto_id, tipo, cantidad, fecha, usuario, request.api_actor["id"], motivo),
-    )
+    registrar_movimiento(cur, producto_id, tipo, cantidad, nuevo_stock, usuario,
+                         request.api_actor["id"], motivo, destino)
     cur.execute(f"UPDATE productos SET stock_actual = {ph} WHERE id = {ph}", (nuevo_stock, producto_id))
     conn.commit()
     conn.close()

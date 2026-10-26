@@ -34,7 +34,7 @@
   </div>
 </div>
 
-{% set n_filtros = (1 if tipo else 0) + (1 if producto_id else 0) + (1 if desde else 0)
+{% set n_filtros = (1 if tipo else 0) + (1 if producto_id else 0) + (1 if usuario else 0) + (1 if desde else 0)
                    + (1 if hasta else 0) + (1 if (planta_activa and not planta_restringida) else 0) %}
 <div class="filter-bar mb-3">
   <button class="filter-toggle d-lg-none" type="button" data-bs-toggle="collapse"
@@ -63,8 +63,9 @@
       <label class="form-label" for="fTipo">Tipo</label>
       <select name="tipo" id="fTipo" class="form-select form-select-sm">
         <option value="">Todos</option>
-        <option value="entrada" {% if tipo == 'entrada' %}selected{% endif %}>Entradas</option>
-        <option value="salida"  {% if tipo == 'salida'  %}selected{% endif %}>Salidas</option>
+        {% for clave, t in TIPOS_MOVIMIENTO.items() %}
+        <option value="{{ clave }}" {% if tipo == clave %}selected{% endif %}>{{ t.plural }}</option>
+        {% endfor %}
       </select>
     </div>
     <div class="col-12 col-md-3">
@@ -75,6 +76,15 @@
         <option value="{{ p['id'] }}" {% if producto_id|string == p['id']|string %}selected{% endif %}>
           {{ p['nombre'] }}{% if p['codigo'] %} [{{ p['codigo'] }}]{% endif %}
         </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label" for="fUsuario">Usuario</label>
+      <select name="usuario" id="fUsuario" class="form-select form-select-sm">
+        <option value="">Todos</option>
+        {% for u in usuarios %}
+        <option value="{{ u }}" {% if usuario|lower|trim == u|lower %}selected{% endif %}>{{ u }}</option>
         {% endfor %}
       </select>
     </div>
@@ -95,8 +105,13 @@
 </div>
 
 <div class="table-card">
-  <div class="table-header">
-    <h6><i class="bi bi-arrow-left-right me-2"></i>{{ total_movimientos }} movimiento{{ 's' if total_movimientos != 1 }}</h6>
+  <div class="table-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
+    <h6 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>{{ total_movimientos }} movimiento{{ 's' if total_movimientos != 1 }}</h6>
+    {% if total_movimientos %}
+    <a href="{{ url_for('exportar_movimientos', **base_params) }}" class="btn btn-sm btn-outline-success">
+      <i class="bi bi-file-earmark-excel me-1"></i>Exportar a Excel
+    </a>
+    {% endif %}
   </div>
   {% if movimientos %}
   <div class="table-responsive">
@@ -104,7 +119,8 @@
       <thead>
         <tr>
           <th>Fecha</th><th>Tipo</th><th>Repuesto</th>
-          <th class="text-center">Cantidad</th><th>Usuario</th><th>Motivo</th>
+          <th class="text-center">Cantidad</th><th class="text-center">Saldo</th>
+          <th>Usuario</th><th>Destino / motivo</th>
         </tr>
       </thead>
       <tbody>
@@ -112,11 +128,8 @@
         <tr>
           <td data-cell="meta" data-label="Fecha" class="text-muted small text-nowrap">{{ m['fecha']|string|truncate(16, True, '') }}</td>
           <td data-cell="status">
-            {% if m['tipo'] == 'entrada' %}
-              <span class="badge badge-stock-ok"><i class="bi bi-box-arrow-in-down"></i>Entrada</span>
-            {% else %}
-              <span class="badge badge-stock-zero"><i class="bi bi-box-arrow-up"></i>Salida</span>
-            {% endif %}
+            {% set _t = TIPOS_MOVIMIENTO.get(m['tipo'], {'nombre': m['tipo'], 'icono': 'dot', 'clase': 'mov-inicial'}) %}
+            <span class="badge mov-badge {{ _t.clase }}"><i class="bi bi-{{ _t.icono }}"></i>{{ _t.nombre }}</span>
           </td>
           <td data-cell="title">
             <a href="{{ url_for('detalle_producto', pid=m['producto_id']) }}" class="fw-semibold text-dark">
@@ -126,9 +139,13 @@
             <span class="text-muted ms-1 font-monospace small">[{{ m['codigo_producto'] }}]</span>
             {% endif %}
           </td>
-          <td data-cell="code" data-label="Cantidad" class="text-center fw-bold fs-5">{{ m['cantidad'] }}</td>
+          <td data-cell="code" data-label="Cantidad" class="text-center fw-bold fs-5">{% set _c = m|cantidad_mov %}<span class="mov-cant {{ 'pos' if _c.startswith('+') else ('neg' if _c.startswith('−') else '') }}">{{ _c }}</span></td>
+          <td data-cell="meta" data-label="Saldo" class="text-center mov-saldo" title="Stock que quedó después de este movimiento">{{ m['saldo'] if m['saldo'] is not none else '—' }}</td>
           <td data-cell="meta" data-label="Usuario" class="text-muted small">{{ m['usuario'] or '—' }}</td>
-          <td data-cell="meta" data-label="Motivo" class="text-muted small">{{ m['motivo'] or '—' }}</td>
+          <td data-cell="meta" data-label="Destino / motivo" class="text-muted small">
+            {% if m['destino'] %}<span class="fw-semibold text-body"><i class="bi bi-gear-wide-connected me-1"></i>{{ m['destino'] }}</span>{% if m['motivo'] %}<br>{% endif %}{% endif %}
+            {{ m['motivo'] or ('' if m['destino'] else '—') }}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
