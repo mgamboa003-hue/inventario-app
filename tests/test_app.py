@@ -219,7 +219,7 @@ def test_ver_ubicacion_muestra_productos(admin_client):
     html = r.get_data(as_text=True)
     idx = html.find("Estante Z-9")
     assert idx != -1
-    seg = html[max(0, idx-50):idx+400]
+    seg = html[idx:idx + 3000]   # solo hacia adelante: atras esta la fila anterior
     m2 = re.search(r"/ubicaciones/(\d+)", seg)
     assert m2, "no se encontro el id de la ubicacion en el HTML"
     uid = m2.group(1)
@@ -239,7 +239,7 @@ def test_ver_ubicacion_ofrece_imprimir_etiqueta_por_repuesto(admin_client):
     html = r.get_data(as_text=True)
     idx = html.find("Estante ET-1")
     assert idx != -1
-    seg = html[max(0, idx - 50):idx + 400]
+    seg = html[idx:idx + 3000]   # solo hacia adelante: atras esta la fila anterior
     uid = re.search(r"/ubicaciones/(\d+)", seg).group(1)
 
     r = admin_client.get(f"/ubicaciones/{uid}")
@@ -264,7 +264,7 @@ def test_etiqueta_ubicacion_genera_qr_con_url(admin_client):
     idx = html.find("Bodega Principal QR")
     assert idx != -1
     import re
-    seg = html[max(0, idx-50):idx+400]
+    seg = html[idx:idx + 3000]   # solo hacia adelante: atras esta la fila anterior
     m = re.search(r"/ubicaciones/(\d+)", seg)
     uid = m.group(1)
 
@@ -954,16 +954,26 @@ def test_toggle_usuario_activa_y_desactiva(client):
     assert r2.status_code == 200
 
 
+def _id_usuario(username):
+    """Id de un usuario leido de la base de pruebas (el HTML de la tabla ya no
+    tiene el link /editar junto al nombre: los modales van despues de la tabla)."""
+    import sqlite3
+    import db
+    con = sqlite3.connect(db.SQLITE_PATH)
+    try:
+        fila = con.execute("SELECT id FROM usuarios WHERE username = ?", (username,)).fetchone()
+        return str(fila[0]) if fila else None
+    finally:
+        con.close()
+
+
 def test_admin_puede_editar_nombre_y_rol_de_usuario(client):
     client.post("/login", data={"username": "admin", "password": "TestAdmin123!"})
     client.post("/admin/usuarios/nuevo", data={
         "username": "editable1", "password": "clave123", "nombre": "Nombre Viejo", "role": "viewer", "planta": "quilicura",
     })
-    body = client.get("/admin/usuarios").get_data(as_text=True)
-    import re
-    m = re.search(r"<strong>editable1</strong>.*?/admin/usuarios/(\d+)/editar", body, re.DOTALL)
-    assert m, "no se encontro el id del usuario"
-    uid = m.group(1)
+    uid = _id_usuario("editable1")
+    assert uid, "no se encontro el id del usuario"
 
     r = client.post(f"/admin/usuarios/{uid}/editar", data={
         "nombre": "Nombre Nuevo", "role": "comprador",
@@ -1025,11 +1035,8 @@ def test_admin_principal_puede_promover_a_otro_admin(client):
     client.post("/admin/usuarios/nuevo", data={
         "username": "admin_promovible", "password": "clave123", "nombre": "Admin Promovible", "role": "admin",
     })
-    body = client.get("/admin/usuarios").get_data(as_text=True)
-    import re
-    m = re.search(r"<strong>admin_promovible</strong>.*?/admin/usuarios/(\d+)/editar", body, re.DOTALL)
-    assert m
-    uid = m.group(1)
+    uid = _id_usuario("admin_promovible")
+    assert uid
 
     r = client.post(f"/admin/usuarios/{uid}/editar", data={
         "nombre": "Admin Promovible", "role": "admin", "super_admin": "1",
@@ -1181,7 +1188,10 @@ def test_whatsapp_de_solicitud_incluye_link_de_la_foto(admin_client):
     m = re.search(r'href="(https://wa\.me/\?text=[^"]+)"', body)
     assert m
     texto = urllib.parse.unquote(m.group(1).split("text=")[1])
-    assert "https://pub-test.r2.dev/otra.webp" in texto
+    m_ficha = re.search(r"https?://[^\s]+/s/(\d+)", texto)
+    assert m_ficha, "el mensaje debe traer el link a la ficha publica de la solicitud"
+    ficha = admin_client.get(f"/s/{m_ficha.group(1)}").get_data(as_text=True)
+    assert 'property="og:image" content="https://pub-test.r2.dev/otra.webp"' in ficha
 
 
 def test_hora_de_la_app_usa_huso_horario_de_chile(admin_client):
