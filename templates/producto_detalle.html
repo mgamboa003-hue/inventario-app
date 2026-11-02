@@ -2,10 +2,15 @@
 {% block title %}{{ producto['nombre'] }} — Wintec{% endblock %}
 {% block topbar_title %}Detalle del repuesto{% endblock %}
 {% block topbar_actions %}
-  {% if session.get('role') in ('admin', 'solicitante') and producto['stock_actual'] < producto['stock_minimo'] %}
+  {# Pedir siempre disponible: arma la solicitud con el repuesto ya cargado y,
+     al guardarla, la pantalla de la solicitud ofrece enviarla por WhatsApp.
+     Con stock bajo se destaca y sugiere lo que falta para llegar al minimo. #}
+  {% if session.get('role') in ('admin', 'solicitante') %}
   {% set img_producto = producto['imagen_url'] or producto['foto'] %}
-  <a href="{{ url_for('nueva_solicitud', producto_id=producto['id'], nombre_item=producto['nombre'], cantidad=(producto['stock_minimo'] - producto['stock_actual']) if producto['stock_minimo'] > producto['stock_actual'] else 1, foto_url_pref=img_producto or None) }}" class="btn btn-warning btn-sm">
-    <i class="bi bi-cart-plus me-1"></i>Hacer pedido
+  {% set stock_bajo = producto['stock_actual'] < producto['stock_minimo'] %}
+  <a href="{{ url_for('nueva_solicitud', producto_id=producto['id'], nombre_item=producto['nombre'], cantidad=(producto['stock_minimo'] - producto['stock_actual']) if stock_bajo else 1, foto_url_pref=img_producto or None) }}"
+     class="btn {{ 'btn-warning' if stock_bajo else 'btn-outline-success' }} btn-sm" title="Crear solicitud de compra y enviarla por WhatsApp">
+    <i class="bi bi-cart-plus me-1"></i>Pedir
   </a>
   {% endif %}
   {% if session.get('role') == 'admin' %}

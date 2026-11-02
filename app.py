@@ -2643,6 +2643,11 @@ def detalle_solicitud(sid):
     ph = p()
     cur.execute(f"SELECT * FROM solicitudes WHERE id = {ph}", (sid,))
     solicitud = cur.fetchone()
+    codigo_repuesto = None
+    if solicitud and solicitud["producto_id"]:
+        cur.execute(f"SELECT codigo FROM productos WHERE id = {ph}", (solicitud["producto_id"],))
+        fila_prod = cur.fetchone()
+        codigo_repuesto = fila_prod["codigo"] if fila_prod else None
     conn.close()
 
     if not solicitud:
@@ -2670,6 +2675,10 @@ def detalle_solicitud(sid):
         prioridad,
         "",
         f"*Ítem:* {solicitud['nombre_item']}",
+    ]
+    if codigo_repuesto:
+        lineas.append(f"*Código:* {codigo_repuesto}")
+    lineas += [
         f"*Cantidad:* {texto_cantidad(solicitud['cantidad'], unidad_de(solicitud))}",
     ]
     if solicitud["descripcion"]:

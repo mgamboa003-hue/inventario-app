@@ -113,3 +113,19 @@ def test_migracion_crea_saldo_inicial_y_rellena_saldos(admin_client):
         {"tipo": "entrada", "cantidad": 5, "saldo": 11},
         {"tipo": "salida", "cantidad": 2, "saldo": 9},
     ]
+
+
+def test_boton_pedir_aparece_con_stock_ok_y_whatsapp_lleva_codigo(admin_client):
+    import re
+    import urllib.parse
+    pid = _crear(admin_client, "Fresa cuchara 5.5", "9063010", 41)
+    html = admin_client.get(f"/productos/{pid}").get_data(as_text=True)
+    assert "Pedir" in html and f"producto_id={pid}" in html
+
+    r = admin_client.post("/solicitudes/nueva", data={
+        "producto_id": pid, "nombre_item": "Fresa cuchara 5.5", "cantidad": "2",
+    }, follow_redirects=True)
+    m = re.search(r'href="(https://wa\.me/\?text=[^"]+)"', r.get_data(as_text=True))
+    assert m
+    texto = urllib.parse.unquote(m.group(1).split("text=")[1])
+    assert "*Código:* 9063010" in texto

@@ -1084,7 +1084,7 @@ def test_boton_hacer_pedido_aparece_con_stock_bajo_y_crea_solicitud_precargada(a
     conn.close()
 
     body = admin_client.get(f"/productos/{pid}").get_data(as_text=True)
-    assert "Hacer pedido" in body
+    assert "Crear solicitud de compra y enviarla por WhatsApp" in body   # boton "Pedir"
     assert f"/solicitudes/nueva?producto_id={pid}" in body
 
     r = admin_client.get(f"/solicitudes/nueva?producto_id={pid}&nombre_item=Aceite+de+vacio+bajo+stock&cantidad=4")
@@ -1103,7 +1103,8 @@ def test_boton_hacer_pedido_aparece_con_stock_bajo_y_crea_solicitud_precargada(a
     assert "Aceite de vacio bajo stock" in lista
 
 
-def test_boton_hacer_pedido_no_aparece_con_stock_ok(admin_client):
+def test_boton_pedir_tambien_aparece_con_stock_ok(admin_client):
+    """Desde nov-2026 el boton Pedir esta siempre (antes solo con stock bajo)."""
     admin_client.post("/productos/nuevo", data={
         "nombre": "Repuesto con stock ok", "planta": "quilicura",
         "stock_actual": "10", "stock_minimo": "2",
@@ -1118,7 +1119,9 @@ def test_boton_hacer_pedido_no_aparece_con_stock_ok(admin_client):
     conn.close()
 
     body = admin_client.get(f"/productos/{pid}").get_data(as_text=True)
-    assert "Hacer pedido" not in body
+    assert "Crear solicitud de compra y enviarla por WhatsApp" in body
+    assert f"/solicitudes/nueva?producto_id={pid}" in body
+    assert "cantidad=1" in body
 
 
 def test_boton_hacer_pedido_no_aparece_para_viewer(client):
@@ -1143,7 +1146,7 @@ def test_boton_hacer_pedido_no_aparece_para_viewer(client):
     client.post("/login", data={"username": "viewerpedido", "password": "clave123"})
     _completar_cambio_password_obligatorio(client, "clave123")
     body = client.get(f"/productos/{pid}").get_data(as_text=True)
-    assert "Hacer pedido" not in body
+    assert "Crear solicitud de compra y enviarla por WhatsApp" not in body
 
 
 def test_hacer_pedido_precarga_foto_del_producto_y_la_pasa_a_la_solicitud(admin_client):
