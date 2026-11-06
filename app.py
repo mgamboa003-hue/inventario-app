@@ -803,31 +803,81 @@ def index():
     cur.execute(sql_top, params_top)
     top_salidas = cur.fetchall()
 
-    join_planta = "JOIN productos p ON p.id = m.producto_id" if planta_activa else ""
-    filtro_planta = f"AND p.planta = {ph}" if planta_activa else ""
-    params_dias = [planta_activa] if planta_activa else []
-    if USE_POSTGRES:
-        sql_dias = f"""
-            SELECT m.fecha::date AS dia,
-                   SUM(CASE WHEN m.tipo='entrada' THEN m.cantidad ELSE 0 END) AS entradas,
-                   SUM(CASE WHEN m.tipo='salida' THEN m.cantidad ELSE 0 END) AS salidas
-            FROM movimientos m
-            {join_planta}
-            WHERE m.fecha::date >= CURRENT_DATE - INTERVAL '13 days' {filtro_planta}
-            GROUP BY dia ORDER BY dia
-        """
-    else:
-        sql_dias = f"""
-            SELECT date(m.fecha) AS dia,
-                   SUM(CASE WHEN m.tipo='entrada' THEN m.cantidad ELSE 0 END) AS entradas,
-                   SUM(CASE WHEN m.tipo='salida' THEN m.cantidad ELSE 0 END) AS salidas
-            FROM movimientos m
-            {join_planta}
-            WHERE date(m.fecha) >= date('now', '-13 days') {filtro_planta}
-            GROUP BY dia ORDER BY dia
-        """
-    cur.execute(sql_dias, params_dias)
-    filas_dias = cur.fetchall()
+    # Entradas y salidas de los ultimos 6 meses (incluido el actual), en
+    # unidades, mes a mes y con ceros donde no hubo nada: con 14 dias el grafico
+    # salia vacio cada vez que la bodega tenia una semana tranquila. Se agrupa
+    # en Python para que funcione igual en SQLite y en Postgres.
+    hoy_dt = ahora()
+    meses = []
+    anio, mes = hoy_dt.year, hoy_dt.month
+    for _ in range(6):
+        meses.append(f"{anio:04d}-{mes:02d}")
+        mes -= 1
+        if mes == 0:
+            anio, mes = anio - 1, 12
+    meses.reverse()
+    mes_anterior = meses[-2]
+    desde_meses = meses[0] + "-01"
+
+    sql_mov = f"""SELECT m.tipo, m.cantidad, m.fecha, m.destino, m.producto_id
+                  FROM movimientos m JOIN productos p ON p.id = m.producto_id
+                  WHERE m.tipo IN ('entrada', 'salida') AND m.fecha >= {ph}"""
+    params_mov = [desde_meses]
+    if planta_activa:
+        sql_mov += f" AND p.planta = {ph}"; params_mov.append(planta_activa)
+    cur.execute(sql_mov, params_mov)
+    movs_6m = cur.fetchall()
+
+    unidades_mes = {m: {"entrada": 0, "salida": 0} for m in meses}
+    hace_30 = (hoy_dt - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    movimientos_30d = 0
+    salud = {"mes": 0, "mes_hasta_hoy_anterior": 0, "mes_anterior": 0,
+             "con_destino": 0, "repuestos": set()}
+    for mv in movs_6m:
+        fecha_txt = str(mv["fecha"])[:19]
+        clave_mes = fecha_txt[:7]
+        if clave_mes in unidades_mes:
+            unidades_mes[clave_mes][mv["tipo"]] += mv["cantidad"] or 0
+        if fecha_txt >= hace_30:
+            movimientos_30d += 1
+        if mv["tipo"] != "salida":
+            continue
+        if clave_mes == meses[-1]:
+            salud["mes"] += 1
+            salud["repuestos"].add(mv["producto_id"])
+            if mv["destino"]:
+                salud["con_destino"] += 1
+        elif clave_mes == mes_anterior:
+            salud["mes_anterior"] += 1
+            # mismo tramo del mes (del 1 al dia de hoy), para comparar parejo
+            if int(fecha_txt[8:10]) <= hoy_dt.day:
+                salud["mes_hasta_hoy_anterior"] += 1
+
+    nombres_mes = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+    etiquetas_meses = [f"{nombres_mes[int(m[5:7]) - 1]} {m[2:4]}" for m in meses]
+
+    sql_ult = """SELECT MAX(m.fecha) AS f FROM movimientos m JOIN productos p ON p.id = m.producto_id
+                 WHERE m.tipo = 'salida'"""
+    params_ult = []
+    if planta_activa:
+        sql_ult += f" AND p.planta = {ph}"; params_ult.append(planta_activa)
+    cur.execute(sql_ult, params_ult)
+    fila_ult = cur.fetchone()
+    ultima_salida = str(fila_ult["f"])[:16] if fila_ult and fila_ult["f"] else None
+    dias_sin_salidas = None
+    if ultima_salida:
+        try:
+            dias_sin_salidas = (hoy_dt.date() - datetime.strptime(ultima_salida[:10], "%Y-%m-%d").date()).days
+        except ValueError:
+            dias_sin_salidas = None
+    salud_registro = {
+        "mes": salud["mes"], "mes_anterior": salud["mes_anterior"],
+        "mes_hasta_hoy_anterior": salud["mes_hasta_hoy_anterior"],
+        "con_destino": salud["con_destino"], "repuestos": len(salud["repuestos"]),
+        "ultima_salida": ultima_salida, "dias_sin_salidas": dias_sin_salidas,
+        "nombre_mes": nombres_mes[hoy_dt.month - 1], "nombre_mes_anterior": nombres_mes[int(mes_anterior[5:7]) - 1],
+        "dia": hoy_dt.day,
+    }
 
     sql_alertas = f"""
         SELECT id, codigo, nombre, stock_actual, stock_minimo, categoria, equipo
@@ -870,9 +920,11 @@ def index():
         stock_bajo=stock_bajo,
         top_labels=[r["nombre"] for r in top_salidas],
         top_values=[r["total_salidas"] for r in top_salidas],
-        dias=[f["dia"] for f in filas_dias],
-        entradas=[f["entradas"] for f in filas_dias],
-        salidas=[f["salidas"] for f in filas_dias],
+        meses=etiquetas_meses,
+        entradas=[unidades_mes[m]["entrada"] for m in meses],
+        salidas=[unidades_mes[m]["salida"] for m in meses],
+        movimientos_30d=movimientos_30d,
+        salud_registro=salud_registro,
         alertas=alertas,
         email_configurado=email_configurado(),
         planta_activa=planta_activa, planta_restringida=planta_restringida(), PLANTAS=PLANTAS,

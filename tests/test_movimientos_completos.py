@@ -129,3 +129,16 @@ def test_boton_pedir_aparece_con_stock_ok_y_whatsapp_lleva_codigo(admin_client):
     assert m
     texto = urllib.parse.unquote(m.group(1).split("text=")[1])
     assert "*Código:* 9063010" in texto
+
+
+def test_resumen_bodega_muestra_6_meses_y_registro_de_salidas(admin_client):
+    pid = _crear(admin_client, "Rep Resumen", "RES-1", 10)
+    admin_client.post("/movimientos/nuevo/salida", data={"producto_id": pid, "cantidad": "3", "destino": "Prensa"})
+    admin_client.post("/movimientos/nuevo/salida", data={"producto_id": pid, "cantidad": "1"})
+    html = admin_client.get("/bodega").get_data(as_text=True)
+    assert "últimos 6 meses" in html
+    assert "Entradas y salidas (30 días)" in html
+    assert "Registro de salidas" in html
+    assert "desde la última salida registrada" in html
+    assert "1 de " in html            # 1 de N salidas del mes con destino
+    assert "Movimientos (14 días)" not in html

@@ -58,8 +58,8 @@
     <a href="{{ url_for('listar_movimientos') }}" class="stat-card amber d-flex align-items-center gap-3">
       <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
       <div>
-        <div class="stat-value">{{ (entradas|sum + salidas|sum) if entradas else 0 }}</div>
-        <div class="stat-label">Movimientos (14 días)</div>
+        <div class="stat-value">{{ movimientos_30d }}</div>
+        <div class="stat-label">Entradas y salidas (30 días)</div>
       </div>
     </a>
   </div>
@@ -101,16 +101,59 @@
 </div>
 {% endif %}
 
+<!-- ══ Salud del registro: los análisis valen lo que vale lo que se anota ══ -->
+{% set sr = salud_registro %}
+{% set pct_destino = ((sr.con_destino * 100 / sr.mes)|round|int) if sr.mes else 0 %}
+<div class="table-card mb-3">
+  <div class="table-header">
+    <h6><i class="bi bi-clipboard-check me-2"></i>Registro de salidas</h6>
+    <span class="text-muted small d-none d-md-inline">Si no se anota lo que sale de bodega, el stock y los avisos dejan de ser confiables</span>
+  </div>
+  <div class="row g-0 text-center registro-salud">
+    <div class="col-6 col-md-3 p-3">
+      <div class="fs-3 fw-bold">{{ sr.mes }}</div>
+      <div class="small text-muted">salidas en {{ sr.nombre_mes }} (al día {{ sr.dia }})</div>
+      {% set dif = sr.mes - sr.mes_hasta_hoy_anterior %}
+      <div class="small mt-1 {{ 'text-success' if dif > 0 else ('text-danger' if dif < 0 else 'text-muted') }}"
+           title="Comparado con las salidas del 1 al {{ sr.dia }} de {{ sr.nombre_mes_anterior }}">
+        {% if dif > 0 %}<i class="bi bi-arrow-up-short"></i>{{ dif }} más{% elif dif < 0 %}<i class="bi bi-arrow-down-short"></i>{{ -dif }} menos{% else %}igual{% endif %}
+        que a esta altura de {{ sr.nombre_mes_anterior }}
+      </div>
+    </div>
+    <div class="col-6 col-md-3 p-3">
+      <div class="fs-3 fw-bold">{{ sr.mes_anterior }}</div>
+      <div class="small text-muted">salidas en todo {{ sr.nombre_mes_anterior }}</div>
+    </div>
+    <div class="col-6 col-md-3 p-3">
+      <div class="fs-3 fw-bold {{ 'text-danger' if sr.mes and pct_destino < 50 }}">{{ pct_destino }}%</div>
+      <div class="small text-muted">de las salidas de {{ sr.nombre_mes }} con equipo de destino</div>
+      <div class="small text-muted mt-1">{{ sr.con_destino }} de {{ sr.mes }}</div>
+    </div>
+    <div class="col-6 col-md-3 p-3">
+      {% if sr.dias_sin_salidas is not none %}
+      <div class="fs-3 fw-bold {{ 'text-danger' if sr.dias_sin_salidas >= 7 else ('text-warning' if sr.dias_sin_salidas >= 3) }}">
+        {% if sr.dias_sin_salidas == 0 %}Hoy{% else %}{{ sr.dias_sin_salidas }} día{{ 's' if sr.dias_sin_salidas != 1 }}{% endif %}
+      </div>
+      <div class="small text-muted">desde la última salida registrada</div>
+      <div class="small text-muted mt-1">{{ sr.ultima_salida }}</div>
+      {% else %}
+      <div class="fs-3 fw-bold">—</div>
+      <div class="small text-muted">todavía no hay salidas registradas</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
 <div class="row g-3">
   <!-- Flujo de entradas y salidas -->
   <div class="col-lg-8">
     <div class="table-card h-100">
       <div class="table-header">
-        <h6><i class="bi bi-graph-up me-2"></i>Entradas y salidas · últimos 14 días</h6>
+        <h6><i class="bi bi-graph-up me-2"></i>Unidades que entraron y salieron · últimos 6 meses</h6>
       </div>
       <div class="p-3">
         <canvas id="chartMovimientos" height="90" role="img"
-                aria-label="Gráfico de entradas y salidas de los últimos 14 días"></canvas>
+                aria-label="Gráfico de unidades que entraron y salieron por mes, últimos 6 meses"></canvas>
       </div>
     </div>
   </div>
@@ -118,7 +161,7 @@
   <div class="col-lg-4">
     <div class="table-card h-100">
       <div class="table-header">
-        <h6><i class="bi bi-bar-chart me-2"></i>Lo que más sale</h6>
+        <h6><i class="bi bi-bar-chart me-2"></i>Lo que más sale <span class="text-muted fw-normal small ms-1">· histórico, en unidades</span></h6>
       </div>
       <div class="p-3">
         <canvas id="chartTop" height="200" role="img"
@@ -136,7 +179,7 @@
 // algunos bloqueadores de anuncios frenan por el nombre del archivo).
 // Los colores se leen del sistema de diseño, asi que siguen al tema
 // claro/oscuro sin duplicar la paleta aqui.
-const dias = {{ dias | tojson }};
+const dias = {{ meses | tojson }};   // etiquetas de mes ya formateadas ("nov 26")
 const entradas = {{ entradas | tojson }};
 const salidas = {{ salidas | tojson }};
 const topLabels = {{ top_labels | tojson }};
@@ -149,7 +192,11 @@ function tok(nombre, respaldo) {
 
 function prepararCanvas(canvas, alturaCss) {
   const dpr = window.devicePixelRatio || 1;
-  const anchoCss = canvas.parentElement.clientWidth;
+  // clientWidth incluye el padding del contenedor: se descuenta para que el
+  // grafico no quede mas ancho que la tarjeta (se cortaba el ultimo mes).
+  const est = getComputedStyle(canvas.parentElement);
+  const anchoCss = canvas.parentElement.clientWidth
+    - (parseFloat(est.paddingLeft) || 0) - (parseFloat(est.paddingRight) || 0);
   canvas.style.width = anchoCss + 'px';
   canvas.style.height = alturaCss + 'px';
   canvas.width = Math.max(1, Math.round(anchoCss * dpr));
@@ -172,14 +219,14 @@ function dibujarLineChart(canvas, labels, series) {
   ctx.clearRect(0, 0, w, h);
 
   const hayDatos = labels.length > 0 && series.some(s => s.data.some(v => v > 0));
-  if (!hayDatos) { dibujarSinDatos(ctx, w, h, 'Sin movimientos en los últimos 14 días'); return; }
+  if (!hayDatos) { dibujarSinDatos(ctx, w, h, 'Sin entradas ni salidas en los últimos 6 meses'); return; }
 
   const cGrid = tok('--border', '#e2e8f0');
   const cTexto = tok('--text-muted', '#6b7c93');
   const cTextoFuerte = tok('--text', '#16202e');
   const fuente = tok('--font', 'sans-serif');
 
-  const padIzq = 36, padDer = 12, padArriba = 14, padAbajo = 46;
+  const padIzq = 36, padDer = 24, padArriba = 14, padAbajo = 46;
   const areaW = w - padIzq - padDer;
   const areaH = h - padArriba - padAbajo;
   const maxValor = Math.max(1, ...series.flatMap(s => s.data));
@@ -209,7 +256,7 @@ function dibujarLineChart(canvas, labels, series) {
   labels.forEach((lbl, i) => {
     if (i % cadaCuantas !== 0 && i !== n - 1) return;
     const x = padIzq + stepX * i;
-    ctx.fillText(String(lbl).slice(5), x, h - padAbajo + 17);
+    ctx.fillText(String(lbl), x, h - padAbajo + 17);
   });
 
   // lineas + relleno
