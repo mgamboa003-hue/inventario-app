@@ -215,3 +215,19 @@ def test_area_en_el_portal(admin_client):
     assert "Caja chica" in body
     body = admin_client.get("/caja/").get_data(as_text=True)
     assert "06 · CAJA CHICA" in body
+
+
+def test_comprador_tiene_inicio_y_acceso_directo(admin_client):
+    c = admin_client
+    _crear_usuario(c, "compInicio", "comprador")
+    eid = _nueva_entrega(c, _id_comprador(c, "compInicio"))
+    _entrar(c, "compInicio")
+    body = c.get("/").get_data(as_text=True)
+    assert c.get("/").status_code == 200
+    assert "Caja chica" in body and "por rendir" in body
+    assert "bajo el mínimo" not in body and "resumen y gráficos de bodega" not in body
+    # boton central de la barra inferior = Caja chica
+    assert 'bi-wallet2"></i></span><span>Caja chica' in body
+    body = c.get("/caja/").get_data(as_text=True)
+    assert f"/caja/entregas/{eid}/gastos/nuevo" in body
+    assert c.get("/bodega").status_code == 302

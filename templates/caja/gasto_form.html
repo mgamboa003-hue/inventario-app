@@ -2,7 +2,7 @@
 {% block title %}{{ 'Editar' if editando else 'Agregar' }} documento — Caja chica{% endblock %}
 {% block topbar_title %}{{ 'Editar documento' if editando else 'Agregar boleta o factura' }}{% endblock %}
 {% block topbar_actions %}
-  <a href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Entrega N° {{ e.id }}</a>
+  <a href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Volver a la entrega</a>
 {% endblock %}
 
 {% block content %}
@@ -195,7 +195,8 @@
         rellenar(r.datos);
         $('btnTimbre').hidden = true;
         var d = r.datos;
-        estado(r.repetido ? 'bad' : 'ok', r.repetido ? 'bi-exclamation-octagon' : 'bi-check-circle',
+        estado(r.repetido ? 'bad' : (r.aviso ? 'warn' : 'ok'), r.repetido ? 'bi-exclamation-octagon' : (r.aviso ? 'bi-exclamation-triangle' : 'bi-check-circle'),
+          (r.aviso && !r.repetido ? '<strong>' + r.aviso + '</strong><br>' : '') +
           (r.repetido ? '<strong>' + r.repetido + '</strong>' :
             '<strong>Timbre leído: ' + d.tipo_nombre + ' N° ' + d.folio + ' por ' + cjClp(d.monto || 0) + '.</strong>') +
           (d.proveedor ? '' : '<br>Es la primera vez de este proveedor: escribe su nombre y la próxima vez saldrá solo.') +

@@ -579,8 +579,10 @@ def test_comprador_solo_ve_solicitudes_en_el_menu(client):
     assert "Solicitudes" in body or "solicitud" in body.lower()
     assert "Pedir algo" not in body
 
-    # no deberia poder entrar a inventario/movimientos/ubicaciones/dashboard
-    for path in ["/", "/productos", "/movimientos", "/ubicaciones"]:
+    # tiene su propia bienvenida (Compras y Caja chica), pero no ve Bodega
+    assert client.get("/").status_code == 200
+    # no deberia poder entrar a inventario/movimientos/ubicaciones/resumen de bodega
+    for path in ["/bodega", "/productos", "/movimientos", "/ubicaciones"]:
         r = client.get(path, follow_redirects=True)
         assert r.status_code == 200
         assert "solicitud" in r.request.path.lower()

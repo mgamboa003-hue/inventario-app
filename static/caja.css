@@ -38,6 +38,9 @@
 
 /* ── Tarjetas de entregas abiertas ── */
 .cj-open { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+.cj-open-item { display: flex; flex-direction: column; gap: .5rem; }
+.cj-open-actions { display: flex; gap: .5rem; }
+.cj-open-actions .btn-primary { flex: 1; }
 .cj-open-card {
   display: block; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md, 12px);
   padding: 1rem 1.1rem; color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s;
@@ -106,3 +109,9 @@
   .cj-stack > tbody > tr > td:not([data-cell]) { order: 7; }
   .cj-stack .cj-total-row { display: none; }
 }
+
+/* Badge del boton central "Caja chica" en la barra inferior del comprador */
+.pm-bottom .pm-scan { position: relative; }
+.pm-bottom .pm-scan .pm-count { top: -12px; right: calc(50% - 32px); z-index: 2; }
+/* Que el boton flotante no tape lo ultimo de la pantalla */
+@media (max-width: 991.98px) { body:has(.cj-fab) .pm-main { padding-bottom: 5rem; } }

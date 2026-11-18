@@ -62,6 +62,7 @@
 {% set ep = request.endpoint or '' %}
 {% set es_inicio = ep == 'index' %}
 {% set avisos_n = notif_sin_leer or 0 %}
+{% set caja_n_bar = caja_pendientes() if session.get('role') in ('admin', 'comprador') else 0 %}
 
 <!-- ══ Barra superior ══ -->
 <header class="pm-top">
@@ -73,7 +74,8 @@
 
     <nav class="pm-areas" aria-label="Áreas del portal">
       {% for a in portal_areas %}
-      {% set pend = (a.clave == 'personal' and ((turnos_cambios_pendientes or 0) + (turnos_correos_pendientes or 0)) > 0) %}
+      {% set pend = (a.clave == 'personal' and ((turnos_cambios_pendientes or 0) + (turnos_correos_pendientes or 0)) > 0)
+                    or (a.clave == 'caja' and caja_n_bar > 0) %}
       <a href="{{ url_for(a.inicio) }}" class="pm-area-link {% if portal_area and portal_area.clave == a.clave %}active{% endif %}"
          {% if portal_area and portal_area.clave == a.clave %}aria-current="page"{% endif %}>
         {{ a.nombre }}{% if pend %}<span class="pm-dot" aria-label="con pendientes"></span>{% endif %}
@@ -130,7 +132,10 @@
 <div class="pm-head">
   <div class="pm-wrap">
     <div class="pm-head-row">
-      <a href="{{ url_for('index') }}" class="pm-back d-lg-none" aria-label="Volver al inicio del portal">
+      {# Volver: dentro de una seccion vuelve a su lista; desde la lista, al inicio #}
+      {% set en_lista = (not portal_seccion) or ep == portal_seccion.endpoint %}
+      <a href="{{ url_for('index') if en_lista else url_for(portal_seccion.endpoint) }}" class="pm-back d-lg-none"
+         aria-label="{{ 'Volver al inicio del portal' if en_lista else 'Volver a ' ~ portal_seccion.etiqueta }}">
         <i class="bi bi-chevron-left"></i>
       </a>
       <div class="pm-head-title">
@@ -184,9 +189,17 @@
     <i class="bi bi-clipboard-check"></i><span>Solicitudes</span>
   </a>
   {% endif %}
+  {% if rol == 'comprador' %}
+  {# Para el comprador el boton central es la Caja chica (no usa el escaner de bodega) #}
+  <a href="{{ url_for('caja.inicio') }}" class="pm-scan {% if ep.startswith('caja.') %}active{% endif %}">
+    <span class="pm-scan-btn"><i class="bi bi-wallet2"></i></span><span>Caja chica</span>
+    {% if caja_n_bar %}<span class="pm-count">{{ caja_n_bar }}</span>{% endif %}
+  </a>
+  {% else %}
   <a href="{{ url_for('portal.escanear') }}" class="pm-scan {% if ep == 'portal.escanear' %}active{% endif %}">
     <span class="pm-scan-btn"><i class="bi bi-qr-code-scan"></i></span><span>Escanear</span>
   </a>
+  {% endif %}
   <a href="{{ url_for('turnos.notificaciones') }}" class="{% if ep == 'turnos.notificaciones' %}active{% endif %}">
     <i class="bi bi-bell"></i><span>Avisos</span>
     {% if avisos_n %}<span class="pm-count">{{ avisos_n if avisos_n < 100 else '99+' }}</span>{% endif %}

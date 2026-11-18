@@ -59,7 +59,7 @@
   {% set _ = items.append({'cls': '', 'ico': 'bi-arrow-left-right', 'titulo': rt.cambios ~ ' cambio' ~ ('s' if rt.cambios != 1 else '') ~ ' de turno por aprobar',
       'sub': 'Personal · Cambios', 'url': url_for('turnos.cambios')}) %}
 {% endif %}
-{% if rol == 'admin' and solicitudes_pendientes %}
+{% if rol in ('admin', 'comprador') and solicitudes_pendientes %}
   {% set _ = items.append({'cls': '', 'ico': 'bi-clipboard-check', 'titulo': solicitudes_pendientes ~ ' solicitud' ~ ('es' if solicitudes_pendientes != 1 else '') ~ ' del equipo pendiente' ~ ('s' if solicitudes_pendientes != 1 else ''),
       'sub': 'Compras · Solicitudes', 'url': url_for('listar_solicitudes')}) %}
 {% endif %}
@@ -124,7 +124,7 @@
       <span><h2>Compras</h2><p>{{ a.descripcion }}</p></span>
     </a>
     <div class="pm-kpis">
-      <div class="pm-kpi {% if solicitudes_pendientes %}warn{% endif %}"><b>{{ solicitudes_pendientes }}</b><span>{{ 'solicitudes pendientes' if rol == 'admin' else 'tus solicitudes pendientes' }}</span></div>
+      <div class="pm-kpi {% if solicitudes_pendientes %}warn{% endif %}"><b>{{ solicitudes_pendientes }}</b><span>{{ 'solicitudes pendientes' if rol == 'admin' else ('por comprar' if rol == 'comprador' else 'tus solicitudes pendientes') }}</span></div>
       {% if rol == 'admin' %}<div class="pm-kpi"><b>{{ ordenes_abiertas }}</b><span>órdenes abiertas</span></div>{% endif %}
     </div>
     <div class="pm-tile-actions">
@@ -172,7 +172,8 @@
     </a>
     <div class="pm-tile-actions">
       <a href="{{ url_for(a.inicio) }}" class="btn btn-primary">Entrar</a>
-      {% if rol == 'admin' %}<a href="{{ url_for('caja.nueva_entrega') }}" class="btn btn-outline-secondary">Entregar dinero</a>{% endif %}
+      {% if rol == 'admin' %}<a href="{{ url_for('caja.nueva_entrega') }}" class="btn btn-outline-secondary">Entregar dinero</a>
+      {% elif caja_n %}<a href="{{ url_for('caja.inicio') }}" class="btn btn-outline-secondary">Agregar boleta</a>{% endif %}
     </div>
   </article>
   {% else %}
@@ -193,6 +194,6 @@
 
 <footer class="pm-foot">
   <span>Portal Mantenimiento Wintec · Quilicura</span>
-  <a href="{{ url_for('bodega_resumen') }}">Ver resumen y gráficos de bodega</a>
+  {% if rol != 'comprador' %}<a href="{{ url_for('bodega_resumen') }}">Ver resumen y gráficos de bodega</a>{% endif %}
 </footer>
 {% endblock %}

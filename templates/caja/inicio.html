@@ -35,16 +35,17 @@
 </div>
 {% endif %}
 
-<h2 class="pm-section-label">Dinero en la calle</h2>
+<h2 class="pm-section-label">{{ 'Dinero en la calle' if es_admin else 'Por rendir' }}</h2>
 {% if abiertas %}
 <div class="cj-open">
   {% for e in abiertas %}
   {% set c = e.cuadre %}
   {% set pct = ((c.total_documentos / e.monto_entregado * 100) if e.monto_entregado else 0)|round|int %}
+  <div class="cj-open-item">
   <a class="cj-open-card" href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}">
     <div class="top">
-      <span class="who">{{ e.comprador }}</span>
-      <span class="num">N° {{ e.id }} · {{ e.fecha|fecha_cl }}</span>
+      <span class="who">{{ e.comprador if es_admin else 'Entrega N° ' ~ e.id }}</span>
+      <span class="num">{{ ('N° ' ~ e.id ~ ' · ') if es_admin }}{{ e.fecha|fecha_cl }}</span>
     </div>
     <div class="d-flex justify-content-between align-items-baseline">
       <span class="tw-muted small">Por rendir</span>
@@ -53,10 +54,15 @@
     <div class="cj-bar {{ 'over' if pct > 100 }}"><span style="width: {{ [pct, 100]|min }}%"></span></div>
     <div class="row-n"><span>{{ c.n_documentos }} doc. · {{ c.total_documentos|clp }}</span><span>de {{ e.monto_entregado|clp }}</span></div>
   </a>
+  <div class="cj-open-actions">
+    <a href="{{ url_for('caja.nuevo_gasto', entrega_id=e.id) }}" class="btn btn-primary"><i class="bi bi-camera me-1"></i>Agregar boleta o factura</a>
+    <a href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}#cierre" class="btn btn-outline-secondary">Rendir</a>
+  </div>
+  </div>
   {% endfor %}
 </div>
 {% else %}
-<p class="pm-allgood"><span class="pm-led"></span>No hay dinero entregado sin rendir.
+<p class="pm-allgood"><span class="pm-led"></span>{{ 'No hay dinero entregado sin rendir.' if es_admin else 'No tienes dinero de caja chica por rendir.' }}
   {% if es_admin %}<a href="{{ url_for('caja.nueva_entrega') }}" class="ms-1">Registrar una entrega</a>{% endif %}</p>
 {% endif %}
 

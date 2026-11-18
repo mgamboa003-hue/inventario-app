@@ -2,7 +2,7 @@
 {% block title %}Caja chica N° {{ e.id }} — Portal Mantenimiento Wintec{% endblock %}
 {% block topbar_title %}Entrega N° {{ e.id }} · {{ e.comprador }}{% endblock %}
 {% block topbar_actions %}
-  <a href="{{ url_for('caja.inicio') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Caja chica</a>
+  <a href="{{ url_for('caja.inicio') }}" class="btn btn-outline-secondary btn-sm d-none d-lg-inline-block"><i class="bi bi-arrow-left me-1"></i>Caja chica</a>
   {% if puede_editar %}
   <a href="{{ url_for('caja.nuevo_gasto', entrega_id=e.id) }}" class="btn btn-primary btn-sm d-none d-lg-inline-flex align-items-center">
     <i class="bi bi-camera me-1"></i>Agregar documento
@@ -66,7 +66,7 @@
       <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('caja.pdf_entrega', entrega_id=e.id) }}"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
       <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('caja.excel_entrega', entrega_id=e.id) }}"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
       {% if puede_editar %}
-      <a href="{{ url_for('caja.nuevo_gasto', entrega_id=e.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Agregar</a>
+      <a href="{{ url_for('caja.nuevo_gasto', entrega_id=e.id) }}" class="btn btn-primary btn-sm d-none d-lg-inline-block"><i class="bi bi-plus-lg me-1"></i>Agregar</a>
       {% endif %}
     </div>
   </div>

@@ -568,6 +568,9 @@ def leer_documento():
         if datos["tipo_doc"] not in cl.TIPOS_DOC:
             datos["tipo_doc"] = "33"
         salida["datos"] = datos
+        if datos["tipo_doc"] == "52":
+            salida["aviso"] = ("Esto es una guía de despacho: no es comprobante de pago y su monto puede no ser "
+                               "el valor real. Si existe, rinde la factura o boleta de esa compra.")
         if rep:
             salida["repetido"] = (f"¡Ojo! Este documento ya está rendido en la entrega N° {rep['entrega_id']} "
                                   f"del {rep['fecha']}.")

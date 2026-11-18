@@ -769,7 +769,9 @@ def restablecer_password(token):
 @app.route("/")
 @login_required
 def index():
-    if session.get("role") == "comprador":
+    # El comprador tiene su propia bienvenida (Compras y Caja chica), pero no
+    # el resumen de bodega.
+    if session.get("role") == "comprador" and request.endpoint == "bodega_resumen":
         return redirect(url_for("listar_solicitudes"))
     planta_activa = planta_filtro_activo()
     ph = p()
@@ -900,7 +902,7 @@ def index():
     else:
         cur.execute(f"SELECT COUNT(*) AS n FROM productos WHERE stock_actual <= 0 AND activo = {ACTIVO_TRUE}")
     sin_stock = cur.fetchone()["n"]
-    if session.get("role") == "admin":
+    if session.get("role") in ("admin", "comprador"):
         cur.execute("SELECT COUNT(*) AS n FROM solicitudes WHERE estado = 'pendiente'")
     else:
         cur.execute(f"SELECT COUNT(*) AS n FROM solicitudes WHERE estado = 'pendiente' AND solicitado_por_id = {ph}",
@@ -915,6 +917,9 @@ def index():
     proyeccion = calcular_dias_restantes_por_producto([a["id"] for a in alertas])
     for a in alertas:
         a["dias_restantes"] = proyeccion.get(a["id"], {}).get("dias_restantes")
+    if session.get("role") == "comprador":
+        # El comprador no ve Bodega: sin avisos de stock en su bienvenida.
+        stock_bajo = sin_stock = 0
 
     return render_template(
         "index.html" if request.endpoint == "bodega_resumen" else "inicio.html",
