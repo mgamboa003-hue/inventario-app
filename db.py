@@ -728,6 +728,9 @@ def crear_estructura(conn):
     # Tablas del modulo de turnos de fin de semana (ver turnos_logica.py)
     from turnos_logica import crear_tablas_turnos
     crear_tablas_turnos(conn)
+    # Tablas del modulo de caja chica (ver caja_logica.py)
+    from caja_logica import crear_tablas_caja
+    crear_tablas_caja(conn)
 
 
 def init_db():
@@ -890,6 +893,8 @@ TABLAS_RESPALDO = [
     # modulo de turnos
     "turnos_tecnicos", "turnos_dias", "turnos_asignaciones",
     "turnos_ausencias", "turnos_cambios", "notificaciones", "turnos_correos",
+    # modulo de caja chica
+    "caja_entregas", "caja_gastos", "caja_emisores",
     # configuracion guardada (destinatarios del correo de ingreso, etc.)
     "sistema_meta",
 ]

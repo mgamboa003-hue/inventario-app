@@ -20,6 +20,7 @@ bp = Blueprint("portal", __name__)
 TODOS = ("admin", "solicitante", "viewer", "comprador")
 NO_COMPRADOR = ("admin", "solicitante", "viewer")
 ADMIN = ("admin",)
+CAJA = ("admin", "comprador")
 
 # Cada seccion: (etiqueta, endpoint, roles, solo_super_admin, endpoints/prefijos que "le pertenecen", badge)
 AREAS = [
@@ -99,6 +100,14 @@ AREAS = [
             ("Sistema", "admin_sistema", ADMIN, True,
              ["admin_sistema", "ejecutar_backup", "descargar_backup", "verificar_fotos",
               "enviar_alerta_manual"], None),
+        ],
+    },
+    {
+        "clave": "caja", "num": "06", "nombre": "Caja chica", "icono": "bi-wallet2",
+        "descripcion": "Entregas de dinero, boletas y facturas, cuadre y rendición",
+        "roles": CAJA,
+        "secciones": [
+            ("Caja chica", "caja.inicio", CAJA, False, ["caja."], None),
         ],
     },
 ]

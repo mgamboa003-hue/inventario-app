@@ -71,6 +71,10 @@ app.register_blueprint(turnos_bp)
 from portal import bp as portal_bp
 app.register_blueprint(portal_bp)
 
+# Modulo de caja chica: entregas, documentos con timbre SII, rendicion PDF/Excel (caja.py)
+from caja import bp as caja_bp
+app.register_blueprint(caja_bp)
+
 
 @app.context_processor
 def inject_session_idle_minutes():

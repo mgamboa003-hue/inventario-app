@@ -1,0 +1,108 @@
+/* ═══════════════════════════════════════════════════════════════
+   Caja chica (templates/caja/*)
+   Usa los tokens de styles.css: funciona en claro y oscuro.
+   ═══════════════════════════════════════════════════════════════ */
+
+.cj-money { font-family: var(--pm-mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cj-neg { color: var(--danger); }
+.cj-ok { color: var(--ok); }
+
+/* ── Tira de cuadre ── */
+.cj-cuadre {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md, 12px);
+  overflow: hidden; margin-bottom: 1rem;
+}
+.cj-cuadre > div { padding: .9rem 1.1rem; border-right: 1px solid var(--border); min-width: 0; }
+.cj-cuadre > div:last-child { border-right: 0; }
+.cj-cuadre small { display: block; font-size: .72rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--text-muted); }
+.cj-cuadre b { display: block; font-size: 1.35rem; font-weight: 650; color: var(--text); margin-top: .15rem; }
+.cj-cuadre .op { font-size: .8rem; color: var(--text-faint); }
+.cj-cuadre .final.ok { background: var(--ok-bg); }
+.cj-cuadre .final.ok b { color: var(--ok); }
+.cj-cuadre .final.bad { background: var(--danger-bg); }
+.cj-cuadre .final.bad b { color: var(--danger); }
+.cj-cuadre .final.pend { background: var(--surface-2); }
+@media (max-width: 767.98px) {
+  .cj-cuadre { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cj-cuadre > div:nth-child(2) { border-right: 0; }
+  .cj-cuadre > div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+  .cj-cuadre b { font-size: 1.1rem; }
+}
+
+/* ── Estados ── */
+.tw-state.abierta  { background: var(--info-bg); color: var(--info); border-color: var(--info-bd); }
+.tw-state.rendida  { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-bd); }
+.tw-state.aprobada { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-bd); }
+.tw-state.bad      { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-bd); }
+
+/* ── Tarjetas de entregas abiertas ── */
+.cj-open { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+.cj-open-card {
+  display: block; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md, 12px);
+  padding: 1rem 1.1rem; color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s;
+}
+.cj-open-card:hover { border-color: var(--border-strong); box-shadow: var(--sh-2); color: inherit; }
+.cj-open-card .top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+.cj-open-card .who { font-weight: 650; }
+.cj-open-card .num { font-size: .78rem; color: var(--text-muted); }
+.cj-bar { height: 6px; border-radius: 99px; background: var(--surface-3); overflow: hidden; margin: .6rem 0 .4rem; }
+.cj-bar > span { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.cj-bar.over > span { background: var(--danger); }
+.cj-open-card .row-n { display: flex; justify-content: space-between; font-size: .85rem; color: var(--text-soft); }
+
+/* ── Paso de la foto / escaneo ── */
+.cj-scan {
+  border: 2px dashed var(--border-strong); border-radius: var(--r-md, 12px);
+  background: var(--surface-2); padding: 1.25rem; text-align: center; position: relative;
+}
+.cj-scan.has-photo { border-style: solid; padding: .75rem; text-align: left; }
+.cj-scan .cj-scan-ico { font-size: 2.2rem; color: var(--accent); line-height: 1; }
+.cj-scan h3 { font-size: 1.05rem; font-weight: 650; margin: .5rem 0 .25rem; }
+.cj-scan p { color: var(--text-muted); font-size: .875rem; margin: 0 auto .9rem; max-width: 46ch; }
+.cj-scan-row { display: flex; gap: .9rem; align-items: flex-start; }
+.cj-thumb { width: 92px; height: 92px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+.cj-scan-msg { font-size: .9rem; }
+.cj-scan-msg strong { display: block; }
+.cj-scan input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.cj-status { display: flex; gap: .6rem; align-items: flex-start; padding: .65rem .8rem; border-radius: 8px; font-size: .875rem; margin-top: .75rem; border: 1px solid; }
+.cj-status i { font-size: 1.1rem; margin-top: .05rem; }
+.cj-status.ok   { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-bd); }
+.cj-status.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-bd); }
+.cj-status.bad  { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-bd); }
+.cj-status.info { background: var(--info-bg); color: var(--info); border-color: var(--info-bd); }
+
+.cj-filled { background: var(--ok-bg) !important; transition: background 1.2s ease; }
+
+/* ── Tabla de documentos ── */
+.cj-doc-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.cj-noimg { width: 40px; height: 40px; border-radius: 6px; border: 1px dashed var(--border-strong); display: inline-flex; align-items: center; justify-content: center; color: var(--text-faint); }
+.cj-tag-timbre { font-size: .65rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: .1rem .4rem; border-radius: 4px; background: var(--ok-bg); color: var(--ok); }
+.cj-total-row td { font-weight: 650; border-top: 2px solid var(--border-strong); }
+
+/* ── Cierre ── */
+.cj-close { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md, 12px); padding: 1.1rem 1.25rem; }
+.cj-close h2 { font-size: 1rem; font-weight: 650; margin-bottom: .25rem; }
+.cj-live { font-size: .95rem; padding: .6rem .8rem; border-radius: 8px; background: var(--surface-2); }
+.cj-live.ok { background: var(--ok-bg); color: var(--ok); }
+.cj-live.bad { background: var(--danger-bg); color: var(--danger); }
+
+.cj-exports { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+/* ── Visor de foto ── */
+.cj-viewer img { max-width: 100%; max-height: 80vh; display: block; margin: 0 auto; }
+
+/* ── Botón grande para celular ── */
+.cj-fab {
+  position: fixed; right: 1rem; bottom: calc(var(--pm-bottom-h, 68px) + 1rem + env(safe-area-inset-bottom));
+  z-index: 1030; border-radius: 99px; padding: .8rem 1.2rem; box-shadow: var(--sh-3, 0 8px 24px rgba(0,0,0,.18));
+  font-weight: 600;
+}
+@media (min-width: 992px) { .cj-fab { display: none; } }
+
+/* Tablas apiladas en celular: titulo arriba, el resto debajo */
+@media (max-width: 991.98px) {
+  .cj-stack > tbody > tr > td:not([data-cell]) { order: 7; }
+  .cj-stack .cj-total-row { display: none; }
+}

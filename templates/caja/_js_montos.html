@@ -1,0 +1,15 @@
+<script>
+/* Montos en pesos: se escriben con puntos de miles mientras se tipea. */
+function cjNumero(t) { var s = String(t || '').split(',')[0]; var n = parseInt(s.replace(/\D/g, ''), 10); return isNaN(n) ? null : n; }
+function cjFormato(n) { n = cjNumero(n); return n === null ? '' : n.toLocaleString('es-CL'); }
+function cjClp(n) { return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('es-CL'); }
+document.querySelectorAll('[data-cj-monto]').forEach(function (i) {
+  i.addEventListener('input', function () {
+    var fin = i.value.length - i.selectionEnd;
+    i.value = cjFormato(i.value);
+    var pos = Math.max(i.value.length - fin, 0);
+    try { i.setSelectionRange(pos, pos); } catch (e) {}
+  });
+  if (i.value) i.value = cjFormato(i.value);
+});
+</script>

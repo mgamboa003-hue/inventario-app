@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Caja chica — Portal Mantenimiento Wintec{% endblock %}
+{% block topbar_title %}Caja chica{% endblock %}
+{% block topbar_actions %}
+  {% if session.get('role') == 'admin' %}
+  <a href="{{ url_for('caja.nueva_entrega') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center">
+    <i class="bi bi-cash-coin me-1"></i>Entregar dinero
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% macro fila_estado(e) -%}
+  {% set c = e.cuadre %}
+  {% if e.estado == 'abierta' %}<span class="tw-state abierta">Abierta</span>
+  {% elif c.cuadra is sameas false %}<span class="tw-state bad">{{ 'Rendida' if e.estado == 'rendida' else 'Aprobada' }} · dif. {{ c.diferencia|clp }}</span>
+  {% else %}<span class="tw-state {{ e.estado }}">{{ caja_estados[e.estado] }}</span>{% endif %}
+{%- endmacro %}
+
+{% block content %}
+{% set es_admin = session.get('role') == 'admin' %}
+
+{% if por_revisar %}
+<h2 class="pm-section-label">{{ 'Rendiciones por revisar' if es_admin else 'Enviadas a revisión' }}</h2>
+<div class="cj-open">
+  {% for e in por_revisar %}
+  <a class="cj-open-card" href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}">
+    <div class="top">
+      <span class="who">{{ e.comprador }}</span>
+      {{ fila_estado(e) }}
+    </div>
+    <div class="num">N° {{ e.id }} · {{ e.fecha|fecha_cl }} · {{ e.cuadre.n_documentos }} documento{{ 's' if e.cuadre.n_documentos != 1 }}</div>
+    <div class="row-n mt-2"><span>Entregado <b class="cj-money">{{ e.monto_entregado|clp }}</b></span><span>Gastado <b class="cj-money">{{ e.cuadre.total_documentos|clp }}</b></span></div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2 class="pm-section-label">Dinero en la calle</h2>
+{% if abiertas %}
+<div class="cj-open">
+  {% for e in abiertas %}
+  {% set c = e.cuadre %}
+  {% set pct = ((c.total_documentos / e.monto_entregado * 100) if e.monto_entregado else 0)|round|int %}
+  <a class="cj-open-card" href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}">
+    <div class="top">
+      <span class="who">{{ e.comprador }}</span>
+      <span class="num">N° {{ e.id }} · {{ e.fecha|fecha_cl }}</span>
+    </div>
+    <div class="d-flex justify-content-between align-items-baseline">
+      <span class="tw-muted small">Por rendir</span>
+      <b class="cj-money fs-5 {{ 'cj-neg' if c.disponible < 0 }}">{{ c.disponible|clp }}</b>
+    </div>
+    <div class="cj-bar {{ 'over' if pct > 100 }}"><span style="width: {{ [pct, 100]|min }}%"></span></div>
+    <div class="row-n"><span>{{ c.n_documentos }} doc. · {{ c.total_documentos|clp }}</span><span>de {{ e.monto_entregado|clp }}</span></div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="pm-allgood"><span class="pm-led"></span>No hay dinero entregado sin rendir.
+  {% if es_admin %}<a href="{{ url_for('caja.nueva_entrega') }}" class="ms-1">Registrar una entrega</a>{% endif %}</p>
+{% endif %}
+
+<div class="table-card">
+  <div class="table-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
+    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial</h6>
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
+      <label class="visually-hidden" for="fDesde">Desde</label>
+      <input type="date" id="fDesde" name="desde" value="{{ desde }}" class="form-control form-control-sm" style="width:auto">
+      <span class="tw-muted small">a</span>
+      <label class="visually-hidden" for="fHasta">Hasta</label>
+      <input type="date" id="fHasta" name="hasta" value="{{ hasta }}" class="form-control form-control-sm" style="width:auto">
+      {% if es_admin %}
+      <label class="visually-hidden" for="fComp">Comprador</label>
+      <select name="comprador" id="fComp" class="form-select form-select-sm" style="width:auto">
+        <option value="">Todos</option>
+        {% for u in compradores %}<option value="{{ u.id }}" {% if u.id == comprador_f %}selected{% endif %}>{{ u.nombre or u.username }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <button class="btn btn-outline-secondary btn-sm">Filtrar</button>
+    </form>
+  </div>
+
+  <div class="d-flex flex-wrap gap-3 px-3 py-2 small border-bottom align-items-center">
+    <span>Entregado <b class="cj-money">{{ tot.entregado|clp }}</b></span>
+    <span>Gastado <b class="cj-money">{{ tot.gastado|clp }}</b></span>
+    <span>{{ tot.documentos }} documento{{ 's' if tot.documentos != 1 }}</span>
+    {% if tot.diferencias %}<span class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>{{ tot.diferencias }} con diferencia</span>{% endif %}
+    <span class="ms-auto cj-exports">
+      {% set q = {'desde': desde, 'hasta': hasta} %}{% if comprador_f %}{% set _ = q.update({'comprador': comprador_f}) %}{% endif %}
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('caja.reporte', formato='excel', **q) }}"><i class="bi bi-file-earmark-excel me-1"></i>Excel del período</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('caja.reporte', formato='pdf', **q) }}"><i class="bi bi-file-earmark-pdf me-1"></i>PDF del período</a>
+    </span>
+  </div>
+
+  {% if historial %}
+  <div class="table-responsive">
+    <table class="table table-hover table-stack cj-stack mb-0 align-middle">
+      <thead><tr><th>N°</th><th>Fecha</th><th>Comprador</th><th class="text-end">Entregado</th><th class="text-end">Gastado</th><th class="text-end">Saldo devuelto</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for e in historial %}
+        <tr>
+          <td>{{ e.id }}</td>
+          <td data-cell="title">{{ e.fecha|fecha_cl }}</td>
+          <td>{{ e.comprador }}</td>
+          <td class="text-end cj-money">{{ e.monto_entregado|clp }}</td>
+          <td class="text-end cj-money">{{ e.cuadre.total_documentos|clp }}</td>
+          <td class="text-end cj-money">{{ e.saldo_devuelto|clp if e.saldo_devuelto is not none else '—' }}</td>
+          <td data-cell="status">{{ fila_estado(e) }}</td>
+          <td data-cell="actions" class="text-end"><a href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}" class="btn btn-outline-secondary btn-sm">Ver</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="tw-muted p-3 mb-0">No hay entregas entre esas fechas.</p>
+  {% endif %}
+</div>
+{% endblock %}

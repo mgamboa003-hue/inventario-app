@@ -63,6 +63,12 @@
   {% set _ = items.append({'cls': '', 'ico': 'bi-clipboard-check', 'titulo': solicitudes_pendientes ~ ' solicitud' ~ ('es' if solicitudes_pendientes != 1 else '') ~ ' del equipo pendiente' ~ ('s' if solicitudes_pendientes != 1 else ''),
       'sub': 'Compras · Solicitudes', 'url': url_for('listar_solicitudes')}) %}
 {% endif %}
+{% set caja_n = caja_pendientes() if rol in ('admin', 'comprador') else 0 %}
+{% if caja_n %}
+  {% set _ = items.append({'cls': 'warn', 'ico': 'bi-wallet2',
+      'titulo': (caja_n ~ ' rendición' ~ ('es' if caja_n != 1 else '') ~ ' de caja chica por revisar') if rol == 'admin' else ('Tienes ' ~ caja_n ~ ' entrega' ~ ('s' if caja_n != 1 else '') ~ ' de caja chica por rendir'),
+      'sub': 'Caja chica', 'url': url_for('caja.inicio')}) %}
+{% endif %}
 {% if rt and rt.mi_proximo %}
   {% set _ = items.append({'cls': '', 'ico': 'bi-person-check', 'titulo': 'Tu próximo turno: ' ~ (rt.mi_proximo.fecha|fecha_larga),
       'sub': 'Confirmado' if rt.mi_proximo.estado == 'confirmado' else 'Provisorio, puede cambiar', 'url': url_for('turnos.calendario', mes=rt.mi_proximo.fecha[:7])}) %}
@@ -151,6 +157,22 @@
       <a href="{{ url_for(a.inicio) }}" class="btn btn-primary">Entrar</a>
       {% if rol == 'admin' %}<a href="{{ url_for('turnos.correo_ingreso') }}" class="btn btn-outline-secondary">Preparar correo</a>
       {% else %}<a href="{{ url_for('turnos.equidad') }}" class="btn btn-outline-secondary">Ver reparto</a>{% endif %}
+    </div>
+  </article>
+  {% elif a.clave == 'caja' %}
+  <article class="pm-tile">
+    <div class="pm-tile-top">
+      <span class="pm-plate">{{ a.num }}<span class="pm-plate-name"> · CAJA CHICA</span></span>
+      {% if caja_n %}<span class="pm-state warn"><span class="pm-led warn"></span><span class="pm-state-txt">{{ caja_n }} {{ 'por revisar' if rol == 'admin' else 'por rendir' }}</span></span>
+      {% else %}<span class="pm-state"><span class="pm-led"></span><span class="pm-state-txt">Al día</span></span>{% endif %}
+    </div>
+    <a class="pm-tile-id pm-tile-link" href="{{ url_for(a.inicio) }}">
+      <span class="pm-tile-ico"><i class="bi {{ a.icono }}"></i></span>
+      <span><h2>Caja chica</h2><p>{{ a.descripcion }}</p></span>
+    </a>
+    <div class="pm-tile-actions">
+      <a href="{{ url_for(a.inicio) }}" class="btn btn-primary">Entrar</a>
+      {% if rol == 'admin' %}<a href="{{ url_for('caja.nueva_entrega') }}" class="btn btn-outline-secondary">Entregar dinero</a>{% endif %}
     </div>
   </article>
   {% else %}

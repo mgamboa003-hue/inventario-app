@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Caja chica N° {{ e.id }} — Portal Mantenimiento Wintec{% endblock %}
+{% block topbar_title %}Entrega N° {{ e.id }} · {{ e.comprador }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('caja.inicio') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Caja chica</a>
+  {% if puede_editar %}
+  <a href="{{ url_for('caja.nuevo_gasto', entrega_id=e.id) }}" class="btn btn-primary btn-sm d-none d-lg-inline-flex align-items-center">
+    <i class="bi bi-camera me-1"></i>Agregar documento
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  {% if e.estado == 'abierta' %}<span class="tw-state abierta">Abierta</span>
+  {% elif c.cuadra is sameas false %}<span class="tw-state bad">{{ caja_estados[e.estado] }} · con diferencia</span>
+  {% else %}<span class="tw-state {{ e.estado }}">{{ caja_estados[e.estado] }}</span>{% endif %}
+  <span class="tw-muted small">Entregado el {{ e.fecha|fecha_cl }} por {{ e.entregado_por or '—' }}{% if e.nota %} · {{ e.nota }}{% endif %}</span>
+  {% if es_admin and puede_editar %}
+  <button class="btn btn-link btn-sm p-0 ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#editarEntrega"><i class="bi bi-pencil me-1"></i>Editar</button>
+  {% endif %}
+</div>
+
+{% if es_admin and puede_editar %}
+<div class="collapse mb-3" id="editarEntrega">
+  <form method="post" action="{{ url_for('caja.editar_entrega', entrega_id=e.id) }}" class="table-card p-3 d-flex flex-wrap gap-2 align-items-end">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div><label class="form-label small mb-1" for="eMonto">Monto</label>
+      <input type="text" inputmode="numeric" id="eMonto" name="monto" class="form-control form-control-sm cj-money" value="{{ e.monto_entregado }}" data-cj-monto></div>
+    <div><label class="form-label small mb-1" for="eFecha">Fecha</label>
+      <input type="date" id="eFecha" name="fecha" class="form-control form-control-sm" value="{{ e.fecha }}"></div>
+    <div class="flex-grow-1"><label class="form-label small mb-1" for="eNota">Nota</label>
+      <input type="text" id="eNota" name="nota" class="form-control form-control-sm" value="{{ e.nota or '' }}" maxlength="300"></div>
+    <button class="btn btn-primary btn-sm">Guardar</button>
+  </form>
+  {% if not gastos %}
+  <form method="post" action="{{ url_for('caja.eliminar_entrega', entrega_id=e.id) }}" class="mt-2" onsubmit="return confirm('¿Eliminar esta entrega?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Eliminar entrega</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Cuadre ── #}
+<div class="cj-cuadre" aria-label="Cuadre de caja">
+  <div><small>Entregado</small><b class="cj-money">{{ c.entregado|clp }}</b></div>
+  <div><small>Documentos ({{ c.n_documentos }})</small><b class="cj-money">{{ c.total_documentos|clp }}</b><span class="op">restan del fondo</span></div>
+  {% if c.saldo_devuelto is none %}
+  <div><small>Por rendir</small><b class="cj-money {{ 'cj-neg' if c.disponible < 0 }}">{{ c.disponible|clp }}</b>
+    <span class="op">{{ 'gastó más de lo entregado' if c.disponible < 0 else 'debería quedar en efectivo' }}</span></div>
+  <div class="final pend"><small>Cuadre</small><b>Pendiente</b><span class="op">al rendir</span></div>
+  {% else %}
+  <div><small>Saldo devuelto</small><b class="cj-money">{{ c.saldo_devuelto|clp }}</b><span class="op">efectivo que quedó</span></div>
+  <div class="final {{ 'ok' if c.cuadra else 'bad' }}"><small>Diferencia</small>
+    <b class="cj-money">{% if c.cuadra %}<i class="bi bi-check-circle me-1"></i>$0{% else %}{{ c.diferencia|clp }}{% endif %}</b>
+    <span class="op">{{ 'cuadra' if c.cuadra else ('falta dinero' if c.diferencia > 0 else 'sobra dinero') }}</span></div>
+  {% endif %}
+</div>
+
+{# ── Documentos ── #}
+<div class="table-card mb-3">
+  <div class="table-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
+    <h6 class="mb-0"><i class="bi bi-receipt me-2"></i>Boletas y facturas</h6>
+    <div class="cj-exports">
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('caja.pdf_entrega', entrega_id=e.id) }}"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('caja.excel_entrega', entrega_id=e.id) }}"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+      {% if puede_editar %}
+      <a href="{{ url_for('caja.nuevo_gasto', entrega_id=e.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Agregar</a>
+      {% endif %}
+    </div>
+  </div>
+  {% if gastos %}
+  <div class="table-responsive">
+    <table class="table table-hover table-stack cj-stack mb-0 align-middle">
+      <thead><tr><th></th><th>Documento</th><th>Proveedor</th><th>Motivo</th><th>Fecha</th><th class="text-end">Monto</th>{% if puede_editar %}<th></th>{% endif %}</tr></thead>
+      <tbody>
+        {% for g in gastos %}
+        <tr>
+          <td data-cell="media">
+            {% if g.foto %}
+            <button type="button" class="btn p-0 border-0" data-cj-ver="{{ url_for('caja.foto_gasto', gasto_id=g.id) }}" aria-label="Ver foto del documento">
+              <img src="{{ url_for('caja.foto_gasto', gasto_id=g.id) }}" class="cj-doc-thumb" alt="" loading="lazy">
+            </button>
+            {% else %}<span class="cj-noimg" title="Sin foto"><i class="bi bi-image"></i></span>{% endif %}
+          </td>
+          <td data-cell="title">
+            <div class="fw-semibold">{{ caja_tipos.get(g.tipo_doc, g.tipo_doc) }}{% if g.folio %} N° {{ g.folio }}{% endif %}</div>
+            {% if g.origen == 'timbre' %}<span class="cj-tag-timbre" title="Datos leídos del timbre electrónico del SII">Timbre SII</span>{% endif %}
+          </td>
+          <td><div>{{ g.proveedor or '—' }}</div>{% if g.rut_emisor %}<div class="small tw-muted">{{ g.rut_emisor|rut }}</div>{% endif %}</td>
+          <td><div>{{ g.motivo or '—' }}</div>{% if g.categoria %}<div class="small tw-muted">{{ g.categoria }}</div>{% endif %}</td>
+          <td>{{ g.fecha_doc|fecha_cl }}</td>
+          <td data-cell="status" class="text-end cj-money fw-semibold {{ 'cj-neg' if g.tipo_doc == '61' }}">{{ ('-' if g.tipo_doc == '61') }}{{ g.monto|clp }}</td>
+          {% if puede_editar %}
+          <td data-cell="actions" class="text-end">
+            <div class="row-actions d-inline-flex gap-1">
+              <a href="{{ url_for('caja.editar_gasto', gasto_id=g.id) }}" class="btn btn-outline-secondary btn-sm" aria-label="Editar"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{{ url_for('caja.eliminar_gasto', gasto_id=g.id) }}" onsubmit="return confirm('¿Eliminar este documento?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-outline-danger btn-sm" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+        <tr class="cj-total-row d-none d-md-table-row">
+          <td colspan="5" class="text-end">Total documentos</td>
+          <td class="text-end cj-money">{{ c.total_documentos|clp }}</td>
+          {% if puede_editar %}<td></td>{% endif %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-4 text-center">
+    <i class="bi bi-receipt fs-2 tw-muted"></i>
+    <p class="tw-muted mb-3">Aún no hay documentos.{% if puede_editar %} Saca una foto a cada boleta o factura y el sistema lee el timbre del SII.{% endif %}</p>
+    {% if puede_editar %}<a href="{{ url_for('caja.nuevo_gasto', entrega_id=e.id) }}" class="btn btn-primary"><i class="bi bi-camera me-1"></i>Agregar el primer documento</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{# ── Cierre / rendición ── #}
+{% if e.estado == 'abierta' %}
+<section class="cj-close" id="cierre">
+  <h2><i class="bi bi-calculator me-2"></i>Rendir y cuadrar</h2>
+  <p class="tw-muted small mb-3">Cuando ya estén todos los documentos, cuenta el efectivo que quedó y escríbelo. El sistema calcula si cuadra.</p>
+  <form method="post" action="{{ url_for('caja.rendir', entrega_id=e.id) }}" class="row g-3 align-items-start">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-md-4">
+      <label class="form-label fw-semibold" for="saldo">Efectivo que queda</label>
+      <div class="input-group">
+        <span class="input-group-text">$</span>
+        <input type="text" inputmode="numeric" id="saldo" name="saldo_devuelto" class="form-control form-control-lg cj-money" required
+               placeholder="0" value="{{ request.args.get('saldo', '') }}" data-cj-monto>
+      </div>
+      <div class="form-text">Cuéntalo en mano: billetes y monedas.</div>
+    </div>
+    <div class="col-md-8">
+      <label class="form-label fw-semibold" for="obs">Observación <span class="tw-muted fw-normal" id="obsHint">(opcional)</span></label>
+      <input type="text" id="obs" name="obs_cierre" class="form-control form-control-lg" maxlength="500" placeholder="Ej: estacionamiento sin boleta $2.000">
+    </div>
+    <div class="col-12">
+      <div class="cj-live" id="cjLive" aria-live="polite">Escribe el efectivo que queda para ver el cuadre.</div>
+    </div>
+    <div class="col-12 d-flex flex-wrap gap-2">
+      <button class="btn btn-primary btn-lg"><i class="bi bi-send-check me-1"></i>{{ 'Cerrar y rendir' if es_admin else 'Enviar rendición' }}</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<section class="cj-close">
+  <h2><i class="bi bi-clipboard-check me-2"></i>Rendición</h2>
+  <dl class="row mb-0 small">
+    <dt class="col-sm-3">Rendida por</dt><dd class="col-sm-9">{{ e.rendida_por or '—' }} · {{ (e.rendida_at or '')[:16] }}</dd>
+    {% if e.obs_cierre %}<dt class="col-sm-3">Observación</dt><dd class="col-sm-9">{{ e.obs_cierre }}</dd>{% endif %}
+    {% if e.estado == 'aprobada' %}
+    <dt class="col-sm-3">Aprobada por</dt><dd class="col-sm-9">{{ e.aprobada_por or '—' }} · {{ (e.aprobada_at or '')[:16] }}</dd>
+    {% if e.obs_aprobacion %}<dt class="col-sm-3">Comentario</dt><dd class="col-sm-9">{{ e.obs_aprobacion }}</dd>{% endif %}
+    {% endif %}
+  </dl>
+  {% if es_admin %}
+  <div class="d-flex flex-wrap gap-2 mt-3 align-items-start">
+    {% if e.estado == 'rendida' %}
+    <form method="post" action="{{ url_for('caja.aprobar', entrega_id=e.id) }}" class="d-flex flex-wrap gap-2 flex-grow-1">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="obs_aprobacion" class="form-control" style="max-width:420px" placeholder="Comentario (opcional)" aria-label="Comentario de aprobación">
+      <button class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Aprobar rendición</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('caja.reabrir', entrega_id=e.id) }}" onsubmit="return confirm('¿Reabrir para corregir documentos? Se borra el cuadre y hay que rendir de nuevo.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-secondary"><i class="bi bi-unlock me-1"></i>Reabrir para corregir</button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{# Visor de fotos #}
+<div class="modal fade" id="cjVisor" tabindex="-1" aria-label="Foto del documento" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2"><span class="fw-semibold">Documento</span>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+      <div class="modal-body cj-viewer"><img alt="Foto del documento" id="cjVisorImg"></div>
+    </div>
+  </div>
+</div>
+
+{% if puede_editar %}
+<a href="{{ url_for('caja.nuevo_gasto', entrega_id=e.id) }}" class="btn btn-primary cj-fab"><i class="bi bi-camera me-1"></i>Agregar documento</a>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% include "caja/_js_montos.html" %}
+<script>
+(function () {
+  document.querySelectorAll('[data-cj-ver]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('cjVisorImg').src = b.dataset.cjVer;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('cjVisor')).show();
+    });
+  });
+  var saldo = document.getElementById('saldo');
+  if (!saldo) return;
+  var disponible = {{ c.disponible }};
+  var live = document.getElementById('cjLive'), hint = document.getElementById('obsHint'), obs = document.getElementById('obs');
+  function pintar() {
+    var s = cjNumero(saldo.value);
+    if (s === null) { live.className = 'cj-live'; live.textContent = 'Escribe el efectivo que queda para ver el cuadre.'; hint.textContent = '(opcional)'; obs.required = false; return; }
+    var dif = disponible - s;
+    if (dif === 0) {
+      live.className = 'cj-live ok'; live.innerHTML = '<i class="bi bi-check-circle me-1"></i><strong>Cuadra perfecto.</strong> Documentos + efectivo = lo entregado.';
+      hint.textContent = '(opcional)'; obs.required = false;
+    } else {
+      live.className = 'cj-live bad';
+      live.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i><strong>' + (dif > 0 ? 'Faltan ' : 'Sobran ') + cjClp(Math.abs(dif)) + '.</strong> ' +
+        (dif > 0 ? 'Puede faltar una boleta o haber un gasto sin documento.' : 'Puede haber un documento repetido o mal ingresado.');
+      hint.textContent = '(obligatoria si no cuadra)'; obs.required = true;
+    }
+  }
+  saldo.addEventListener('input', pintar);
+  pintar();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if editando else 'Agregar' }} documento — Caja chica{% endblock %}
+{% block topbar_title %}{{ 'Editar documento' if editando else 'Agregar boleta o factura' }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Entrega N° {{ e.id }}</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="d-flex justify-content-between align-items-baseline mb-2 small">
+      <span class="tw-muted">{{ e.comprador }} · entregado {{ e.monto_entregado|clp }}</span>
+      <span>Por rendir{{ ' sin este documento' if editando }}: <b class="cj-money {{ 'cj-neg' if c.disponible < 0 }}">{{ c.disponible|clp }}</b></span>
+    </div>
+
+    <form method="post" id="cjForm" autocomplete="off" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% set foto_pend = g.get('foto') if (not editando and g.get('foto')) else '' %}
+      <input type="hidden" name="foto" id="fFoto" value="{{ foto_pend }}">
+      <input type="hidden" name="origen" id="fOrigen" value="{{ g.get('origen', 'manual') }}">
+
+      {# ── Paso 1: foto ── #}
+      {% set con_foto = (editando and g.get('foto')) or foto_pend %}
+      <div class="cj-scan mb-3 {{ 'has-photo' if con_foto }}" id="cjScan">
+        <input type="file" accept="image/*" capture="environment" id="inCamara" aria-label="Sacar foto">
+        <input type="file" accept="image/*" id="inGaleria" aria-label="Elegir foto de la galería">
+        <input type="file" accept="image/*" capture="environment" id="inTimbre" aria-label="Foto de cerca del timbre">
+
+        <div id="cjScanVacio" {% if con_foto %}hidden{% endif %}>
+          <div class="cj-scan-ico"><i class="bi bi-upc-scan"></i></div>
+          <h3>Saca una foto al documento</h3>
+          <p>Que se vea entero y derecho, con el <strong>timbre</strong> (el código ancho de abajo) nítido. El sistema lee solo el RUT, el folio, la fecha y el monto.</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <label for="inCamara" class="btn btn-primary btn-lg"><i class="bi bi-camera me-1"></i>Sacar foto</label>
+            <label for="inGaleria" class="btn btn-outline-secondary btn-lg"><i class="bi bi-image me-1"></i>Galería</label>
+          </div>
+        </div>
+
+        <div id="cjScanFoto" {% if not con_foto %}hidden{% endif %}>
+          <div class="cj-scan-row">
+            <img class="cj-thumb" id="cjThumb" alt="Foto del documento"
+                 {% if foto_pend %}src="{{ url_for('caja.foto_ref', ref=foto_pend) }}"{% elif con_foto %}src="{{ url_for('caja.foto_gasto', gasto_id=g.id) }}"{% endif %}>
+            <div class="cj-scan-msg flex-grow-1">
+              <strong id="cjScanTitulo">{{ 'Foto guardada' if con_foto else '' }}</strong>
+              <span class="tw-muted small" id="cjScanSub">{{ 'Puedes reemplazarla con otra.' if con_foto else '' }}</span>
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                <label for="inCamara" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-repeat me-1"></i>Otra foto</label>
+                <label for="inTimbre" class="btn btn-outline-primary btn-sm" id="btnTimbre" hidden><i class="bi bi-upc-scan me-1"></i>Foto de cerca del timbre</label>
+              </div>
+            </div>
+          </div>
+          <div id="cjStatus" hidden></div>
+        </div>
+      </div>
+
+      {# ── Paso 2: datos ── #}
+      <div class="table-card p-3 p-md-4 mb-3">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="fTipo">Tipo de documento</label>
+            <select name="tipo_doc" id="fTipo" class="form-select">
+              {% set tsel = g.get('tipo_doc', '33') %}
+              {% for t in tipos %}<option value="{{ t }}" {% if t == tsel %}selected{% endif %}>{{ caja_tipos[t] }}</option>{% endfor %}
+              {% if tsel not in tipos %}<option value="{{ tsel }}" selected>{{ caja_tipos.get(tsel, tsel) }}</option>{% endif %}
+            </select>
+          </div>
+          <div class="col-sm-6" data-con-doc>
+            <label class="form-label fw-semibold" for="fFolio">N° (folio)</label>
+            <input type="text" inputmode="numeric" name="folio" id="fFolio" class="form-control" maxlength="20" value="{{ g.get('folio') or '' }}">
+          </div>
+          <div class="col-sm-6" data-con-doc>
+            <label class="form-label fw-semibold" for="fRut">RUT del proveedor</label>
+            <input type="text" name="rut_emisor" id="fRut" class="form-control" maxlength="12" placeholder="76.123.456-7" value="{{ (g.get('rut_emisor') or '')|rut if g.get('rut_emisor') else '' }}">
+            <div class="form-text" id="rutAyuda"></div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="fProv">Proveedor</label>
+            <input type="text" name="proveedor" id="fProv" class="form-control" maxlength="120" placeholder="Nombre del local" value="{{ g.get('proveedor') or '' }}">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" for="fFecha">Fecha</label>
+            <input type="date" name="fecha_doc" id="fFecha" class="form-control" value="{{ g.get('fecha_doc') or e.fecha }}">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" for="fMonto">Monto total</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="text" inputmode="numeric" name="monto" id="fMonto" class="form-control cj-money fw-semibold" required value="{{ g.get('monto') or '' }}" data-cj-monto>
+            </div>
+          </div>
+          <div class="col-sm-5">
+            <label class="form-label fw-semibold" for="fCat">Categoría</label>
+            <select name="categoria" id="fCat" class="form-select">
+              {% for cat in categorias %}<option {% if cat == g.get('categoria', 'Repuestos') %}selected{% endif %}>{{ cat }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-7">
+            <label class="form-label fw-semibold" for="fMotivo">¿Para qué fue? <span class="tw-muted fw-normal" id="motivoHint">(opcional)</span></label>
+            <input type="text" name="motivo" id="fMotivo" class="form-control" maxlength="300" placeholder="Ej: rodamientos lavadora LISEC" value="{{ g.get('motivo') or '' }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <button class="btn btn-primary btn-lg flex-grow-1" id="btnGuardar"><i class="bi bi-check2 me-1"></i>Guardar</button>
+        {% if not editando %}
+        <button class="btn btn-outline-primary btn-lg flex-grow-1" name="otro" value="1"><i class="bi bi-plus-lg me-1"></i>Guardar y agregar otro</button>
+        {% else %}
+        <a href="{{ url_for('caja.ver_entrega', entrega_id=e.id) }}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% include "caja/_js_montos.html" %}
+<script>
+(function () {
+  var URL_LEER = "{{ url_for('caja.leer_documento') }}";
+  var URL_EMISOR = "{{ url_for('caja.buscar_emisor') }}";
+  var EXCLUIR = "{{ g.get('id', '') if editando else '' }}";
+  var CSRF = document.querySelector('input[name=csrf_token]').value;
+  var $ = function (id) { return document.getElementById(id); };
+  var subiendo = false;
+
+  function estado(tipo, icono, html) {
+    var s = $('cjStatus');
+    s.hidden = false; s.className = 'cj-status ' + tipo;
+    s.innerHTML = '<i class="bi ' + icono + '"></i><div>' + html + '</div>';
+  }
+  function marcar(el) { el.classList.add('cj-filled'); setTimeout(function () { el.classList.remove('cj-filled'); }, 1500); }
+
+  // Achica la foto en el celular antes de subirla (sube mucho mas rapido y
+  // sigue con detalle de sobra para leer el timbre).
+  function achicar(file, maxLado) {
+    return new Promise(function (resolve) {
+      if (!window.createImageBitmap && !window.FileReader) return resolve(file);
+      var img = new Image();
+      img.onload = function () {
+        var lado = Math.max(img.naturalWidth, img.naturalHeight);
+        if (lado <= maxLado) { URL.revokeObjectURL(img.src); return resolve(file); }
+        var f = maxLado / lado, c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * f); c.height = Math.round(img.naturalHeight * f);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        c.toBlob(function (b) { resolve(b || file); }, 'image/jpeg', 0.92);
+      };
+      img.onerror = function () { resolve(file); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function rellenar(d) {
+    var tipo = $('fTipo');
+    if (![].some.call(tipo.options, function (o) { return o.value === d.tipo_doc; })) {
+      var o = document.createElement('option'); o.value = d.tipo_doc; o.textContent = d.tipo_nombre; tipo.appendChild(o);
+    }
+    tipo.value = d.tipo_doc; marcar(tipo);
+    [['fFolio', d.folio], ['fRut', d.rut_emisor], ['fFecha', d.fecha_doc], ['fMonto', d.monto ? cjFormato(d.monto) : '']]
+      .forEach(function (p) { if (p[1]) { $(p[0]).value = p[1]; marcar($(p[0])); } });
+    if (d.proveedor) { $('fProv').value = d.proveedor; marcar($('fProv')); }
+    $('fOrigen').value = 'timbre';
+    actualizarTipo();
+  }
+
+  function enviar(file, guardar) {
+    if (!file) return;
+    subiendo = true; $('btnGuardar').disabled = true;
+    if (guardar) {
+      $('cjScanVacio').hidden = true; $('cjScanFoto').hidden = false; $('cjScan').classList.add('has-photo');
+      $('cjThumb').src = URL.createObjectURL(file);
+    }
+    $('cjScanTitulo').textContent = guardar ? 'Subiendo foto…' : 'Leyendo el timbre…';
+    $('cjScanSub').textContent = 'Un momento.';
+    $('cjStatus').hidden = true;
+    achicar(file, 3200).then(function (blob) {
+      var fd = new FormData();
+      fd.append('foto', blob, 'documento.jpg');
+      fd.append('guardar', guardar ? '1' : '0');
+      if (EXCLUIR) fd.append('excluir', EXCLUIR);
+      return fetch(URL_LEER, { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF }, credentials: 'same-origin' });
+    }).then(function (r) { return r.json(); }).then(function (r) {
+      if (!r.ok) {
+        $('cjScanTitulo').textContent = 'No se pudo usar la foto';
+        $('cjScanSub').textContent = '';
+        estado('bad', 'bi-x-circle', r.error || 'Intenta de nuevo.');
+        return;
+      }
+      if (guardar && r.foto) $('fFoto').value = r.foto;
+      $('cjScanTitulo').textContent = 'Foto guardada';
+      $('cjScanSub').textContent = '';
+      if (r.leido) {
+        rellenar(r.datos);
+        $('btnTimbre').hidden = true;
+        var d = r.datos;
+        estado(r.repetido ? 'bad' : 'ok', r.repetido ? 'bi-exclamation-octagon' : 'bi-check-circle',
+          (r.repetido ? '<strong>' + r.repetido + '</strong>' :
+            '<strong>Timbre leído: ' + d.tipo_nombre + ' N° ' + d.folio + ' por ' + cjClp(d.monto || 0) + '.</strong>') +
+          (d.proveedor ? '' : '<br>Es la primera vez de este proveedor: escribe su nombre y la próxima vez saldrá solo.') +
+          (r.repetido ? '' : '<br><span class="small">Revisa que el monto coincida con el papel y agrega para qué fue.</span>'));
+        if (!d.proveedor) $('fProv').focus(); else $('fMotivo').focus();
+      } else {
+        $('btnTimbre').hidden = false;
+        estado(guardar ? 'warn' : 'bad', 'bi-upc',
+          guardar ? '<strong>No encontré el timbre en la foto.</strong> Si tiene el código ancho abajo, usa <em>Foto de cerca del timbre</em> (derecho, con luz y sin sombra). Si es una boleta de papel o no tiene timbre, completa los datos a mano.'
+                  : '<strong>Tampoco pude leerlo de cerca.</strong> Completa los datos a mano; la foto del documento ya quedó guardada.');
+      }
+    }).catch(function () {
+      $('cjScanTitulo').textContent = 'Sin conexión';
+      $('cjScanSub').textContent = '';
+      estado('bad', 'bi-wifi-off', 'No se pudo subir la foto. Revisa la señal e intenta de nuevo.');
+    }).finally(function () { subiendo = false; $('btnGuardar').disabled = false; });
+  }
+
+  $('inCamara').addEventListener('change', function () { enviar(this.files[0], true); this.value = ''; });
+  $('inGaleria').addEventListener('change', function () { enviar(this.files[0], true); this.value = ''; });
+  $('inTimbre').addEventListener('change', function () { enviar(this.files[0], false); this.value = ''; });
+
+  // Tipo "vale sin documento": no pide folio ni RUT, si pide el motivo
+  function actualizarTipo() {
+    var vale = $('fTipo').value === 'VALE';
+    document.querySelectorAll('[data-con-doc]').forEach(function (el) { el.hidden = vale; });
+    $('motivoHint').textContent = vale ? '(obligatorio para un vale)' : '(opcional)';
+  }
+  $('fTipo').addEventListener('change', actualizarTipo);
+  actualizarTipo();
+
+  // RUT: valida y busca el nombre si ya se uso antes
+  $('fRut').addEventListener('change', function () {
+    var v = this.value.trim(), ayuda = $('rutAyuda');
+    if (!v) { ayuda.textContent = ''; return; }
+    fetch(URL_EMISOR + '?rut=' + encodeURIComponent(v), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); }).then(function (r) {
+        ayuda.className = 'form-text ' + (r.valido ? 'text-success' : 'text-danger');
+        ayuda.textContent = r.valido ? (r.nombre ? 'Proveedor conocido: ' + r.nombre : 'RUT válido') : 'Este RUT no es válido (revisa el dígito verificador).';
+        if (r.nombre && !$('fProv').value) { $('fProv').value = r.nombre; marcar($('fProv')); }
+      }).catch(function () {});
+  });
+
+  $('cjForm').addEventListener('submit', function (ev) {
+    if (subiendo) { ev.preventDefault(); return; }
+    if (!cjNumero($('fMonto').value)) { ev.preventDefault(); $('fMonto').focus(); $('fMonto').classList.add('is-invalid'); }
+  });
+})();
+</script>
+{% endblock %}

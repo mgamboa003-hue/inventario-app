@@ -45,3 +45,5 @@ static/uploads/*
 
 # Carpeta que crea el escritorio de Claude al entregar archivos
 Claude outputs/
+# Fotos de documentos de caja chica (privadas, guardado local)
+datos_caja/
