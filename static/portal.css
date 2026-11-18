@@ -410,7 +410,25 @@ body { font-family: var(--font); background: var(--bg); }
 @media (max-width: 1399.98px) { .pm-kbd { display: none; } .pm-search { flex-basis: 220px; min-width: 140px; } .pm-area-link { padding: 0 .65rem; } }
 /* Con 6 areas en la barra (Caja chica) no cabe el buscador en pantallas medianas:
    se esconde (Bodega e Inicio tienen su propio buscador). */
-@media (max-width: 1439.98px) { .pm-search { display: none; } }
+/* Pantallas medianas de PC (992-1439px): con 6 areas no cabe el buscador
+   completo. Queda como un boton con lupa; al hacer clic (o tecla "/") se
+   abre encima de las areas y al salir vuelve a ser lupa. */
+@media (min-width: 992px) and (max-width: 1439.98px) {
+  .pm-top-in { position: relative; }
+  .pm-search {
+    display: flex !important; flex: 0 0 40px; width: 40px; min-width: 40px;
+    padding: 0; justify-content: center; cursor: pointer;
+  }
+  .pm-search i { color: var(--pm-bar-text); }
+  .pm-search input { position: absolute; width: 1px; opacity: 0; pointer-events: none; }
+  .pm-search:focus-within {
+    position: absolute; z-index: 5; top: 50%; transform: translateY(-50%);
+    right: 0; width: min(420px, 60%); justify-content: flex-start; padding: 0 .6rem 0 .8rem;
+    background: var(--pm-bar); border-color: rgba(255,255,255,.6);
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  }
+  .pm-search:focus-within input { position: static; width: auto; opacity: 1; pointer-events: auto; }
+}
 @media (max-width: 1279.98px) { .pm-area-link { padding: 0 .55rem; } }
 @media (max-width: 991.98px) {
   .pm-tile:not(.wide):not(.compact) .pm-plate-name,

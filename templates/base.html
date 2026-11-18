@@ -84,7 +84,8 @@
     </nav>
 
     {% if rol != 'comprador' %}
-    <form method="get" action="{{ url_for('listar_productos') }}" class="pm-search" role="search">
+    <form method="get" action="{{ url_for('listar_productos') }}" class="pm-search" role="search"
+          onclick="this.querySelector('input').focus()" title="Buscar repuesto (tecla /)">
       <i class="bi bi-search" aria-hidden="true"></i>
       <input type="search" name="q" placeholder="Buscar repuesto o código…" aria-label="Buscar repuesto"
              value="{{ request.args.get('q','') if ep == 'listar_productos' else '' }}">
